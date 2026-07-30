@@ -20,7 +20,7 @@
     padding: calc(env(safe-area-inset-top) + 12px) 16px 0;
     background: rgba(13,13,13,.96); border-bottom: 1px solid #303030;
   }
-  .preview { display: flex; align-items: center; gap: 13px; height: 94px; }
+  .preview { display: flex; align-items: center; gap: 13px; height: 94px; padding-right: 52px; }
   #thumb {
     width: 142px; aspect-ratio: 16/9; object-fit: cover;
     background: #181818; border: 1px solid #333;
@@ -63,7 +63,7 @@
   #overview.open { display: flex; flex-direction: column; }
   .ov-head { flex: none; display: flex; align-items: center; height: 44px; }
   .ov-head h2 { flex: 1; font-size: 18px; font-weight: 600; }
-  #ovClose { width: 44px; font-size: 24px; }
+  #ovClose { width: 44px; height: 44px; font-size: 24px; }
   #grid {
     flex: 1; min-height: 0; overflow-y: auto; display: grid;
     grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; padding-top: 10px;
@@ -74,7 +74,7 @@
   .page span { display: block; padding: 7px 8px; color: #aaa8a1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #overviewOpen {
     position: fixed; z-index: 6; top: calc(env(safe-area-inset-top) + 18px); right: 16px;
-    width: 38px; height: 34px; border: 1px solid #333; color: #aaa8a1;
+    width: 44px; height: 44px; border: 1px solid #333; color: #aaa8a1;
   }
 </style>
 </head>

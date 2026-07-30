@@ -79,6 +79,7 @@
     background: var(--chrome); border: 1px solid var(--chair); border-bottom: none;
     border-radius: 22px 22px 0 0; color: #b5b3ac;
     transition: color .18s, bottom .32s cubic-bezier(.22,.61,.21,1);
+    font: inherit;
   }
   #notesToggle:hover { color: var(--paper); }
   #notesToggle svg { width: 16px; height: 16px; display: block; transition: transform .28s; }
@@ -165,7 +166,7 @@
     position: absolute; left: 100px; right: 100px; bottom: 34px;
     border-top: 1px solid #c9c6bc; padding-top: 12px;
     display: flex; justify-content: space-between; align-items: flex-start;
-    font-size: 15px; font-weight: 600; letter-spacing: .18em; color: #999;
+    font-size: 24px; font-weight: 600; letter-spacing: .14em; color: #777;
   }
   .pfoot .pn { background: var(--ink); color: #fff; padding: 7px 10px 7px 16px; margin-top: -12px; }
   .canvas.dark .pfoot { border-color: #333; color: #777; }
@@ -292,8 +293,9 @@
     font-size: 11px; letter-spacing: .12em;
   }
   #drawerClose {
+    width: 32px; height: 32px; margin: -4px -8px -4px 0;
     border: 0; background: none; color: #77756e; cursor: pointer;
-    font: inherit; font-size: 16px; line-height: 1;
+    font: inherit; font-size: 18px; line-height: 1;
   }
   #drawerClose:hover { color: #f0eee8; }
   #notesPanel .col.comm .ed { font-size: 14px; color: #a9a79f; }
@@ -368,7 +370,7 @@
   @keyframes barIn { from { width: 0; } }
 
   /* ============================================================
-     示例页样式(替换成自己的页面时整段删换;真实成稿参考见同目录 reference-deck.html)
+     示例页样式（替换成自己的页面时可按页面类型删换）
      ============================================================ */
   /* --- 示例:封面(满幅深底+两行标题错峰浮现;换成真图:加 <img> 并给画布加 full-img) --- */
   .pcover .ph-img { position: absolute; inset: 0; background: radial-gradient(ellipse 90% 70% at 50% 42%, #3a3835, #141312 78%); }
@@ -376,7 +378,7 @@
   .pcover .cover-title { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: #fff; text-shadow: 0 2px 28px rgba(0,0,0,.45); }
   .pcover .co-part { font-size: 26px; font-weight: 300; letter-spacing: .35em; text-indent: .35em; color: rgba(255,255,255,.88); margin-bottom: 46px; }
   .pcover .zh { font-size: 104px; font-weight: 300; letter-spacing: .16em; text-indent: .16em; }
-  .pcover .cv-cap { position: absolute; left: 48px; bottom: 40px; font-size: 15px; font-weight: 300; letter-spacing: .08em; color: rgba(255,255,255,.55); }
+  .pcover .cv-cap { position: absolute; left: 48px; bottom: 40px; font-size: 24px; font-weight: 300; letter-spacing: .06em; color: rgba(255,255,255,.62); }
   .slide.on .pcover .co-part { opacity: 0; animation: fwUp .7s ease .25s forwards; }
   .slide.on .pcover .zh { opacity: 0; animation: fwUp .8s ease .45s forwards; }
 
@@ -385,7 +387,7 @@
   .pbody .bd-text { position: absolute; top: 320px; left: 100px; width: 900px; font-size: 26px; line-height: 1.9; }
   .pbody .bd-text p + p { margin-top: 40px; }
   .pbody .bd-fig { position: absolute; top: 280px; right: 100px; width: 680px; height: 560px; background: #dedbd2; }
-  .pbody .bd-fig span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #999; letter-spacing: .2em; }
+  .pbody .bd-fig span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #777; letter-spacing: .2em; }
   .slide.on .pbody .bd-title { opacity: 0; animation: fwUp .6s ease .1s forwards; }
   .slide.on .pbody .bd-text { opacity: 0; animation: fwFadeIn .7s ease .4s forwards; }
   .slide.on .pbody .bd-fig { opacity: 0; animation: fwFadeIn .7s ease .55s forwards; }
@@ -397,7 +399,7 @@
   .psteps .st-row { display: flex; align-items: baseline; gap: 40px; padding: 52px 0; border-top: 1px solid #2c2c2c; opacity: .28; transition: opacity .5s; }
   .psteps .st-row .no { font-size: 44px; font-weight: 300; width: 90px; flex: none; }
   .psteps .st-row .w { font-size: 44px; font-weight: 300; letter-spacing: .04em; transition: font-weight 0s .1s; }
-  .psteps .st-row .ex { font-size: 21px; font-weight: 300; color: rgba(255,255,255,.55); margin-left: auto; opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
+  .psteps .st-row .ex { font-size: 24px; font-weight: 300; color: rgba(255,255,255,.62); margin-left: auto; opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
   .psteps[data-step="1"] .st-row:nth-child(1),
   .psteps[data-step="2"] .st-row:nth-child(-n+2),
   .psteps[data-step="3"] .st-row { opacity: 1; }
@@ -421,17 +423,21 @@
     border-right: 2px solid #050505; overflow: hidden;
     transition: flex .68s cubic-bezier(.22,.61,.21,1), filter .4s;
   }
-  .paccordion .ac-col:nth-child(2) { background: linear-gradient(145deg,#382d27,#111 72%); }
-  .paccordion .ac-col:nth-child(3) { background: linear-gradient(145deg,#4a493d,#111 72%); }
-  .paccordion .ac-col:nth-child(4) { background: linear-gradient(145deg,#233841,#111 72%); }
-  .paccordion .ac-col:nth-child(5) { background: linear-gradient(145deg,#50342d,#111 72%); }
+  .paccordion .ac-col:nth-child(2) { background: linear-gradient(145deg,#3d3b38,#111 72%); }
+  .paccordion .ac-col:nth-child(3) { background: linear-gradient(145deg,#343434,#111 72%); }
+  .paccordion .ac-col:nth-child(4) { background: linear-gradient(145deg,#2c2d2e,#111 72%); }
+  .paccordion .ac-col:nth-child(5) { background: linear-gradient(145deg,#242424,#111 72%); }
   .paccordion .ac-col:hover { flex: 3.2; }
   .paccordion:has(.ac-col:hover) .ac-col:not(:hover) { filter: brightness(.42) saturate(.55); }
   .paccordion .ac-copy { position: absolute; left: 42px; right: 42px; bottom: 58px; white-space: nowrap; }
-  .paccordion .ac-no { font-size: 17px; letter-spacing: .15em; color: rgba(255,255,255,.5); }
+  .paccordion .ac-no { font-size: 24px; letter-spacing: .15em; color: rgba(255,255,255,.58); }
   .paccordion .ac-name { margin-top: 12px; font-size: 38px; font-weight: 300; }
-  .paccordion .ac-desc { margin-top: 14px; max-width: 500px; font-size: 18px; line-height: 1.65; color: rgba(255,255,255,.58); opacity: 0; transition: opacity .35s .14s; }
+  .paccordion .ac-desc { margin-top: 14px; max-width: 500px; font-size: 24px; line-height: 1.65; color: rgba(255,255,255,.68); opacity: 0; transition: opacity .35s .14s; }
   .paccordion .ac-col:hover .ac-desc { opacity: 1; }
+  body.exporting .paccordion .ac-col:nth-child(2),
+  .ovItem .paccordion .ac-col:nth-child(2) { flex: 3.2; }
+  body.exporting .paccordion .ac-col:nth-child(2) .ac-desc,
+  .ovItem .paccordion .ac-col:nth-child(2) .ac-desc { opacity: 1; }
 
   /* --- 参考骨架:左右对照。适合前后、问题与方案、两个观点的直接比较。 --- */
   .psplit { display: grid; grid-template-columns: 1fr 1fr; background: #0a0a0a; color: #fff; }
@@ -439,9 +445,9 @@
   .psplit .sp-half:first-child { background: linear-gradient(135deg,#69655d,#292826); }
   .psplit .sp-half:last-child { background: linear-gradient(135deg,#232323,#050505); }
   .psplit .sp-half + .sp-half { border-left: 2px solid #000; }
-  .psplit .sp-label { position: absolute; top: 58px; left: 64px; font-size: 17px; letter-spacing: .18em; color: rgba(255,255,255,.65); }
+  .psplit .sp-label { position: absolute; top: 58px; left: 64px; font-size: 24px; letter-spacing: .14em; color: rgba(255,255,255,.68); }
   .psplit .sp-word { position: absolute; left: 64px; bottom: 112px; font-size: 92px; font-weight: 300; }
-  .psplit .sp-copy { position: absolute; left: 68px; right: 68px; bottom: 58px; font-size: 18px; color: rgba(255,255,255,.58); }
+  .psplit .sp-copy { position: absolute; left: 68px; right: 68px; bottom: 58px; font-size: 24px; color: rgba(255,255,255,.68); }
   .slide.on .psplit .sp-half:first-child { animation: splitLeft .8s cubic-bezier(.22,.61,.21,1); }
   .slide.on .psplit .sp-half:last-child { animation: splitRight .8s cubic-bezier(.22,.61,.21,1); }
   @keyframes splitLeft { from { transform: translateX(-36px); opacity: 0; } }
@@ -455,6 +461,7 @@
   .pbars .bar-track { height: 18px; background: #ddd9d0; }
   .pbars .bar-fill { display: block; height: 100%; width: var(--value); background: #111; }
   .pbars .bar-value { font-size: 34px; font-weight: 600; text-align: right; }
+  .pbars .bar-meta { position: absolute; left: 100px; bottom: 96px; font-size: 24px; letter-spacing: .04em; color: #6f6b64; }
   .slide.on .pbars .bar-fill { animation: barIn .8s cubic-bezier(.22,.61,.21,1) both; }
   .slide.on .pbars .bar-row:nth-child(2) .bar-fill { animation-delay: .12s; }
   .slide.on .pbars .bar-row:nth-child(3) .bar-fill { animation-delay: .24s; }
@@ -538,7 +545,7 @@
 <div id="zonePrev" class="navzone"></div>
 <div id="zoneNext" class="navzone"></div>
 
-<div id="notesToggle" data-tip="展开或收起讲稿（N）" aria-label="展开或收起讲稿"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m18 15l-6-6l-6 6"/></svg></div>
+<button id="notesToggle" data-tip="展开或收起讲稿（N）" aria-label="展开或收起讲稿"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m18 15l-6-6l-6 6"/></svg></button>
 <div id="notesPanel">
   <div id="nGrip" title="拖动调节面板高度"></div>
   <div id="notesHead">
@@ -668,8 +675,8 @@
 <!-- 参考骨架：左右直接对照 -->
 <section class="slide" data-title="左右对照">
   <div class="canvas nofoot psplit">
-    <div class="sp-half"><div class="sp-label">BEFORE</div><div class="sp-word">分散</div><div class="sp-copy">信息都在，但观看顺序不明确。</div></div>
-    <div class="sp-half"><div class="sp-label">AFTER</div><div class="sp-word">聚焦</div><div class="sp-copy">保留一个决定性关系，让差异一眼可见。</div></div>
+    <div class="sp-half"><div class="sp-label">调整前</div><div class="sp-word">分散</div><div class="sp-copy">信息都在，但观看顺序不明确。</div></div>
+    <div class="sp-half"><div class="sp-label">调整后</div><div class="sp-word">聚焦</div><div class="sp-copy">保留一个决定性关系，让差异一眼可见。</div></div>
   </div>
   <aside>
     <div class="ns"><p>对照页的重点不是把两堆信息平铺出来，而是让观众直接看见一个变化。左右两侧应使用完全相同的比较尺度。</p></div>
@@ -682,11 +689,12 @@
   <div class="canvas pbars">
     <div class="bar-title">数据先给排序，再给数字</div>
     <div class="bar-list">
-      <div class="bar-row"><span class="bar-name">首要因素</span><span class="bar-track"><i class="bar-fill" style="--value:86%"></i></span><span class="bar-value">86</span></div>
-      <div class="bar-row"><span class="bar-name">第二因素</span><span class="bar-track"><i class="bar-fill" style="--value:68%"></i></span><span class="bar-value">68</span></div>
-      <div class="bar-row"><span class="bar-name">第三因素</span><span class="bar-track"><i class="bar-fill" style="--value:43%"></i></span><span class="bar-value">43</span></div>
-      <div class="bar-row"><span class="bar-name">其他因素</span><span class="bar-track"><i class="bar-fill" style="--value:27%"></i></span><span class="bar-value">27</span></div>
+      <div class="bar-row"><span class="bar-name">首要因素</span><span class="bar-track"><i class="bar-fill" style="--value:86%"></i></span><span class="bar-value">86%</span></div>
+      <div class="bar-row"><span class="bar-name">第二因素</span><span class="bar-track"><i class="bar-fill" style="--value:68%"></i></span><span class="bar-value">68%</span></div>
+      <div class="bar-row"><span class="bar-name">第三因素</span><span class="bar-track"><i class="bar-fill" style="--value:43%"></i></span><span class="bar-value">43%</span></div>
+      <div class="bar-row"><span class="bar-name">其他因素</span><span class="bar-track"><i class="bar-fill" style="--value:27%"></i></span><span class="bar-value">27%</span></div>
     </div>
+    <div class="bar-meta">示例口径：2026 Q2 · n=500 · 单位：% · 来源：替换为真实来源</div>
   </div>
   <aside>
     <div class="ns"><p>条形先把排序讲清楚，精确数字只承担核对作用。进入页面后按顺序生长，视线自然从第一项往下移动。</p></div>

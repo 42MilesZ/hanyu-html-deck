@@ -23,7 +23,7 @@ with sync_playwright() as pw:
     def load(p):
         pg.goto("about:blank")
         pg.goto(URL + f"#p{p}")
-        pg.evaluate("document.body.classList.add('present'); window.dispatchEvent(new Event('resize'))")
+        pg.evaluate("document.body.classList.add('present', 'exporting'); window.dispatchEvent(new Event('resize'))")
         pg.add_style_tag(content=FF_CSS)
         pg.wait_for_timeout(350)
 
