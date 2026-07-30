@@ -1,0 +1,56 @@
+---
+name: hanyu-deck
+description: Use when creating or revising a local-first HTML presentation with speaker notes, an optional notes drawer, export tools, source write-back, or a phone teleprompter.
+---
+
+# Hanyu Deck
+
+使用本 skill 创建或修改 HTML 演示文稿时，以 `assets/hanyu-deck/template.html` 为底座，不从空白页面重新搭引擎。
+
+## 开始前
+
+1. 先读 `references/design-system.md`。
+2. 如果目标目录还没有 Hanyu Deck，运行：
+
+   ```bash
+   python3 scripts/create_deck.py /目标目录
+   ```
+
+3. 阅读目标目录里的 `README.md`，确认纯 HTML 功能与本地服务功能的边界。
+
+## 页面制作
+
+- 画布固定为 1920 × 1080，所有页面使用 `.slide > .canvas + aside` 结构。
+- 页面正文服务于演讲，不把讲稿压到画布上。
+- 讲稿写在 `.ns` 中，用自然段纯文本；每个意思单独成段，不强制项目列表。
+- 备注写在 `.nc` 中。它既可保存修改意见，也可保存补充说明或个人提醒。
+- 优先复用模板中的五种页面骨架：正文、分类聚焦、左右对照、数据排序、章节转折。只有真实内容无法表达时才新增页面类型。
+- 图片应成为页面主体；缺少真实图片时保留克制的中性占位，不用装饰图标填空。
+- 动画用于讲解顺序、比较变化或跨页连续性。无认知作用的动画不要添加。
+
+## 交互与状态
+
+- 讲稿面板默认收起到表头；备注抽屉默认关闭。
+- 两种状态按 `DECK.key` 分别写入 localStorage，不互相覆盖。
+- 手机端默认打开讲稿；备注通过 `讲稿 / 备注` 切换显示。
+- 手机端只使用同一局域网。首选同一 Wi-Fi；没有可用网络时，使用手机热点并让电脑连接。
+- 不接入公网中继、公共 MQTT 或托管提词页。
+
+## 本地服务
+
+本地服务负责手机提词、遥控、源文件写回、图片/PDF/发送版导出。修改这部分时保留以下边界：
+
+- `/canvas` 只允许本机调用。
+- `/canvas`、`/seed`、`/export` 必须校验请求来源。
+- 写回必须先核对页数与结构，再用临时文件原子替换。
+- 手机讲稿只在局域网传输，不上传到第三方服务。
+- 自动化截图默认不向手机上报翻页；显式加 `?pr=1` 才启用联动。
+
+## 完成前检查
+
+1. 运行 `python3 -m unittest discover -s tests -v`。
+2. 在桌面视口检查默认、总览、演示、讲稿展开、备注抽屉。
+3. 在手机视口检查讲稿/备注切换、翻页、自由浏览和滚动位置。
+4. 启动本地服务，验证 `/info`、二维码、SSE、写回拒绝规则。
+5. 导出发送版，确认 `.nc` 备注与画布写回代码都已剥除。
+

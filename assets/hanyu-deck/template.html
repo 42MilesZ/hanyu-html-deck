@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hanyu Deck</title>
+<!-- ============================================================
+     Hanyu Deck — 面向 AI 生成 HTML 演示文稿的本地优先框架。
+     复制整个 hanyu-deck/ 目录到项目文件夹，将本文件改名为 index.html，
+     修改文件尾 DECK 配置，再替换示例页。
+     ============================================================ -->
+<style>
+  /* 本地字体(同目录 fonts/,全量字符):全平台渲染一致；发送版由 build_send.py 内联。 */
+  @font-face { font-family: "Noto Sans SC"; font-weight: 300; src: url("fonts/NotoSansSC-300.woff2") format("woff2"); }
+  @font-face { font-family: "Noto Sans SC"; font-weight: 600; src: url("fonts/NotoSansSC-600.woff2") format("woff2"); }
+  :root { --paper: #f2f1ed; --hair: #d2d0c8; --ink: #111; --chrome: #121212; --chair: #2c2c2c; --nh: 296px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Noto Sans SC", -apple-system, "Helvetica Neue", sans-serif;
+    background: var(--chrome);
+    color: #d8d6d0;
+    font-weight: 300;
+    overflow: hidden;
+  }
+  body.present { background: #0c0c0c; }
+
+  /* ===== 1:1 原尺寸模式(R):给 Figma 之类的 DOM 抓取插件用 =====
+     常态下 fitSlide() 会给画布写内联 transform:scale(),插件读到的是缩放后的几何——
+     画布尺寸不再是 1920×1080,子元素坐标也被小数缩放带偏。本模式摘掉缩放与边框,
+     让插件抓到真实尺寸;画布超出窗口靠滚动查看,是预期行为。 */
+  body.raw { overflow: auto; background: #1a1a1a; }
+  body.raw #stage {
+    position: static; display: block; overflow: visible;
+    width: 1920px; height: 1080px;
+  }
+  body.raw .canvas { transform: none !important; border: none; box-shadow: none; }
+  body.raw .slide .canvas, body.raw .slide .canvas * { animation: none !important; }
+  body.raw #notesPanel, body.raw #progress, body.raw .navzone { display: none; }
+
+  /* ===== 工具钮 =====
+     半透明深底+背景模糊:叠在浅色画布上也读得清 */
+  #toolbar {
+    position: fixed; top: 10px; right: 10px; z-index: 90; /* 高于总览(80):总览下仍可切回默认 */
+    display: flex; flex-direction: row; align-items: center; gap: 12px;
+    color: #d8d6d0; font-size: 13px;
+    transition: opacity .25s;
+  }
+  /* 图标钮统一规格:纯图标、无文字标签；解释浮层延迟约 1 秒出现。 */
+  #toolbar button {
+    font: inherit; color: #b5b3ac; background: rgba(14,14,14,.58);
+    border: none; border-radius: 3px; padding: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  #toolbar button svg { display: block; width: 15px; height: 15px; }
+  #toolbar button:hover { background: var(--paper); color: var(--ink); }
+  [data-tip] { position: relative; }
+  [data-tip]::after {
+    content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%;
+    transform: translate(-50%, -3px); z-index: 140; pointer-events: none;
+    padding: 7px 9px; background: #303030; color: #f0eee8;
+    border: 1px solid #444; border-radius: 3px; white-space: nowrap;
+    font-size: 11px; font-weight: 300; letter-spacing: .04em;
+    opacity: 0; visibility: hidden;
+    transition: opacity .12s ease .9s, transform .12s ease .9s, visibility 0s linear 1.02s;
+  }
+  [data-tip]:hover::after {
+    opacity: 1; visibility: visible; transform: translate(-50%, 0);
+    transition-delay: .9s, .9s, .9s;
+  }
+
+  /* 批注区拉起/收起把手:贴在批注面板顶边中央的半圆钮(面板 overflow:hidden 会裁子元素,故用 fixed) */
+  #notesToggle {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(var(--nh) + 3px); z-index: 41;
+    width: 48px; height: 19px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--chrome); border: 1px solid var(--chair); border-bottom: none;
+    border-radius: 22px 22px 0 0; color: #b5b3ac;
+    transition: color .18s, bottom .32s cubic-bezier(.22,.61,.21,1);
+  }
+  #notesToggle:hover { color: var(--paper); }
+  #notesToggle svg { width: 16px; height: 16px; display: block; transition: transform .28s; }
+  body:not(.notes-mini) #notesToggle svg { transform: rotate(180deg); } /* 展开态箭头朝下=收起 */
+  body.notes-mini #notesToggle { bottom: 46px; }
+  body.present #notesToggle, body.raw #notesToggle, body.notes-hidden #notesToggle { display: none; }
+  /* 视图三段(演示/默认/总览):互斥单选,淡底托盘+细边读作一组;
+     选中不靠各自变底色,而是一个方块(.thumb)在三个位置之间滑动 */
+  #segView {
+    position: relative;
+    display: flex; gap: 2px; padding: 3px; border-radius: 5px;
+    background: rgba(14,14,14,.62); border: 1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  #segView .thumb {
+    position: absolute; top: 0; left: 0; z-index: 0;
+    background: rgba(255,255,255,.16); border-radius: 3px;
+    transition: transform .24s cubic-bezier(.22,.61,.21,1), width .24s, height .24s;
+    pointer-events: none;
+  }
+  #segView .thumb.noanim { transition: none; }
+  #segView button {
+    position: relative; z-index: 1;
+    background: none; border-radius: 3px; color: #9d9b94;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  #segView button:hover { background: none; color: #d8d6d0; }
+  #segView button.on { background: none; color: #f0eee8; } /* 亮的是图标,底色交给滑块 */
+  /* 导出:带向下小三角,表示点开是菜单而非直接触发 */
+  #exWrap { position: relative; display: flex; }
+  #exWrap > button { gap: 4px; padding-right: 7px; }
+  #exWrap .caret {
+    width: 0; height: 0; opacity: .7;
+    border-left: 3.5px solid transparent; border-right: 3.5px solid transparent;
+    border-top: 4px solid currentColor;
+    transition: transform .18s;
+  }
+  #exWrap.open .caret { transform: rotate(180deg); }
+  #exMenu {
+    position: absolute; top: calc(100% + 6px); right: 0; display: none;
+    flex-direction: column; min-width: 150px; padding: 5px 0;
+    background: var(--chrome); border: 1px solid var(--chair);
+    font-size: 12px; font-weight: 300; letter-spacing: .12em;
+  }
+  #exMenu.open { display: flex; }
+  #exMenu button { text-align: left; justify-content: flex-start; padding: 8px 16px; white-space: nowrap; background: none; border-radius: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  #exMenu button.toggle::before {
+    content: ""; width: 8px; height: 8px; margin-right: 9px;
+    border: 1px solid #666; background: transparent;
+  }
+  #exMenu button.toggle.on::before { background: #f0eee8; border-color: #f0eee8; }
+  body.present #toolbar { opacity: 0; pointer-events: none; }
+  body.present #toolbar:hover,
+  body.present.reveal-ui #toolbar { opacity: 1; pointer-events: auto; }
+
+  /* ===== 舞台与页面 ===== */
+  #stage {
+    /* 顶部无横条,画布向上撑满(fitSlide 的 0.97 缩放自带呼吸边) */
+    position: absolute; top: 0; bottom: calc(var(--nh) + 4px); left: 0; right: 0;
+    display: flex; align-items: center; justify-content: center;
+    /* 画布布局盒固定 1920,scale 只缩视觉不缩布局——不裁剪的话窄屏(竖屏/4:3)会长出横向滚动条 */
+    overflow: hidden;
+  }
+  body.present #stage { top: 0; bottom: 0; }
+  body.notes-hidden:not(.present) #stage { bottom: 16px; }
+
+  .slide { display: none; }
+  .slide.current { display: block; }
+  .slide aside { display: none; } /* 讲稿/内部注记模板,由底部批注面板读取展示 */
+  .canvas {
+    width: 1920px; height: 1080px;
+    background: var(--paper); color: var(--ink); position: relative; overflow: hidden;
+    transform-origin: center center;
+    border: 2px solid rgba(255,255,255,.2);
+    box-shadow: 0 6px 40px rgba(0,0,0,.45);
+  }
+  body.present .canvas { border-color: transparent; box-shadow: 0 6px 48px rgba(0,0,0,.6); }
+  .canvas.dark { background: #000; }
+  .canvas.full-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .canvas b, .canvas strong { font-weight: 600; }
+
+  /* 页脚线(代码页统一,JS 注入;满幅图页与带 nofoot 类的画布不注入) */
+  .pfoot {
+    position: absolute; left: 100px; right: 100px; bottom: 34px;
+    border-top: 1px solid #c9c6bc; padding-top: 12px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    font-size: 15px; font-weight: 600; letter-spacing: .18em; color: #999;
+  }
+  .pfoot .pn { background: var(--ink); color: #fff; padding: 7px 10px 7px 16px; margin-top: -12px; }
+  .canvas.dark .pfoot { border-color: #333; color: #777; }
+  .canvas.dark .pfoot .pn { background: #fff; color: #000; }
+
+  /* ===== 翻页点击区(画布带 nav-narrow 类的页收窄到 4%,给悬停交互让位) ===== */
+  .navzone { position: absolute; top: 0; bottom: calc(var(--nh) + 4px); width: 12%; z-index: 20; cursor: pointer; }
+  body.present .navzone { top: 0; bottom: 0; }
+  #zonePrev { left: 0; } #zoneNext { right: 0; }
+  body.navnarrow .navzone { width: 4%; }
+
+  /* ===== 进度条 ===== */
+  #progress { position: fixed; bottom: 0; left: 0; right: 0; height: 3px; background: #262626; z-index: 60; }
+  #progressBar { height: 100%; width: 0; background: #e8e6df; transition: width .2s; }
+
+  /* ===== 讲稿面板 + 右侧备注抽屉 ===== */
+  #notesPanel {
+    position: fixed; bottom: 3px; left: 0; right: 0; height: var(--nh); z-index: 40;
+    background: var(--chrome); border-top: 1px solid var(--chair);
+    display: flex; flex-direction: column; gap: 0; overflow: hidden;
+  }
+  #nGrip { position: absolute; left: 0; right: 0; top: 0; height: 7px; cursor: ns-resize; z-index: 6; }
+  /* 迷你态(默认):正文收起只留表头一条;展开/收起走 .notes-anim 的高度过渡(常态不挂 transition,免得拖动调高被拖慢) */
+  body.notes-mini #notesPanel { height: 43px; }
+  body.notes-mini #nGrip { display: none; }
+  #notesPanel .col { transition: opacity .25s ease; }
+  body.notes-mini #notesPanel .col { opacity: 0; }
+  body.notes-mini:not(.present) #stage, body.notes-mini:not(.present) .navzone { bottom: 50px; }
+  body.notes-anim #notesPanel { transition: height .32s cubic-bezier(.22,.61,.21,1); }
+  body.notes-anim #stage, body.notes-anim .navzone { transition: bottom .32s cubic-bezier(.22,.61,.21,1); }
+  /* 面板表头:左=页码(唯一加粗强调)+标题+本页时长,中=全场时间轴,右=语速三档+存默认+历史 */
+  #notesHead {
+    flex: none; display: flex; align-items: center;
+    padding: 9px 22px 0; font-size: 13px; color: #d8d6d0;
+  }
+  #pageNum { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; min-width: 56px; }
+  #pnCur { position: relative; display: inline-block; overflow: hidden; height: 20px; line-height: 20px; font-size: 15px; font-weight: 600; color: #f0eee8; letter-spacing: .04em; }
+  #pnCur .nv { display: inline-block; transition: transform .42s cubic-bezier(.22,.61,.21,1), opacity .42s; }
+  #pnSep { font-size: 12px; font-weight: 300; color: rgba(255,255,255,.32); margin-left: 7px; letter-spacing: .1em; }
+  /* 固定槽位:标题长短不再推移时间轴起点,超长省略 */
+  #pageTitle {
+    font-weight: 300; color: #98968f; letter-spacing: .08em; margin-left: 14px;
+    flex: none; width: 144px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* 全场时间轴:细线=全稿,页边界 1px 刻度;亮线=已讲完,3px 高亮段=当前页(时长标注挂段中点下方),
+     白色游标=讲到本页的时间点(累计时间在其上方)。轴线落在 34px 盒子的垂直中点,与表头文字同一中线 */
+  #tl { position: relative; flex: 1; height: 34px; margin: 0 10px 0 28px; min-width: 220px; cursor: pointer; }
+  #tlPv {
+    /* fixed:面板 overflow:hidden 会裁掉探出顶部的部分,fixed 不受祖先裁剪;位置由 JS 按轴矩形算 */
+    position: fixed; width: 192px; z-index: 70; pointer-events: none;
+    background: var(--chrome); border: 1px solid var(--chair); padding: 4px;
+    opacity: 0; visibility: hidden; transform: translateX(-50%) translateY(6px);
+    transition: opacity .18s ease, transform .22s cubic-bezier(.22,.61,.21,1), visibility 0s linear .18s;
+  }
+  #tlPv.on {
+    opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+    transition: opacity .18s ease, transform .22s cubic-bezier(.22,.61,.21,1);
+  }
+  /* 悬停所指页的区间段:5px 软带;颜色随区段状态——已讲过用与亮线一致的高亮度,未讲过用柔和档(JS 设) */
+  #tlHov {
+    position: absolute; bottom: 14px; height: 5px; background: rgba(240, 238, 232, .35);
+    opacity: 0; transition: left .18s ease, width .18s ease, opacity .2s ease, background .2s ease;
+    pointer-events: none;
+  }
+  #tlPv img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #000; }
+  #tlPv .lbl {
+    font-size: 11px; font-weight: 300; letter-spacing: .08em; color: #98968f;
+    padding: 5px 2px 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* 轴长随语速伸缩:慢 180=基准顶满,宽度=180/rate(中 ~86%,快 75%),内部全百分比定位整体跟随 */
+  #tlIn { position: relative; height: 100%; width: 100%; transition: width .55s cubic-bezier(.22,.61,.21,1); }
+  #tl .trk { position: absolute; left: 0; right: 0; bottom: 16px; height: 1px; background: rgba(240,238,232,.13); }
+  #tl .tick { position: absolute; bottom: 14px; width: 1px; height: 5px; background: rgba(240,238,232,.2); transition: left .55s cubic-bezier(.22,.61,.21,1); }
+  #tlFill { position: absolute; left: 0; bottom: 16px; height: 1px; background: rgba(240,238,232,.8); transition: width .55s cubic-bezier(.22,.61,.21,1); }
+  #tlCur { position: absolute; bottom: 15px; height: 3px; background: rgba(240,238,232,.5); transition: left .55s cubic-bezier(.22,.61,.21,1), width .55s cubic-bezier(.22,.61,.21,1); }
+  #tlHead { position: absolute; bottom: 11px; width: 2px; height: 11px; margin-left: -1px; background: rgba(240,238,232,.9); transition: left .55s cubic-bezier(.22,.61,.21,1); }
+  #tlNow { position: absolute; bottom: 23px; transform: translateX(-50%); font-size: 11px; color: rgba(240,238,232,.8); letter-spacing: .06em; font-variant-numeric: tabular-nums; transition: left .55s cubic-bezier(.22,.61,.21,1); }
+  #tlSec { position: absolute; bottom: 1px; transform: translateX(-50%); font-size: 11px; color: rgba(240,238,232,.55); letter-spacing: .06em; font-variant-numeric: tabular-nums; transition: left .55s cubic-bezier(.22,.61,.21,1); }
+  #tlTot { position: absolute; right: 0; bottom: 23px; font-size: 11px; color: rgba(240,238,232,.32); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+  /* 语速三档:选中 600 白,其余细字重压暗 */
+  #nsRate { display: flex; align-items: center; gap: 12px; margin-right: 16px; }
+  #nsRate .rt { font-size: 11px; font-weight: 300; letter-spacing: .12em; color: #5f5d57; cursor: pointer; }
+  #nsRate .rt.act { font-weight: 600; color: #b6b4ac; }
+  #notesHead .vsep { width: 1px; height: 12px; background: var(--chair); margin-right: 16px; }
+  body.present #notesPanel, body.notes-hidden #notesPanel { display: none; }
+  #notesPanel .col {
+    min-width: 0; min-height: 0; padding: 12px 22px 0;
+    font-size: 13.5px; line-height: 1.8;
+    display: flex; flex-direction: column;
+  }
+  /* min-height:0 两层都不能少——嵌套 flex 里内容会把容器撑高、被面板裁掉,看着溢出却滚不动;
+     滚动条隐藏,顶/底极限回弹由 JS 做(批注区回弹一节) */
+  #notesPanel .ed { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; outline: none; padding: 2px 4px 16px 0; font-weight: 300; color: #d0cec8; font-size: 15.5px; line-height: 1.6; }
+  #notesPanel .ed::-webkit-scrollbar { display: none; }
+  #notesPanel .ed b, #notesPanel .ed strong { font-weight: 600; color: #f0eee8; }
+  #notesPanel .ed p { margin-bottom: 14px; }
+  /* 外部粘贴残留样式兜底:批注区内除加粗外不允许任何样式(白底/字色/字号/斜体/下划线一律压平)。
+     只压 p 的子元素:p 本身要承担行类型的颜色(o-task/o-main 等) */
+  #notesPanel .ed p * {
+    background: transparent !important; color: inherit !important;
+    font-family: inherit !important; font-size: inherit !important;
+    font-style: normal !important; text-decoration: none !important; letter-spacing: inherit !important;
+  }
+  #notesPanel .ed b, #notesPanel .ed strong, #notesPanel .ed b *, #notesPanel .ed strong * { color: #f0eee8 !important; }
+  #notesPanel .ed ul { padding-left: 18px; }
+  #notesPanel .ed li { margin-bottom: 4px; }
+  #notesPanel .ed.dirty { background: #23211a; }
+  #nsCols { position: relative; flex: 1; min-height: 0; display: flex; overflow: hidden; }
+  #notesPanel .col.script {
+    flex: 1; padding-right: 28px;
+    transition: margin-right .34s cubic-bezier(.22,.61,.21,1);
+  }
+  #notesPanel .col.comm {
+    position: absolute; top: 0; bottom: 0; right: 0; width: min(38vw, 620px);
+    border-left: 1px solid var(--chair); background: #171717;
+    transform: translateX(100%);
+    transition: transform .34s cubic-bezier(.22,.61,.21,1);
+  }
+  body.notes-drawer-open #notesPanel .col.script { margin-right: min(38vw, 620px); }
+  body.notes-drawer-open #notesPanel .col.comm { transform: translateX(0); }
+  .comm-label {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 24px; margin-bottom: 6px; color: #77756e;
+    font-size: 11px; letter-spacing: .12em;
+  }
+  #drawerClose {
+    border: 0; background: none; color: #77756e; cursor: pointer;
+    font: inherit; font-size: 16px; line-height: 1;
+  }
+  #drawerClose:hover { color: #f0eee8; }
+  #notesPanel .col.comm .ed { font-size: 14px; color: #a9a79f; }
+  #notesPanel .col.comm .ed p { margin-bottom: 10px; }
+  #notesPanel .col.comm .ed p.c-ref { color: #85837c; }
+  #notesPanel .col.comm .ed p.c-flag { color: #d8b98a; border-left: 2px solid #a2582f; padding-left: 8px; }
+  #edComm:empty::before {
+    content: "写下本页的修改意见、补充说明或个人备注……";
+    color: #68665f; pointer-events: none;
+  }
+  #btnSeed, #btnHist, #btnBk {
+    font: inherit; font-size: 11px; font-weight: 300; letter-spacing: .08em; color: #77756e;
+    background: none; border: none; border-radius: 0;
+    padding: 3px 8px; cursor: pointer;
+  }
+  #btnSeed:hover, #btnHist:hover { background: var(--paper); color: var(--ink); }
+  #histWrap { position: relative; display: flex; }
+  #histMenu {
+    /* fixed 向上弹:迷你态表头贴屏底,向下弹出界;fixed 也不受面板 overflow:hidden 裁剪 */
+    position: fixed; display: none;
+    flex-direction: column; width: 380px; max-height: 42vh; overflow-y: auto;
+    background: var(--chrome); border: 1px solid var(--chair); padding: 5px 0; z-index: 60;
+  }
+  #histMenu.open { display: flex; }
+  #histMenu .hi {
+    display: flex; gap: 10px; align-items: baseline; text-align: left;
+    font: inherit; font-size: 11px; font-weight: 300; color: #98968f;
+    background: none; border: none; padding: 7px 14px; cursor: pointer;
+  }
+  #histMenu .hi:hover { background: var(--paper); color: var(--ink); }
+  #histMenu .ht { color: #5f5d57; flex: none; }
+  #histMenu .hx { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .draft-flag { color: #d97a3d; font-weight: 600; }
+
+  /* ===== 总览(缩略图恒为静态完成态:入场动画的初始隐藏态只挂 .slide.current/.on 下) ===== */
+  #overview {
+    position: fixed; inset: 0; z-index: 80; background: rgba(14,14,14,.98);
+    display: none; overflow-y: auto; padding: 56px 44px;
+  }
+  #overview.open { display: block; }
+  #ovGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; max-width: 1500px; margin: 0 auto; }
+  .ovItem { cursor: pointer; }
+  .ovItem .thumbWrap {
+    width: 100%; aspect-ratio: 16/9; overflow: hidden;
+    outline: 1px solid #333; background: var(--paper); position: relative;
+  }
+  .ovItem.now .thumbWrap { outline: 2px solid #e8e6df; }
+  .ovItem .thumbWrap .canvas {
+    transform: scale(var(--ovscale)); transform-origin: top left;
+    position: absolute; top: 0; left: 0; box-shadow: none; border: none;
+  }
+  .ovItem .cap { color: #8a8880; font-weight: 300; font-size: 12px; letter-spacing: .06em; margin-top: 7px; text-align: center; }
+  .ovItem.now .cap { color: #f0eee8; font-weight: 600; }
+
+  /* ============================================================
+     全局入场/出场:每页画布淡入;旧页绝对定位叠在新页上 450ms 淡出。
+     入场动画一律挂 .slide.on(不挂 .current):.on 在 current 与 leaving 期间都保留,
+     离场时选择器不变、动画不被重置,入场没播完就翻页时以当前帧继续播并随整页淡出。
+     初始隐藏态与 keyframes 只在 .on/.current 下生效,总览缩略图与导出恒为静态终态。
+     ============================================================ */
+  .slide.on .canvas { animation: cvIn .5s ease; }
+  @keyframes cvIn { from { opacity: 0; } }
+  .slide.leaving { display: block; position: absolute; z-index: 2; pointer-events: none; animation: cvOut .45s ease forwards; }
+  @keyframes cvOut { to { opacity: 0; } }
+  /* 满幅贴图页:图 1.6s Ken Burns 缓推收束(个别页要豁免时给画布加 nokb 类) */
+  .slide.on .canvas.full-img:not(.nokb) > img { animation: kbIn 1.6s cubic-bezier(.22,.61,.36,1); }
+  @keyframes kbIn { from { transform: scale(1.04); } }
+  /* 通用入场关键帧:淡入 / 上浮淡入 / 拆字渐显 / 条形生长 */
+  @keyframes fwFadeIn { to { opacity: 1; } }
+  @keyframes fwUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes chIn { to { opacity: 1; filter: none; } }
+  @keyframes barIn { from { width: 0; } }
+
+  /* ============================================================
+     示例页样式(替换成自己的页面时整段删换;真实成稿参考见同目录 reference-deck.html)
+     ============================================================ */
+  /* --- 示例:封面(满幅深底+两行标题错峰浮现;换成真图:加 <img> 并给画布加 full-img) --- */
+  .pcover .ph-img { position: absolute; inset: 0; background: radial-gradient(ellipse 90% 70% at 50% 42%, #3a3835, #141312 78%); }
+  .pcover .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.30) 0%, rgba(0,0,0,.54) 42%, rgba(0,0,0,.54) 60%, rgba(0,0,0,.24) 100%); }
+  .pcover .cover-title { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: #fff; text-shadow: 0 2px 28px rgba(0,0,0,.45); }
+  .pcover .co-part { font-size: 26px; font-weight: 300; letter-spacing: .35em; text-indent: .35em; color: rgba(255,255,255,.88); margin-bottom: 46px; }
+  .pcover .zh { font-size: 104px; font-weight: 300; letter-spacing: .16em; text-indent: .16em; }
+  .pcover .cv-cap { position: absolute; left: 48px; bottom: 40px; font-size: 15px; font-weight: 300; letter-spacing: .08em; color: rgba(255,255,255,.55); }
+  .slide.on .pcover .co-part { opacity: 0; animation: fwUp .7s ease .25s forwards; }
+  .slide.on .pcover .zh { opacity: 0; animation: fwUp .8s ease .45s forwards; }
+
+  /* --- 示例:正文页(线/面层级:标题成线,正文成段) --- */
+  .pbody .bd-title { position: absolute; top: 96px; left: 100px; font-size: 72px; font-weight: 300; letter-spacing: .04em; }
+  .pbody .bd-text { position: absolute; top: 320px; left: 100px; width: 900px; font-size: 26px; line-height: 1.9; }
+  .pbody .bd-text p + p { margin-top: 40px; }
+  .pbody .bd-fig { position: absolute; top: 280px; right: 100px; width: 680px; height: 560px; background: #dedbd2; }
+  .pbody .bd-fig span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #999; letter-spacing: .2em; }
+  .slide.on .pbody .bd-title { opacity: 0; animation: fwUp .6s ease .1s forwards; }
+  .slide.on .pbody .bd-text { opacity: 0; animation: fwFadeIn .7s ease .4s forwards; }
+  .slide.on .pbody .bd-fig { opacity: 0; animation: fwFadeIn .7s ease .55s forwards; }
+
+  /* --- 示例:分步页(data-steps 步进:→ 逐项点亮,未点亮压暗细字;讲到哪亮到哪) --- */
+  .psteps { background: #000; color: #fff; }
+  .psteps .st-title { position: absolute; top: 88px; left: 100px; font-size: 60px; font-weight: 300; letter-spacing: .1em; }
+  .psteps .st-rows { position: absolute; top: 300px; left: 100px; right: 100px; display: flex; flex-direction: column; gap: 0; }
+  .psteps .st-row { display: flex; align-items: baseline; gap: 40px; padding: 52px 0; border-top: 1px solid #2c2c2c; opacity: .28; transition: opacity .5s; }
+  .psteps .st-row .no { font-size: 44px; font-weight: 300; width: 90px; flex: none; }
+  .psteps .st-row .w { font-size: 44px; font-weight: 300; letter-spacing: .04em; transition: font-weight 0s .1s; }
+  .psteps .st-row .ex { font-size: 21px; font-weight: 300; color: rgba(255,255,255,.55); margin-left: auto; opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
+  .psteps[data-step="1"] .st-row:nth-child(1),
+  .psteps[data-step="2"] .st-row:nth-child(-n+2),
+  .psteps[data-step="3"] .st-row { opacity: 1; }
+  .psteps[data-step="1"] .st-row:nth-child(1) .w,
+  .psteps[data-step="2"] .st-row:nth-child(2) .w,
+  .psteps[data-step="3"] .st-row:nth-child(3) .w { font-weight: 600; }
+  .psteps[data-step="1"] .st-row:nth-child(1) .ex,
+  .psteps[data-step="2"] .st-row:nth-child(-n+2) .ex,
+  .psteps[data-step="3"] .st-row .ex { opacity: 1; transform: none; }
+  .slide.on .psteps .st-title { opacity: 0; animation: fwUp .6s ease .1s forwards; }
+  .slide.on .psteps .st-row { animation: fwFadeIn .5s ease both; }
+  .slide.on .psteps .st-row:nth-child(1) { animation-delay: .15s; }
+  .slide.on .psteps .st-row:nth-child(2) { animation-delay: .25s; }
+  .slide.on .psteps .st-row:nth-child(3) { animation-delay: .35s; }
+
+  /* --- 参考骨架:可展开图像列。悬停聚焦一列，其余退后，适合讲分类与案例。 --- */
+  .paccordion { display: flex; background: #050505; color: #fff; }
+  .paccordion .ac-title { position: absolute; left: 72px; top: 58px; z-index: 5; font-size: 54px; font-weight: 300; }
+  .paccordion .ac-col {
+    position: relative; flex: 1; min-width: 0; height: 100%;
+    border-right: 2px solid #050505; overflow: hidden;
+    transition: flex .68s cubic-bezier(.22,.61,.21,1), filter .4s;
+  }
+  .paccordion .ac-col:nth-child(2) { background: linear-gradient(145deg,#382d27,#111 72%); }
+  .paccordion .ac-col:nth-child(3) { background: linear-gradient(145deg,#4a493d,#111 72%); }
+  .paccordion .ac-col:nth-child(4) { background: linear-gradient(145deg,#233841,#111 72%); }
+  .paccordion .ac-col:nth-child(5) { background: linear-gradient(145deg,#50342d,#111 72%); }
+  .paccordion .ac-col:hover { flex: 3.2; }
+  .paccordion:has(.ac-col:hover) .ac-col:not(:hover) { filter: brightness(.42) saturate(.55); }
+  .paccordion .ac-copy { position: absolute; left: 42px; right: 42px; bottom: 58px; white-space: nowrap; }
+  .paccordion .ac-no { font-size: 17px; letter-spacing: .15em; color: rgba(255,255,255,.5); }
+  .paccordion .ac-name { margin-top: 12px; font-size: 38px; font-weight: 300; }
+  .paccordion .ac-desc { margin-top: 14px; max-width: 500px; font-size: 18px; line-height: 1.65; color: rgba(255,255,255,.58); opacity: 0; transition: opacity .35s .14s; }
+  .paccordion .ac-col:hover .ac-desc { opacity: 1; }
+
+  /* --- 参考骨架:左右对照。适合前后、问题与方案、两个观点的直接比较。 --- */
+  .psplit { display: grid; grid-template-columns: 1fr 1fr; background: #0a0a0a; color: #fff; }
+  .psplit .sp-half { position: relative; overflow: hidden; }
+  .psplit .sp-half:first-child { background: linear-gradient(135deg,#69655d,#292826); }
+  .psplit .sp-half:last-child { background: linear-gradient(135deg,#232323,#050505); }
+  .psplit .sp-half + .sp-half { border-left: 2px solid #000; }
+  .psplit .sp-label { position: absolute; top: 58px; left: 64px; font-size: 17px; letter-spacing: .18em; color: rgba(255,255,255,.65); }
+  .psplit .sp-word { position: absolute; left: 64px; bottom: 112px; font-size: 92px; font-weight: 300; }
+  .psplit .sp-copy { position: absolute; left: 68px; right: 68px; bottom: 58px; font-size: 18px; color: rgba(255,255,255,.58); }
+  .slide.on .psplit .sp-half:first-child { animation: splitLeft .8s cubic-bezier(.22,.61,.21,1); }
+  .slide.on .psplit .sp-half:last-child { animation: splitRight .8s cubic-bezier(.22,.61,.21,1); }
+  @keyframes splitLeft { from { transform: translateX(-36px); opacity: 0; } }
+  @keyframes splitRight { from { transform: translateX(36px); opacity: 0; } }
+
+  /* --- 参考骨架:条形数据。进入页面后按排序依次生长。 --- */
+  .pbars .bar-title { position: absolute; left: 100px; top: 86px; font-size: 66px; font-weight: 300; }
+  .pbars .bar-list { position: absolute; left: 100px; right: 100px; top: 300px; }
+  .pbars .bar-row { display: grid; grid-template-columns: 230px 1fr 120px; align-items: center; gap: 28px; padding: 28px 0; border-top: 1px solid #ccc9c0; }
+  .pbars .bar-name { font-size: 24px; }
+  .pbars .bar-track { height: 18px; background: #ddd9d0; }
+  .pbars .bar-fill { display: block; height: 100%; width: var(--value); background: #111; }
+  .pbars .bar-value { font-size: 34px; font-weight: 600; text-align: right; }
+  .slide.on .pbars .bar-fill { animation: barIn .8s cubic-bezier(.22,.61,.21,1) both; }
+  .slide.on .pbars .bar-row:nth-child(2) .bar-fill { animation-delay: .12s; }
+  .slide.on .pbars .bar-row:nth-child(3) .bar-fill { animation-delay: .24s; }
+  .slide.on .pbars .bar-row:nth-child(4) .bar-fill { animation-delay: .36s; }
+
+  /* --- 参考骨架:单词概念页。作为章节停顿或叙事转折。 --- */
+  .pword { background: #000; color: #fff; display: flex; align-items: center; justify-content: center; }
+  .pword .word { font-size: 208px; font-weight: 300; letter-spacing: .12em; text-indent: .12em; }
+  .pword .word::after { content: ""; display: block; width: 0; height: 1px; margin: 28px auto 0; background: #fff; }
+  .slide.on .pword .word { animation: wordLand .9s cubic-bezier(.22,.61,.21,1); }
+  .slide.on .pword .word::after { animation: wordLine .9s ease .55s forwards; }
+  @keyframes wordLand { from { opacity: 0; transform: scale(.92); letter-spacing: .2em; } }
+  @keyframes wordLine { to { width: 180px; } }
+
+  /* --- 示例:结语(满幅深底+金句拆字渐显,拆字由引擎 JS 自动做,文本写在 .line 里即可) --- */
+  .pend .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .35), rgba(0, 0, 0, .68) 38%, rgba(0, 0, 0, .68) 72%, rgba(0, 0, 0, .35)); }
+  .pend .ph-img { position: absolute; inset: 0; background: radial-gradient(ellipse 90% 70% at 50% 60%, #33322f, #101010 80%); }
+  .pend .line { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: #fff; font-size: 62px; font-weight: 300; line-height: 2; letter-spacing: .1em; }
+  .pend .line .ch { display: inline-block; }
+  .slide.on .pend .line .ch { opacity: 0; filter: blur(4px); animation: chIn 1.4s ease forwards; animation-delay: calc(var(--i) * 95ms + .5s); }
+
+  /* ===== 画布就地编辑:双击画布文字直接改,失焦后经本地服务写回本文件源文 ===== */
+  .cv-editing { outline: 2px dashed rgba(178, 86, 58, .7); outline-offset: 5px; cursor: text; }
+  #cvToast { position: fixed; top: 58px; left: 50%; transform: translateX(-50%); background: #2b2a28; color: #f0eee8; font-size: 13px; padding: 8px 16px; border-radius: 6px; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 120; }
+  #cvToast.on { opacity: 1; }
+  #cvToast.bad { background: #7c2f1d; }
+  #prompterDialog {
+    display: none; position: fixed; inset: 0; z-index: 160;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,.68); backdrop-filter: blur(8px);
+  }
+  #prompterDialog.open { display: flex; }
+  .pd-card {
+    position: relative; width: 430px; padding: 30px;
+    background: #171717; border: 1px solid #3a3a3a; color: #d8d6d0;
+  }
+  #pdClose {
+    position: absolute; right: 18px; top: 15px; border: 0; background: none;
+    color: #777; font: 300 24px/1 "Noto Sans SC", sans-serif; cursor: pointer;
+  }
+  #pdClose:hover { color: #f0eee8; }
+  .pd-kicker { color: #777; font-size: 11px; letter-spacing: .16em; margin-bottom: 8px; }
+  .pd-card h2 { color: #f0eee8; font-size: 24px; font-weight: 300; margin-bottom: 22px; }
+  #pdQr {
+    display: flex; align-items: center; justify-content: center;
+    width: 230px; height: 230px; margin: 0 auto 16px; background: #f2f1ed; color: #333;
+    font-size: 12px; text-align: center; padding: 16px;
+  }
+  #pdQr img { width: 100%; height: 100%; display: block; }
+  #pdUrl { color: #b5b3ac; font-size: 12px; text-align: center; word-break: break-all; }
+  .pd-help { margin-top: 22px; color: #88867f; font-size: 13px; line-height: 1.65; }
+  #pdStatus { margin-top: 12px; padding-top: 12px; border-top: 1px solid #303030; color: #777; font-size: 12px; }
+  #pdStatus.ok { color: #a9c6aa; }
+</style>
+</head>
+<body class="notes-mini">
+
+<div id="toolbar">
+  <div id="segView">
+    <i class="thumb noanim"></i>
+    <button data-view="overview" data-tip="总览（O）" aria-label="总览"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3v18m-9-9h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></g></svg></button>
+    <button data-view="default" class="on" data-tip="默认（Esc）" aria-label="默认视图"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" rx="2"/></svg></button>
+    <button data-view="present" data-tip="演示（P / F）" aria-label="演示"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 3h20m-1 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3m4 18l5-5l5 5"/></svg></button>
+  </div>
+  <button data-act="drawer" data-tip="备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+  <button data-act="prompter" data-tip="手机提词器" aria-label="手机提词器"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  <span id="exWrap">
+    <button data-act="export" data-tip="导出" aria-label="导出菜单"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 15V3m9 12v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10l5 5l5-5"/></g></svg><i class="caret"></i></button>
+    <div id="exMenu">
+      <button data-ex="script">导出讲稿</button>
+      <button data-ex="diff-notes">复制改动的备注</button>
+      <button data-ex="imgs">每页图片</button>
+      <button data-ex="pdf">图片版 PDF</button>
+      <button data-ex="send">发送版</button>
+      <button class="toggle" data-act="raw">原尺寸（1:1）</button>
+    </div>
+  </span>
+</div>
+
+<div id="stage"></div>
+<div id="zonePrev" class="navzone"></div>
+<div id="zoneNext" class="navzone"></div>
+
+<div id="notesToggle" data-tip="展开或收起讲稿（N）" aria-label="展开或收起讲稿"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m18 15l-6-6l-6 6"/></svg></div>
+<div id="notesPanel">
+  <div id="nGrip" title="拖动调节面板高度"></div>
+  <div id="notesHead">
+    <span id="pageNum"><span id="pnCur"></span><span id="pnSep"></span></span>
+    <span id="pageTitle"></span>
+    <div id="tl" title="全场时间轴:游标=讲到本页的时间点,高亮段=当前页,段下数字=本页讲稿时长">
+      <div id="tlIn">
+        <div class="trk"></div>
+        <div id="tlFill"></div>
+        <div id="tlCur"></div>
+        <div id="tlHov"></div>
+        <div id="tlHead"></div>
+        <span id="tlNow"></span>
+        <span id="tlSec" title="本页讲稿时长"></span>
+        <span id="tlTot"></span>
+      </div>
+      <div id="tlPv">
+        <img alt="">
+        <div class="lbl"></div>
+      </div>
+    </div>
+    <div id="nsRate" title="语速:快 240 / 中 210 / 慢 180 字每分钟">
+      <span class="rt" data-r="240">快</span>
+      <span class="rt" data-r="210">中</span>
+      <span class="rt" data-r="180">慢</span>
+    </div>
+    <span class="vsep"></span>
+    <button id="btnSeed" title="把所有改动页写回本文件,变成默认稿(要提词服务在跑)">存为默认</button>
+    <span id="histWrap">
+      <button id="btnHist" title="本页讲稿的历史版本,点任意一条恢复;恢复前当前稿也会记入历史">查看历史</button>
+      <div id="histMenu"></div>
+    </span>
+  </div>
+  <div id="nsCols">
+    <div class="col script">
+      <div class="ed" id="edScript" contenteditable="true"></div>
+    </div>
+    <div class="col comm">
+      <div class="comm-label"><span>备注</span><button id="drawerClose" aria-label="收起备注">×</button></div>
+      <div class="ed" id="edComm" contenteditable="true"></div>
+    </div>
+  </div>
+</div>
+
+<div id="overview"><div id="ovGrid"></div></div>
+<div id="progress"><div id="progressBar"></div></div>
+<div id="cvToast"></div>
+<div id="prompterDialog" role="dialog" aria-modal="true" aria-label="手机提词器">
+  <div class="pd-card">
+    <button id="pdClose" aria-label="关闭">×</button>
+    <p class="pd-kicker">手机提词器</p>
+    <h2>用手机扫描二维码</h2>
+    <div id="pdQr"><span>正在连接本地服务…</span></div>
+    <p id="pdUrl"></p>
+    <p class="pd-help">手机和电脑连接同一个 Wi-Fi。没有可用网络时，可开启手机热点并让电脑连接；网络变化后二维码会自动刷新。</p>
+    <p id="pdStatus">等待本地服务</p>
+  </div>
+</div>
+
+<!-- ============ 页面模板(示例页,逐页替换;每页 = .canvas 版面 + aside 讲稿) ============ -->
+<template id="slides">
+
+<!-- 示例：封面 -->
+<section class="slide" data-title="封面">
+  <div class="canvas dark nofoot pcover">
+    <div class="ph-img"></div>
+    <div class="scrim"></div>
+    <div class="cover-title">
+      <div class="co-part">副标题 · 主体单位</div>
+      <div class="zh">演示稿主标题</div>
+    </div>
+    <div class="cv-cap">左下角图注（作者 · 作品 · 年代 · 收藏地）</div>
+  </div>
+  <aside>
+    <div class="ns"><p>开场先亮明对象与核心判断，让观众知道接下来要解决什么问题。</p><p>这里使用自然段纯文本。每个意思单独成段，不要求项目列表或固定结构。</p></div>
+    <div class="nc"><p>记录这一页的修改意见、补充说明或个人备注。</p></div>
+  </aside>
+</section>
+
+<!-- 示例：正文页（浅底代码页，页脚线自动注入） -->
+<section class="slide" data-title="正文示例">
+  <div class="canvas pbody">
+    <div class="bd-title">页面标题</div>
+    <div class="bd-text">
+      <p>正文写成段落：完整句子连成面，不拆成一排排小标签。标题单独成行并留白，层级靠形态与空间建立。</p>
+      <p>图是主体，文字是配角。右侧占位块换成大图，文字只保留理解这张图所必需的内容。</p>
+    </div>
+    <div class="bd-fig"><span>图片占位</span></div>
+  </div>
+  <aside>
+    <div class="ns"><p>解释页面判断与图片之间的关系。正文只讲一个决定性判断，再补一条必要的证据或观察。</p><p>次要信息简短带过，避免把讲稿写成页面元素清单。</p></div>
+    <div class="nc"><p>可以记录图片替换、裁切要求或待确认的说法。</p></div>
+  </aside>
+</section>
+
+<!-- 示例：分步页（data-steps=3：右箭头逐步点亮） -->
+<section class="slide" data-title="分步示例">
+  <div class="canvas psteps" data-steps="3" data-step="0">
+    <div class="st-title">分步机制</div>
+    <div class="st-rows">
+      <div class="st-row"><span class="no">01</span><span class="w">第一步</span><span class="ex">当前内容点亮，其余压暗</span></div>
+      <div class="st-row"><span class="no">02</span><span class="w">第二步</span><span class="ex">右箭头、空格或右侧点击区继续步进</span></div>
+      <div class="st-row"><span class="no">03</span><span class="w">第三步</span><span class="ex">左箭头先逐步回退，再返回上一页</span></div>
+    </div>
+  </div>
+  <aside>
+    <div class="ns"><p>信息按讲解顺序进场：讲到哪里，页面就点亮到哪里。每一步只增加当前理解需要的信息。</p><p>使用右箭头逐步推进。</p></div>
+    <div class="nc"><p>提示：不需要分步的页面不要为了动效强行拆步。</p></div>
+  </aside>
+</section>
+
+<!-- 参考骨架：悬停展开的图像列 -->
+<section class="slide" data-title="分类聚焦">
+  <div class="canvas nofoot paccordion">
+    <div class="ac-title">分类聚焦</div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">01</div><div class="ac-name">观察</div><div class="ac-desc">悬停后展开解释。一次只让一个分类成为主角。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">02</div><div class="ac-name">判断</div><div class="ac-desc">适合方法、案例或连续图像的逐项讲解。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">03</div><div class="ac-name">选择</div><div class="ac-desc">真实项目中将渐变背景替换为满幅图像。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">04</div><div class="ac-name">行动</div><div class="ac-desc">窄列只保留名称，展开列再出现说明。</div></div></div>
+  </div>
+  <aside>
+    <div class="ns"><p>这一页用四个并列分类建立全景。讲到某一类时，将鼠标移上对应栏位，其他内容自动退后。</p><p>它适合案例分类、方法阶段与连续图像，不适合需要同时精确比较的数据。</p></div>
+    <div class="nc"><p>替换建议：每一栏使用同一比例、同一视觉密度的图片。</p></div>
+  </aside>
+</section>
+
+<!-- 参考骨架：左右直接对照 -->
+<section class="slide" data-title="左右对照">
+  <div class="canvas nofoot psplit">
+    <div class="sp-half"><div class="sp-label">BEFORE</div><div class="sp-word">分散</div><div class="sp-copy">信息都在，但观看顺序不明确。</div></div>
+    <div class="sp-half"><div class="sp-label">AFTER</div><div class="sp-word">聚焦</div><div class="sp-copy">保留一个决定性关系，让差异一眼可见。</div></div>
+  </div>
+  <aside>
+    <div class="ns"><p>对照页的重点不是把两堆信息平铺出来，而是让观众直接看见一个变化。左右两侧应使用完全相同的比较尺度。</p></div>
+    <div class="nc"><p>可用于改版前后、问题与方案、传统路径与新路径。</p></div>
+  </aside>
+</section>
+
+<!-- 参考骨架：数据条形 -->
+<section class="slide" data-title="数据排序">
+  <div class="canvas pbars">
+    <div class="bar-title">数据先给排序，再给数字</div>
+    <div class="bar-list">
+      <div class="bar-row"><span class="bar-name">首要因素</span><span class="bar-track"><i class="bar-fill" style="--value:86%"></i></span><span class="bar-value">86</span></div>
+      <div class="bar-row"><span class="bar-name">第二因素</span><span class="bar-track"><i class="bar-fill" style="--value:68%"></i></span><span class="bar-value">68</span></div>
+      <div class="bar-row"><span class="bar-name">第三因素</span><span class="bar-track"><i class="bar-fill" style="--value:43%"></i></span><span class="bar-value">43</span></div>
+      <div class="bar-row"><span class="bar-name">其他因素</span><span class="bar-track"><i class="bar-fill" style="--value:27%"></i></span><span class="bar-value">27</span></div>
+    </div>
+  </div>
+  <aside>
+    <div class="ns"><p>条形先把排序讲清楚，精确数字只承担核对作用。进入页面后按顺序生长，视线自然从第一项往下移动。</p></div>
+    <div class="nc"><p>修改数据时，同时更新 --value 与右侧数字。</p></div>
+  </aside>
+</section>
+
+<!-- 参考骨架：章节概念词 -->
+<section class="slide" data-title="章节转折">
+  <div class="canvas nofoot pword"><div class="word">聚焦</div></div>
+  <aside>
+    <div class="ns"><p>章节转折页只保留一个词，让讲述停一下，再进入下一段。这里不承担解释功能。</p></div>
+    <div class="nc"><p>大词建议控制在二到四个汉字。</p></div>
+  </aside>
+</section>
+
+<!-- 示例：结语（金句拆字渐显由引擎自动处理 .pend .line） -->
+<section class="slide" data-title="结语">
+  <div class="canvas dark nofoot pend">
+    <div class="ph-img"></div>
+    <div class="scrim"></div>
+    <div class="line">结语金句写在这里，<br>引擎自动逐字渐显。</div>
+  </div>
+  <aside>
+    <div class="ns"><p>用一句话收束整场的最终判断，不再展开新内容。</p></div>
+    <div class="nc"><p>结束页也可以保留个人提醒，但手机端默认仍显示讲稿。</p></div>
+  </aside>
+</section>
+
+</template>
+<script>
+// ===== 项目配置:新 deck 只改这里 =====
+var DECK = {
+  name: 'Hanyu Deck', // 页脚线左侧的项目名
+  key: 'hanyu-deck-v1', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
+  port: 8123          // 本地提词服务端口
+};
+(function () {
+  var SRV = 'http://127.0.0.1:' + DECK.port;
+  var tpl = document.getElementById('slides');
+  var slides = Array.prototype.slice.call(tpl.content.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var total = slides.length;
+  var cur = 0;
+
+  // 把模板里的页面搬进舞台;代码页统一注入页脚线(满幅图页与带 nofoot 类的画布跳过)
+  slides.forEach(function (s, i) {
+    s.dataset.page = i + 1;
+    var c = s.querySelector('.canvas');
+    if (c && !c.classList.contains('full-img') && !c.classList.contains('nofoot')) {
+      var f = document.createElement('div');
+      f.className = 'pfoot';
+      f.innerHTML = '<span>' + DECK.name + '</span><span class="pn">' +
+        String(i + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0') + '</span>';
+      c.appendChild(f);
+    }
+    stage.appendChild(s);
+  });
+  slides = Array.prototype.slice.call(stage.querySelectorAll('.slide'));
+
+  var pnCur = document.getElementById('pnCur');
+  var pnSep = document.getElementById('pnSep');
+  var pageTitle = document.getElementById('pageTitle');
+  pnSep.textContent = '/ ' + total;
+
+  // 页码数字滚动切换:新数字沿翻页方向滑入、旧数字反向滑出(不闪变)
+  function rollNum(box, text, dir) {
+    var old = box.querySelector('.nv:not(.out)');
+    if (old && old.textContent === text) return;
+    var nv = document.createElement('span');
+    nv.className = 'nv';
+    nv.textContent = text;
+    if (old) {
+      nv.style.transform = 'translateY(' + (dir >= 0 ? '' : '-') + '110%)';
+      old.classList.add('out');
+      old.style.position = 'absolute'; old.style.left = '0'; old.style.top = '0';
+      requestAnimationFrame(function () {
+        old.style.transform = 'translateY(' + (dir >= 0 ? '-' : '') + '110%)';
+        old.style.opacity = '0';
+      });
+      setTimeout(function () { old.remove(); }, 460);
+    }
+    box.appendChild(nv);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { nv.style.transform = 'translateY(0)'; }); });
+  }
+  var progressBar = document.getElementById('progressBar');
+  var edScript = document.getElementById('edScript');
+  var overview = document.getElementById('overview');
+  var ovGrid = document.getElementById('ovGrid');
+  var edComm = document.getElementById('edComm');
+  var EDS = [
+    { key: DECK.key + '.s.', el: edScript, sel: '.ns', label: '讲稿', canon: canonNs },
+    { key: DECK.key + '.c.', el: edComm, sel: '.nc', label: '备注', canon: canon }
+  ];
+  var PANEL_KEY = DECK.key + '.ui.panelExpanded';
+  var DRAWER_KEY = DECK.key + '.ui.notesDrawerOpen';
+  if (localStorage.getItem(PANEL_KEY) === '1') document.body.classList.remove('notes-mini');
+  if (localStorage.getItem(DRAWER_KEY) === '1') document.body.classList.add('notes-drawer-open');
+
+  function fitSlide() {
+    var raw = document.body.classList.contains('raw');
+    var rect = stage.getBoundingClientRect();
+    var scale = Math.min(rect.width / 1920, rect.height / 1080) * 0.97;
+    slides.forEach(function (s) {
+      var c = s.querySelector('.canvas');
+      c.style.transform = raw ? '' : 'scale(' + scale + ')';
+    });
+  }
+
+  function seedOf(i, ed) {
+    var aside = slides[i].querySelector('aside');
+    var src = aside ? aside.querySelector(ed.sel) : null;
+    return src ? src.innerHTML : '<p>无</p>';
+  }
+  var normBox = document.createElement('div');
+  // 讲稿的行类型类(结构真源,规范化与写回种子时保留)
+  var NS_CLS = { 'o-task': 1, 'o-main': 1, 'o-sub': 1, 'o-pass': 1, 'o-stage': 1 };
+  // 结构化规范形:分段统一成 <p>、行内标签保留、讲稿行类型类保留。改动判定必须用它——
+  // 纯文本比较会把"只按回车分段/只加粗"误判成没改动,顺手删掉已存的稿(真丢过稿)
+  function canonFrag(root) {
+    var out = [], tmp = document.createElement('div');
+    Array.prototype.forEach.call(root.childNodes, function (n) {
+      var h = '', cls = '';
+      if (n.nodeType === 3) { tmp.textContent = n.textContent; h = tmp.innerHTML; }
+      else if (n.nodeType === 1) {
+        if (n.tagName === 'P' || n.tagName === 'DIV') {
+          h = n.innerHTML;
+          cls = (n.className || '').split(/\s+/).filter(function (c) { return NS_CLS[c]; }).sort().join(' ');
+        } else h = n.outerHTML;
+      }
+      h = h.replace(/<\/?div[^>]*>/gi, '').replace(/<br\s*\/?>\s*$/i, '').trim();
+      if (h) out.push(cls ? '<p class="' + cls + '">' + h + '</p>' : '<p>' + h + '</p>');
+    });
+    return out.join('');
+  }
+  function canon(html) {
+    normBox.innerHTML = html;
+    return canonFrag(normBox);
+  }
+  // 讲稿保持自然段纯文本：不强制目的、要点或项目列表。
+  function canonNs(html) {
+    return canon(html);
+  }
+  function saveNote() {
+    EDS.forEach(function (ed) {
+      var key = ed.key + (cur + 1);
+      if (ed.canon(ed.el.innerHTML) === ed.canon(seedOf(cur, ed))) localStorage.removeItem(key);
+      else localStorage.setItem(key, ed.el.innerHTML);
+      ed.el.classList.toggle('dirty', !!localStorage.getItem(key));
+    });
+  }
+  function loadNotes(i) {
+    EDS.forEach(function (ed) {
+      var stored = localStorage.getItem(ed.key + (i + 1));
+      ed.el.innerHTML = stored || seedOf(i, ed);
+      ed.el.classList.toggle('dirty', !!stored);
+    });
+    decorate();
+    decorateComm();
+    saveNote();     // 加载后立刻重比对:旧格式存稿经规范化后若与种子一致,当场清掉 dirty 覆盖
+    histReset();
+    updateTime();
+  }
+
+  // ===== 结构化讲稿(左栏):所见即所得,编辑态=预览态 =====
+  // 两级项目列表:o-main=要点(实心方点)/o-sub=关键词(空心圆点),Tab/Shift+Tab 在 普通行⇄要点⇄关键词 间升降;
+  // 另有 o-task=目的(首行)/o-pass=带过(短横)/o-stage=舞台指示(（…）按文本自动判)。加粗用原生 Cmd/Ctrl+B。
+  // 行首的旧标记与粘贴进来的列表前缀(任务/目的/★/无缩进"- "/缩进"- "/·)在这里转成行类型并剥掉字符,
+  // 光标位置保持;旧格式("-"=★ 下子点)只在整段含 ★ 行时按旧方言解析——老本地存稿/历史稿的兼容通道。
+  function nsLegacy(root) {
+    return Array.prototype.some.call(root.children, function (n) { return /^\s*★/.test(n.textContent); });
+  }
+  function nsClsBase(p) {
+    var k = '';
+    (p.className || '').split(/\s+/).some(function (c) { if (NS_CLS[c]) { k = c; return true; } });
+    return k;
+  }
+  function nsMarkCls(t, first, legacy) {
+    var s = t.replace(/^\s+/, '');
+    if (first && /^(任务|目的)([：:　]|\s)/.test(s)) return 'o-task';
+    if (/^★/.test(s)) return 'o-main';
+    if (/^[-–*]\s/.test(s)) return legacy ? 'o-sub' : (/^\s/.test(t) ? 'o-sub' : 'o-main');
+    if (/^[·•]\s/.test(s)) return 'o-pass';
+    return '';
+  }
+  var NS_MARK = /^\s*((任务|目的)[：:　]?|★|[-–*](?=\s)|[·•])\s*/;
+  function nsStripMark(p) {
+    // 标记在行首,只动第一个文本节点(行内加粗等结构不受影响);光标若在该节点里按删掉的字符数回移
+    var tn = p.firstChild;
+    while (tn && tn.nodeType === 1 && tn.firstChild) tn = tn.firstChild;
+    if (!tn || tn.nodeType !== 3) return;
+    var m = tn.textContent.match(NS_MARK);
+    if (!m || !m[0]) return;
+    var sel = getSelection(), fix = null;
+    if (sel.rangeCount && sel.anchorNode === tn) fix = Math.max(0, sel.anchorOffset - m[0].length);
+    tn.textContent = tn.textContent.slice(m[0].length);
+    if (fix !== null) {
+      var r = document.createRange();
+      r.setStart(tn, Math.min(fix, tn.textContent.length)); r.collapse(true);
+      sel.removeAllRanges(); sel.addRange(r);
+    }
+  }
+  function nsSetCls(n, cls) {
+    n.className = cls || '';
+  }
+  function nsNormalize(root) {
+    if (root === edScript && !root.children.length) { root.innerHTML = '<p class="o-task"><br></p>'; return; }
+    var legacy = nsLegacy(root);
+    var idx = 0;
+    Array.prototype.forEach.call(root.children, function (n) {
+      if (!/^(P|DIV)$/.test(n.tagName)) return;
+      var isFirst = idx === 0; idx++;
+      var cls = nsMarkCls(n.textContent, isFirst, legacy);
+      if (cls) nsStripMark(n);
+      else {
+        var kept = nsClsBase(n);
+        var s = n.textContent.trim();
+        if (/^（.*）$/.test(s)) kept = 'o-stage';               // 舞台指示按文本判,随文本增减
+        else if (kept === 'o-stage') kept = '';
+        if (isFirst && !kept) kept = 'o-task';                  // 首行恒为目的
+        cls = kept;
+      }
+      nsSetCls(n, cls);
+    });
+  }
+  function decorate() {}
+
+  // ===== 讲稿光标工具 =====
+  function nsLineAt(node) {
+    while (node && node !== edScript && node.parentNode !== edScript) node = node.parentNode;
+    return node && node !== edScript && /^(P|DIV)$/.test(node.tagName) ? node : null;
+  }
+  function nsPing() { edScript.dispatchEvent(new Event('input', { bubbles: true })); }
+  function nsCaretTo(p) {
+    var r = document.createRange();
+    r.selectNodeContents(p); r.collapse(true);
+    var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+
+  // ===== 讲稿结构操作:回车=同级新行(目的行回车下接要点;空关键词回车升要点、空要点回车退普通行),
+  // Tab/Shift+Tab=普通行⇄要点⇄关键词;加粗走浏览器原生 Cmd/Ctrl+B =====
+  function nsEnter() {
+    var sel = getSelection();
+    if (!sel.rangeCount) return;
+    var line = nsLineAt(sel.anchorNode);
+    if (!line) return;
+    var cls = nsClsBase(line);
+    var empty = !line.textContent.trim();
+    if (empty && (cls === 'o-sub' || cls === 'o-pass')) { nsSetCls(line, 'o-main'); nsPing(); return; }
+    if (empty && cls === 'o-main') { nsSetCls(line, ''); nsPing(); return; }
+    var next = cls === 'o-task' ? 'o-main' : (cls === 'o-stage' ? '' : cls);
+    // 光标处拆行:光标到行尾的内容(含行内加粗结构)搬进新行
+    var p = document.createElement('p');
+    p.innerHTML = '<br>';
+    if (line.lastChild) {
+      var r = sel.getRangeAt(0);
+      r.deleteContents();
+      var tail = document.createRange();
+      tail.setStart(r.startContainer, r.startOffset);
+      tail.setEndAfter(line.lastChild);
+      var frag = tail.extractContents();
+      if (frag.textContent.trim()) { p.innerHTML = ''; p.appendChild(frag); }
+      if (!line.textContent.trim() && !line.querySelector('br')) line.innerHTML = '<br>';
+    }
+    nsSetCls(p, next);
+    if (line.nextSibling) edScript.insertBefore(p, line.nextSibling); else edScript.appendChild(p);
+    nsCaretTo(p);
+    nsPing();
+  }
+  function nsShift(up) {
+    var sel = getSelection();
+    if (!sel.rangeCount) return;
+    var line = nsLineAt(sel.anchorNode);
+    if (!line) return;
+    var cls = nsClsBase(line);
+    if (cls === 'o-task' || cls === 'o-stage') return;
+    var order = ['', 'o-main', 'o-sub'];
+    var i = order.indexOf(cls === 'o-pass' ? 'o-main' : cls);
+    var j = up ? i - 1 : i + 1;
+    if (j < 0 || j > 2) return;
+    nsSetCls(line, order[j]);
+    nsPing();
+  }
+  // contenteditable 的原生回车即自然段；不接管 Tab/Enter，不施加结构。
+
+  // ===== 备注装饰:参考信息压暗，【】起头的待确认项高亮 =====
+  function decorateComm() {
+    Array.prototype.forEach.call(edComm.children, function (n) {
+      if (!/^(P|DIV)$/.test(n.tagName)) return;
+      var t = n.textContent.trim();
+      if (/^【/.test(t)) n.className = 'c-flag';
+      else if (/^(出处|原稿|问|参数|图|提示)[:：]/.test(t)) n.className = 'c-ref';
+      else n.className = '';
+    });
+  }
+  edComm.addEventListener('input', decorateComm);
+
+  // ===== 批注区撤销/重做(自建栈,替代 contenteditable 脆弱的原生撤销):
+  // 输入停顿 350ms 存快照;Cmd/Ctrl+Z 撤销、+Shift 重做;翻页时重置(loadNotes 调 histReset)
+  var hist = [], histIdx = 0, histTimer = null;
+  function histReset() {
+    clearTimeout(histTimer);
+    hist = [edScript.innerHTML]; histIdx = 0;
+  }
+  function histSnap() {
+    clearTimeout(histTimer);
+    if (edScript.innerHTML === hist[histIdx]) return;
+    hist = hist.slice(0, histIdx + 1);
+    hist.push(edScript.innerHTML);
+    if (hist.length > 100) hist.shift();
+    histIdx = hist.length - 1;
+  }
+  function histApply() {
+    edScript.innerHTML = hist[histIdx];
+    decorate();
+    saveNote();
+    edScript.focus();
+    var r = document.createRange();
+    r.selectNodeContents(edScript); r.collapse(false);
+    var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+  function histUndo() { histSnap(); if (histIdx > 0) { histIdx--; histApply(); } }
+  function histRedo() { histSnap(); if (histIdx < hist.length - 1) { histIdx++; histApply(); } }
+  edScript.addEventListener('input', decorate);
+  edScript.addEventListener('input', function () {
+    clearTimeout(histTimer);
+    histTimer = setTimeout(histSnap, 350);
+  });
+
+  // ===== 批注区极限回弹(弹簧物理版):滚轮在边界注入位移,rAF 每帧弹簧回收——
+  // 不等"事件停止"再弹(触控板惯性会持续发 wheel,等停版要拖一秒),任何时刻都在回弹,惯性一衰减立即归位 =====
+  (function () {
+    var over = 0, raf = 0;
+    function frame() {
+      over *= 0.82;                               // 每帧衰减 ≈ 120fps 下 ~90ms 半衰,跟手又干脆
+      if (Math.abs(over) < 0.4) { over = 0; raf = 0; }
+      edScript.style.transform = over ? 'translateY(' + over.toFixed(2) + 'px)' : '';
+      if (raf) raf = requestAnimationFrame(frame);
+    }
+    edScript.addEventListener('wheel', function (e) {
+      var max = edScript.scrollHeight - edScript.clientHeight;
+      var atTop = edScript.scrollTop <= 0;
+      var atBot = edScript.scrollTop >= max - 1;
+      var pulling = (e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBot);
+      if (!pulling && !over) return;              // 正常区间交给原生滚动
+      e.preventDefault();
+      // 阻尼注入:位移越大增量越小,上限 72px;方向只允许从所在边界向外拉
+      var next = over - e.deltaY * (1 - Math.min(Math.abs(over) / 72, 1)) * 0.4;
+      if (atTop && !atBot) next = Math.min(72, Math.max(0, next));
+      else if (atBot && !atTop) next = Math.max(-72, Math.min(0, next));
+      else next = Math.max(-72, Math.min(72, next));
+      over = next;
+      if (!raf) raf = requestAnimationFrame(frame);
+    }, { passive: false });
+    edScript.style.transition = 'none';
+  })();
+
+  // ===== 讲稿时长估算 + 全场时间轴:中文按字、英文按词(1 词≈1.2 字),(→ …) 舞台指示不计 =====
+  var RATE_KEY = DECK.key + '.rate';
+  var rate = parseInt(localStorage.getItem(RATE_KEY), 10) || 210;
+  var nsRate = document.getElementById('nsRate');
+  var tlSec = document.getElementById('tlSec');
+  var tlIn = document.getElementById('tlIn');
+  var tlFill = document.getElementById('tlFill');
+  var tlCur = document.getElementById('tlCur');
+  var tlHead = document.getElementById('tlHead');
+  var tlNow = document.getElementById('tlNow');
+  var tlTot = document.getElementById('tlTot');
+  var ticks = [];
+  var estBox = document.createElement('div');
+  function estSec(html) {
+    estBox.innerHTML = canonNs(html);
+    // 目的行与舞台指示不上口,不计入讲述时长
+    Array.prototype.forEach.call(estBox.querySelectorAll('.o-task, .o-stage'), function (p) { p.remove(); });
+    var txt = estBox.innerText.replace(/[(（][^)）]*→[^)）]*[)）]/g, '');
+    var cjk = (txt.match(/[一-鿿]/g) || []).length;
+    var en = (txt.match(/[A-Za-z][A-Za-z'’]*/g) || []).length;
+    return (cjk + en * 1.2) * 60 / rate;
+  }
+  function fmtClock(s) {
+    s = Math.round(s);
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  // 时间轴:游标停在「讲到本页开头」的累计时间点,翻页/改稿/换语速时缓动滑移
+  function updateTime() {
+    var secs = [];
+    for (var i = 0; i < total; i++) {
+      var html = i === cur ? edScript.innerHTML :
+        (localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0]));
+      secs.push(estSec(html));
+    }
+    var totalSec = secs.reduce(function (a, b) { return a + b; }, 0) || 1;
+    var cum = 0, cums = [0];
+    secs.forEach(function (s) { cum += s; cums.push(cum); });
+    if (!ticks.length) for (var j = 1; j < total; j++) {
+      var t = document.createElement('div');
+      t.className = 'tick';
+      tlIn.appendChild(t);
+      ticks.push(t);
+    }
+    ticks.forEach(function (t, j) { t.style.left = (cums[j + 1] / totalSec * 100) + '%'; });
+    tlIn.style.width = (180 / rate * 100) + '%'; // 慢 180=顶满,轴长正比于该语速下的总时长
+    var pos = cums[cur] / totalSec * 100;
+    tlFill.style.width = pos + '%';
+    tlCur.style.left = pos + '%';
+    tlCur.style.width = (secs[cur] / totalSec * 100) + '%';
+    tlHead.style.left = pos + '%';
+    tlNow.style.left = Math.min(Math.max(pos, 2.5), 88) + '%';
+    tlNow.textContent = fmtClock(cums[cur]);
+    // 本页时长标注在当前页高亮段的中点下方(与游标上方的累计时间上下错层,不相撞)
+    tlSec.style.left = Math.min(Math.max(pos + secs[cur] / totalSec * 50, 2.5), 95) + '%';
+    tlSec.textContent = fmtClock(secs[cur]);
+    tlTot.textContent = fmtClock(totalSec);
+    tlCums = cums; tlTotSec = totalSec;   // 悬停预览/拖动跳页用同一套页时长映射
+  }
+
+  // ===== 时间轴悬停预览 + 拖动跳页(播放器式):hover 200ms 出小窗,按住拖动实时换页 =====
+  var tl = document.getElementById('tl');
+  var tlPv = document.getElementById('tlPv');
+  var tlPvImg = tlPv.querySelector('img');
+  var tlPvLbl = tlPv.querySelector('.lbl');
+  var tlCums = [], tlTotSec = 1, tlHoverT = 0, tlShown = false, tlDrag = false, tlPvPage = -1, tlLastX = 0;
+  function tlPageAt(clientX) {
+    var r = tlIn.getBoundingClientRect();
+    var t = Math.min(Math.max((clientX - r.left) / r.width, 0), 0.999) * tlTotSec;
+    for (var i = 0; i < total; i++) if (t < tlCums[i + 1]) return i;
+    return total - 1;
+  }
+  var tlHov = document.getElementById('tlHov');
+  function tlPvShow(clientX) {
+    var i = tlPageAt(clientX);
+    if (i !== tlPvPage) {
+      tlPvPage = i;
+      tlPvLbl.textContent = 'P' + (i + 1) + ' · ' + (slides[i].dataset.title || '');
+      tlPvImg.style.display = '';
+      tlPvImg.src = SRV + '/thumbs/' + (i + 1) + '.jpg';   // 服务没开时 onerror 隐藏图,只留页码标题
+      tlHov.style.left = (tlCums[i] / tlTotSec * 100) + '%';
+      tlHov.style.width = ((tlCums[i + 1] - tlCums[i]) / tlTotSec * 100) + '%';
+    }
+    // 已讲过区段用与亮线一致的高亮度,未讲过用柔和档,视觉状态不打架
+    tlHov.style.background = 'rgba(240,238,232,' + (i < cur ? '.75' : '.35') + ')';
+    tlHov.style.opacity = 1;
+    var r = tl.getBoundingClientRect();
+    tlPv.style.left = Math.min(Math.max(clientX, r.left + 100), r.left + r.width - 100) + 'px';
+    tlPv.style.bottom = (window.innerHeight - r.top + 10) + 'px';
+    tlPv.classList.add('on');
+    tlShown = true;
+  }
+  function tlPvHide() {
+    tlPv.classList.remove('on');
+    tlHov.style.opacity = 0;
+    tlShown = false; tlPvPage = -1;
+  }
+  tlPvImg.addEventListener('error', function () { tlPvImg.style.display = 'none'; });
+  function tlJump(clientX) {
+    var i = tlPageAt(clientX);
+    if (i !== cur) go(i);
+  }
+  tl.addEventListener('pointermove', function (e) {
+    tlLastX = e.clientX;
+    if (tlShown || tlDrag) tlPvShow(e.clientX);
+    else if (!tlHoverT) tlHoverT = setTimeout(function () { tlHoverT = 0; tlPvShow(tlLastX); }, 200);
+    if (tlDrag) tlJump(e.clientX);
+  });
+  tl.addEventListener('pointerleave', function () {
+    clearTimeout(tlHoverT); tlHoverT = 0;
+    if (!tlDrag) tlPvHide();
+  });
+  tl.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    tlDrag = true;
+    try { tl.setPointerCapture(e.pointerId); } catch (err) {}
+    tlPvShow(e.clientX);
+    tlJump(e.clientX);
+  });
+  tl.addEventListener('pointerup', function (e) {
+    if (!tlDrag) return;
+    tlDrag = false;
+    var r = tl.getBoundingClientRect();
+    if (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right) tlPvHide();
+  });
+  nsRate.addEventListener('click', function (e) {
+    var el = e.target.closest('.rt');
+    if (!el) return;
+    rate = parseInt(el.dataset.r, 10);
+    localStorage.setItem(RATE_KEY, rate);
+    nsRate.querySelectorAll('.rt').forEach(function (r) { r.classList.toggle('act', r === el); });
+    updateTime();
+  });
+  nsRate.querySelectorAll('.rt').forEach(function (r) { r.classList.toggle('act', parseInt(r.dataset.r, 10) === rate); });
+  edScript.addEventListener('input', updateTime);
+  // ===== 讲稿历史:每页一条时间轴(localStorage 键 <key>.h.N,数组,上限 30 条)。
+  // 记录时机:离开改过的页(go 里)、存为默认前、从历史恢复前——恢复永不丢当前稿 =====
+  var HKEY = DECK.key + '.h.';
+  function histOf(i) {
+    try { return JSON.parse(localStorage.getItem(HKEY + (i + 1))) || []; }
+    catch (e) { return []; }
+  }
+  function snapHist(i) {
+    var h = localStorage.getItem(EDS[0].key + (i + 1));
+    if (!h) return;                       // 与默认稿一致(无改动)不记
+    var arr = histOf(i);
+    if (arr.length && canonNs(arr[arr.length - 1].h) === canonNs(h)) return;   // 与最近一条相同不重复记
+    arr.push({ t: Date.now(), h: h });
+    if (arr.length > 30) arr = arr.slice(arr.length - 30);
+    localStorage.setItem(HKEY + (i + 1), JSON.stringify(arr));
+  }
+  var histMenu = document.getElementById('histMenu');
+  function fmtT(t) {
+    var d = new Date(t);
+    function z(n) { return (n < 10 ? '0' : '') + n; }
+    return z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes());
+  }
+  function buildHist() {
+    histMenu.innerHTML = '';
+    function add(label, html, k) {
+      normBox.innerHTML = html;
+      var b = document.createElement('button');
+      b.className = 'hi'; b.dataset.k = k;
+      var t1 = document.createElement('span'); t1.className = 'ht'; t1.textContent = label;
+      var t2 = document.createElement('span'); t2.className = 'hx';
+      t2.textContent = normBox.innerText.replace(/\s+/g, ' ').trim().slice(0, 46);
+      b.appendChild(t1); b.appendChild(t2); histMenu.appendChild(b);
+    }
+    var arr = histOf(cur);
+    for (var k = arr.length - 1; k >= 0; k--) add(fmtT(arr[k].t), arr[k].h, String(k));
+    add('默认稿', seedOf(cur, EDS[0]), 'seed');
+  }
+  document.getElementById('btnHist').addEventListener('click', function () {
+    if (histMenu.classList.contains('open')) { histMenu.classList.remove('open'); return; }
+    buildHist();
+    var r = document.getElementById('histWrap').getBoundingClientRect();
+    var hr = document.getElementById('notesHead').getBoundingClientRect();
+    histMenu.style.right = Math.max(window.innerWidth - r.right, 8) + 'px';
+    histMenu.style.bottom = (window.innerHeight - hr.top + 8) + 'px';   // 锚在整条表头上方,不压表头
+    histMenu.classList.add('open');
+  });
+  histMenu.addEventListener('click', function (e) {
+    var b = e.target.closest('.hi');
+    if (!b) return;
+    histMenu.classList.remove('open');
+    saveNote();
+    snapHist(cur);                        // 当前稿先入历史,再恢复
+    if (b.dataset.k === 'seed') {
+      EDS.forEach(function (ed) { localStorage.removeItem(ed.key + (cur + 1)); });
+    } else {
+      var it = histOf(cur)[+b.dataset.k];
+      if (!it) return;
+      localStorage.setItem(EDS[0].key + (cur + 1), it.h);
+    }
+    loadNotes(cur);
+    saveNote();                           // 恢复的版本若与默认稿一致,顺手清掉覆盖标记
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#histWrap')) histMenu.classList.remove('open');
+  });
+
+  // ===== 存为默认:两栏所有改动页一键经本地提词服务写回本文件源文,写成后清本地覆盖 =====
+  // 讲稿走 canonNs:写回的种子是行类型类格式(不再带 ★/- 标记字符)
+  function fragOfPage(i, ed) {
+    return ed.canon(localStorage.getItem(ed.key + (i + 1)) || '');
+  }
+  function saveAsDefault() {
+    saveNote();
+    var changed = [];   // {i, ed} 对
+    slides.forEach(function (s, i) {
+      EDS.forEach(function (ed) {
+        if (localStorage.getItem(ed.key + (i + 1))) changed.push({ i: i, ed: ed });
+      });
+    });
+    if (!changed.length) { alert('没有任何页有改动,现在显示的都是默认稿。'); return; }
+    var names = changed.map(function (c) { return 'P' + (c.i + 1) + c.ed.label; }).join('、');
+    if (!confirm('把 ' + names + ' 的改动写回源文件,存为默认稿?')) return;
+    var oks = [], fails = [], netDown = false;
+    var chain = Promise.resolve();
+    changed.forEach(function (c) {
+      var i = c.i, ed = c.ed;
+      chain = chain.then(function () {
+        if (netDown) return;
+        var frag = fragOfPage(i, ed);
+        if (!frag) { fails.push('P' + (i + 1) + ed.label + '(内容为空,跳过)'); return; }
+        return fetch(SRV + '/seed', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page: i + 1, html: frag, sel: ed.sel.slice(1) })
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (!d.ok) { fails.push('P' + (i + 1) + ed.label + '(' + (d.err || '未知原因') + ')'); return; }
+          if (ed === EDS[0]) snapHist(i);
+          var src = slides[i].querySelector('aside ' + ed.sel);
+          if (src) src.innerHTML = frag;
+          localStorage.removeItem(ed.key + (i + 1));
+          oks.push('P' + (i + 1) + ed.label);
+        }, function () { netDown = true; });
+      });
+    });
+    chain.then(function () {
+      loadNotes(cur);
+      // 成功静默(确认框已点过一次,dirty 标记消失即回执);只有失败才弹
+      if (netDown) { alert('本地服务没在运行。双击「启动 Hanyu Deck.command」后再点。' + (oks.length ? '(已写回:' + oks.join('、') + ')' : '')); return; }
+      if (fails.length) alert('没写成:' + fails.join(';') + (oks.length ? '\n(已写回:' + oks.join('、') + ')' : ''));
+    });
+  }
+  document.getElementById('btnSeed').addEventListener('click', saveAsDefault);
+
+  // ===== CVEDIT-START（发送版由 build_send.py 剥除）=====
+  // ===== 画布就地编辑:双击画布文字直接改,失焦后整块画布经本地提词服务写回本文件源文 =====
+  // 用途=不必为增删一两个字改代码。写回粒度=整个 .canvas 的 innerHTML
+  // (源文里的缩进/换行是文本节点,浏览器序列化原样保留,所以改一个字只产生一行 diff);
+  // 服务端锚定画布块后面的 </div><aside> 定位边界,并核对页数——文件在别处被改过就拒写。
+  // 前提:每页结构恒为 .canvas 紧跟 <aside>(与批注写回同一约定),别打破。
+  (function () {
+    var toastEl = document.getElementById('cvToast'), toastT = null;
+    function toast(msg, bad) {
+      toastEl.textContent = msg;
+      toastEl.classList.toggle('bad', !!bad);
+      toastEl.classList.add('on');
+      clearTimeout(toastT);
+      toastT = setTimeout(function () { toastEl.classList.remove('on'); }, bad ? 6000 : 2200);
+    }
+    function serializeCanvas(c) {
+      var clone = c.cloneNode(true);
+      // 页脚线由引擎进页时注入,不属于源文:写回前摘掉,否则每存一次就在源文里多积一条
+      Array.prototype.slice.call(clone.querySelectorAll('.pfoot')).forEach(function (f) { f.remove(); });
+      // 金句逐字动画把文本拆成了 .ch 字符 span:写回前还原成纯文本,不把几百个 span 烙进源文件
+      Array.prototype.slice.call(clone.querySelectorAll('span.ch')).forEach(function (s) {
+        s.replaceWith(document.createTextNode(s.textContent));
+      });
+      return clone.innerHTML;
+    }
+    var editEl = null, editCanvas = null, editSnap = '', elSnap = '';
+    var postChain = Promise.resolve();   // 串行:连改两处时后发的请求不会带着旧快照抢先落盘
+    function endEdit() {
+      if (!editEl) return;
+      var el = editEl, c = editCanvas, was = editSnap;
+      editEl = null; editCanvas = null;
+      el.removeAttribute('contenteditable');
+      el.classList.remove('cv-editing');
+      var frag = serializeCanvas(c);
+      if (frag === was) return;
+      var pageNo = parseInt(c.closest('.slide').dataset.page, 10);
+      var body = JSON.stringify({ page: pageNo, total: total, html: frag });
+      postChain = postChain.then(function () {
+        return fetch(SRV + '/canvas', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
+        }).then(function (r) { return r.json(); }).then(function (d) {
+          if (d.ok) toast('P' + pageNo + ' 画布改动已写回源文件');
+          else toast('没写回:' + (d.err || '未知原因'), true);
+        }, function () {
+          toast('本地服务没在运行，改动只在当前窗口（刷新会丢）。双击「启动 Hanyu Deck.command」后再改任意一个字即可补存。', true);
+        });
+      });
+      return postChain;
+    }
+    function cancelEdit() {
+      if (!editEl) return;
+      var el = editEl;
+      editEl = null; editCanvas = null;
+      el.innerHTML = elSnap;             // Esc = 放弃这次改动,不落盘
+      el.removeAttribute('contenteditable');
+      el.classList.remove('cv-editing');
+      el.blur();
+    }
+    stage.addEventListener('dblclick', function (e) {
+      if (view !== 'default') return;                     // 演示/总览态不进编辑
+      var el = e.target;
+      if (!el.closest) return;
+      var c = el.closest('.canvas');
+      if (!c || !slides[cur].contains(c)) return;
+      if (el.tagName === 'IMG' || el.closest('svg')) return;
+      // 双击容器内边距时 e.target 是容器本身,整块可编辑太容易误清空:收敛到最近的文本块;
+      // 逐字动画的 .ch 单字 span 不能当编辑单元,上提到它所在的行
+      if (el.classList.contains('ch')) el = el.parentNode;
+      el = el.closest('p, td, th, li, .line') || el;
+      if (el === c || !c.contains(el)) return;
+      if (editEl === el) return;
+      endEdit();
+      editEl = el; editCanvas = c;
+      editSnap = serializeCanvas(c);
+      elSnap = el.innerHTML;
+      el.setAttribute('contenteditable', 'true');
+      el.classList.add('cv-editing');
+      el.focus();
+    });
+    // blur 不冒泡,focusout 冒泡:点画布外任意处都会走到这里存一次
+    stage.addEventListener('focusout', function (e) {
+      if (editEl && e.target === editEl) endEdit();
+    });
+    stage.addEventListener('keydown', function (e) {
+      if (!editEl || !editEl.contains(e.target)) return;
+      // 原生回车会包 <div> 污染源文,统一转 <br>
+      if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertHTML', false, '<br>'); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelEdit(); }
+    });
+    stage.addEventListener('paste', function (e) {
+      if (!editEl || !editEl.contains(e.target)) return;
+      e.preventDefault();
+      var t = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
+      if (t) document.execCommand('insertText', false, t);
+    });
+    // 拖拽落入不走 paste:整段富文本(div/style/font)会直接进源文件,一律拦掉
+    stage.addEventListener('drop', function (e) {
+      if (editEl) e.preventDefault();
+    });
+    // 关窗/刷新时元素不失焦,改动会静默丢:sendBeacon 在页面销毁前也能把最后一次改动送出
+    window.addEventListener('beforeunload', function () {
+      if (!editEl) return;
+      var c = editCanvas, was = editSnap;
+      var frag = serializeCanvas(c);
+      if (frag === was || !navigator.sendBeacon) return;
+      var payload = JSON.stringify({ page: parseInt(c.closest('.slide').dataset.page, 10), total: total, html: frag });
+      // 用 text/plain 发:beacon 不支持预检,服务端只读 body 不看 Content-Type
+      navigator.sendBeacon(SRV + '/canvas', new Blob([payload], { type: 'text/plain' }));
+    });
+  })();
+  // ===== CVEDIT-END =====
+
+  // ===== 页内分步(canvas 带 data-steps 的页,→ 先展开节点再翻页) =====
+  function stepsOf(i) {
+    var c = slides[i].querySelector('.canvas');
+    return c && c.dataset.steps ? parseInt(c.dataset.steps, 10) : 0;
+  }
+  function stepOf(i) {
+    var c = slides[i].querySelector('.canvas');
+    return c && c.dataset.step ? parseInt(c.dataset.step, 10) : 0;
+  }
+  function initStepOf(i) {
+    var c = slides[i].querySelector('.canvas');
+    return c && c.dataset.initstep ? parseInt(c.dataset.initstep, 10) : 0;
+  }
+  function setStep(i, n) {
+    var c = slides[i].querySelector('.canvas');
+    if (c) c.dataset.step = n;
+    if (i === cur) prFlip(); // 步进(含 data-autostep 定时器)也同步给手机提词页,预览帧跟着换
+  }
+
+  var autoTimer = null;
+  var leaveTimer = null, leavingEl = null;
+  function go(i, skipSave) {
+    if (i < 0 || i >= total) return;
+    var dirn = i >= cur ? 1 : -1;
+    if (!skipSave) { saveNote(); snapHist(cur); }
+    clearTimeout(autoTimer);
+    // 出场:旧页加 .leaving 绝对定位叠在新页上淡出 450ms(快速连翻时立刻清掉上一个 leaving)。
+    // .on 在 current 与 leaving 期间都保留:入场动画全部挂 .slide.on 下,选择器在离场时不变,
+    // 动画不被重置、以当前帧继续播并随整页淡出——修"翻页时动画瞬间跳完成态再过渡"的闪动。
+    if (leavingEl) { leavingEl.classList.remove('leaving'); leavingEl.classList.remove('on'); leavingEl = null; }
+    clearTimeout(leaveTimer);
+    var old = slides[cur];
+    slides[cur].classList.remove('current');
+    if (old !== slides[i]) {
+      old.classList.add('leaving');
+      leavingEl = old;
+      leaveTimer = setTimeout(function () { old.classList.remove('leaving'); old.classList.remove('on'); if (leavingEl === old) leavingEl = null; }, 460);
+    }
+    cur = i;
+    slides[cur].classList.add('current');
+    slides[cur].classList.add('on');
+    if (stepsOf(cur)) setStep(cur, initStepOf(cur));
+    rollNum(pnCur, String(cur + 1), dirn);
+    pageTitle.textContent = slides[cur].dataset.title || '';
+    // 标题超出固定槽位就缩字号(下限 10px),槽位宽度不动、时间轴起点才稳
+    pageTitle.style.fontSize = '';
+    for (var fs = 13; fs > 10 && pageTitle.scrollWidth > pageTitle.clientWidth; fs -= 0.5) {
+      pageTitle.style.fontSize = fs + 'px';
+    }
+    // 画布带 nav-narrow 类的页:翻页热区收窄到 4%,给页内悬停交互让位
+    document.body.classList.toggle('navnarrow', !!slides[cur].querySelector('.canvas.nav-narrow'));
+    progressBar.style.width = ((cur + 1) / total * 100) + '%';
+    loadNotes(cur);
+    location.hash = 'p' + (cur + 1);
+    // 声明 data-autostep(毫秒)的页:进页后延迟自动步进一步,不需手动 →
+    var ac = slides[cur].querySelector('.canvas[data-autostep]');
+    if (ac) {
+      var target = cur;
+      autoTimer = setTimeout(function () {
+        if (cur === target && stepOf(cur) < stepsOf(cur)) setStep(cur, stepOf(cur) + 1);
+      }, parseInt(ac.dataset.autostep, 10));
+    }
+    prFlip();
+  }
+  function next() {
+    if (stepOf(cur) < stepsOf(cur)) setStep(cur, stepOf(cur) + 1);
+    else go(cur + 1);
+  }
+  function prev() {
+    // 只有声明了 data-steps 的页才回退步进;回退下限是 data-initstep(默认 0),静态硬编码 data-step 的页直接翻页
+    if (stepsOf(cur) && stepOf(cur) > initStepOf(cur)) setStep(cur, stepOf(cur) - 1);
+    else go(cur - 1);
+  }
+
+  // ===== 总览 =====
+  function buildOverview() {
+    ovGrid.innerHTML = '';
+    slides.forEach(function (s, i) {
+      var item = document.createElement('div');
+      item.className = 'ovItem' + (i === cur ? ' now' : '');
+      var wrap = document.createElement('div');
+      wrap.className = 'thumbWrap';
+      var clone = s.querySelector('.canvas').cloneNode(true);
+      clone.style.transform = '';
+      wrap.appendChild(clone);
+      var cap = document.createElement('div');
+      cap.className = 'cap';
+      cap.textContent = 'P' + (i + 1) + ' ' + (s.dataset.title || '');
+      item.appendChild(wrap);
+      item.appendChild(cap);
+      item.addEventListener('click', function () {
+        overview.classList.remove('open');
+        go(i);
+      });
+      ovGrid.appendChild(item);
+    });
+    requestAnimationFrame(function () {
+      var w = ovGrid.querySelector('.thumbWrap').getBoundingClientRect().width;
+      ovGrid.style.setProperty('--ovscale', w / 1920);
+      ovGrid.querySelectorAll('.thumbWrap').forEach(function (tw) {
+        tw.style.setProperty('--ovscale', tw.getBoundingClientRect().width / 1920);
+      });
+    });
+  }
+
+  // ===== 讲稿与备注导出 =====
+  // 导出取纯文本必须走这里:游离元素的 innerText 不做排版、段落间不产生换行,
+  // 直接 innerText 会把整页讲稿黏成一坨(真发生过)。按 <p> 逐段取、段间空行。
+  function textOf(html, ed) {
+    normBox.innerHTML = ed ? ed.canon(html) : canon(html);
+    var tmp = document.createElement('div'), out = [];
+    Array.prototype.forEach.call(normBox.querySelectorAll('p'), function (p) {
+      tmp.innerHTML = p.innerHTML.replace(/<br\s*\/?>/gi, '\n');
+      var t = tmp.textContent.trim();
+      if (t) out.push(t);
+    });
+    return out.join('\n\n');
+  }
+  function exportChangedNotes() {
+    saveNote();
+    var lines = ['# ' + DECK.name + '｜改动的备注', ''];
+    var count = 0;
+    slides.forEach(function (s, i) {
+      var raw = localStorage.getItem(EDS[1].key + (i + 1));
+      if (!raw) return;
+      var txt = textOf(raw, EDS[1]);
+      if (!txt) return;
+      count++;
+      lines.push('## P' + (i + 1) + ' ' + (s.dataset.title || ''), '', txt, '');
+    });
+    if (!count) { alert('还没有改动过的备注。'); return; }
+    copyOut(lines.join('\n'), '已复制 ' + count + ' 页改动的备注。');
+  }
+
+  // ===== 导出菜单:批注走剪贴板;图片/PDF 让本地提词服务代跑导出脚本(后台跑,完成弹系统通知) =====
+  var exMenu = document.getElementById('exMenu');
+  var exWrap = document.getElementById('exWrap');
+  // 开合同时挂到 #exWrap:小三角靠它翻转
+  function setExMenu(on) {
+    exMenu.classList.toggle('open', on);
+    exWrap.classList.toggle('open', on);
+  }
+  function doExport(kind) {
+    setExMenu(false);
+    if (kind === 'diff-notes') exportChangedNotes();
+    else if (kind === 'script') exportScript();
+    else exportServer(kind);
+  }
+  function exportScript() {
+    saveNote();
+    var lines = ['# ' + DECK.name + '｜讲稿', ''];
+    slides.forEach(function (s, i) {
+      lines.push('## P' + (i + 1) + ' ' + (s.dataset.title || ''), '');
+      var txt = textOf(localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0]), EDS[0]);
+      lines.push(txt || '(无讲稿)', '');
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (DECK.name || 'deck') + '-讲稿.md';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function copyOut(md, ok) {
+    function fb() {
+      var ta = document.createElement('textarea');
+      ta.value = md; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); alert(ok); }
+      catch (e) { prompt('复制失败,手动拷贝:', md); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(md).then(function () { alert(ok); }, fb);
+    else fb();
+  }
+  function exportServer(kind) {
+    fetch(SRV + '/export', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ what: kind })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.busy) alert('已有一个导出在进行,等它的完成通知即可。');
+      else if (d.ok) alert({
+        pdf: '开始导出:先逐页截图再合成 PDF,大约两三分钟,完成后有系统通知并在访达里定位到 PDF。',
+        imgs: '开始逐页截图,大约两三分钟,完成后有系统通知并打开图片文件夹。',
+        send: '开始导出发送版:单文件内联打包并剥除内部注记,完成后有系统通知并定位到文件。'
+      }[kind]);
+      else alert('导出没能启动:' + (d.err || '未知原因'));
+    }).catch(function () {
+      alert('本地服务没在运行。双击「启动 Hanyu Deck.command」后再试。');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#exWrap')) setExMenu(false);
+  });
+
+  // ===== 模式 =====
+  // 视图三段互斥:演示 / 默认 / 总览。演示态 = 演示样式 + 浏览器全屏一体(P/F 同效);
+  // 系统手势/Esc 退出全屏时由 fullscreenchange 同步回默认。
+  var segView = document.getElementById('segView');
+  var segThumb = segView.querySelector('.thumb');
+  var view = 'default';
+  function positionThumb() {
+    var on = segView.querySelector('button.on');
+    if (!on) return;
+    segThumb.style.width = on.offsetWidth + 'px';
+    segThumb.style.height = on.offsetHeight + 'px';
+    segThumb.style.transform = 'translate(' + on.offsetLeft + 'px,' + on.offsetTop + 'px)';
+    if (segThumb.classList.contains('noanim')) {
+      // 首帧只定位不动画,之后切换才滑动
+      requestAnimationFrame(function () { segThumb.classList.remove('noanim'); });
+    }
+  }
+  function syncToolbar() {
+    Array.prototype.forEach.call(segView.querySelectorAll('button'), function (b) {
+      b.classList.toggle('on', b.dataset.view === view);
+    });
+    positionThumb();
+    var rawBtn = document.querySelector('#toolbar button[data-act="raw"]');
+    if (rawBtn) rawBtn.classList.toggle('on', document.body.classList.contains('raw'));
+    var drawerBtn = document.querySelector('#toolbar button[data-act="drawer"]');
+    if (drawerBtn) drawerBtn.classList.toggle('on', document.body.classList.contains('notes-drawer-open'));
+  }
+  function setView(v) {
+    view = v;
+    var b = document.body;
+    if (v === 'overview') { buildOverview(); overview.classList.add('open'); }
+    else overview.classList.remove('open');
+    b.classList.toggle('ov', v === 'overview');
+    var wantP = (v === 'present');
+    b.classList.toggle('present', wantP);
+    if (wantP && !document.fullscreenElement) {
+      var p = document.documentElement.requestFullscreen();
+      if (p && p.catch) p.catch(function () {});
+    } else if (!wantP && document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+    if (v !== 'default') b.classList.remove('raw'); // 1:1 只在默认视图下成立
+    syncToolbar();
+    fitSlide();
+  }
+  function togglePresent() { setView(view === 'present' ? 'default' : 'present'); }
+  function toggleOverview() { setView(view === 'overview' ? 'default' : 'overview'); }
+  // 1:1 原尺寸:摘掉画布缩放,供 Figma 之类的 DOM 抓取插件按真实 1920×1080 读取
+  function setRaw(on) {
+    if (on && view !== 'default') setView('default');
+    document.body.classList.toggle('raw', on);
+    syncToolbar();
+    fitSlide();
+  }
+  function toggleRaw() { setRaw(!document.body.classList.contains('raw')); }
+  document.addEventListener('fullscreenchange', function () {
+    if (!document.fullscreenElement && view === 'present') setView('default');
+  });
+  var notesAnimT = null;
+  function toggleNotes() {
+    if (view !== 'default') return; // 总览/演示态批注面板不显示,快捷键同步失效
+    document.body.classList.add('notes-anim');
+    document.body.classList.toggle('notes-mini');
+    localStorage.setItem(PANEL_KEY, document.body.classList.contains('notes-mini') ? '0' : '1');
+    syncToolbar();
+    fitSlide();
+    clearTimeout(notesAnimT);
+    notesAnimT = setTimeout(function () {
+      document.body.classList.remove('notes-anim');
+      fitSlide();
+    }, 340);
+  }
+  function setDrawer(on) {
+    document.body.classList.toggle('notes-drawer-open', on);
+    localStorage.setItem(DRAWER_KEY, on ? '1' : '0');
+    if (on && document.body.classList.contains('notes-mini')) {
+      document.body.classList.remove('notes-mini');
+      localStorage.setItem(PANEL_KEY, '1');
+    }
+    syncToolbar();
+    fitSlide();
+  }
+  function toggleDrawer() {
+    if (view !== 'default') setView('default');
+    setDrawer(!document.body.classList.contains('notes-drawer-open'));
+  }
+
+  // 手机提词器：二维码只指向当前局域网里的本机服务；网络变化时自动轮询刷新。
+  var pd = document.getElementById('prompterDialog');
+  var pdQr = document.getElementById('pdQr');
+  var pdUrl = document.getElementById('pdUrl');
+  var pdStatus = document.getElementById('pdStatus');
+  var pdTimer = null;
+  function refreshPrompterInfo() {
+    fetch(SRV + '/info').then(function (r) { return r.json(); }).then(function (d) {
+      var url = d.preferred || (d.urls && d.urls[0]) || '';
+      if (!url) throw new Error('没有可用的局域网地址');
+      if (pdUrl.textContent !== url) {
+        pdUrl.textContent = url;
+        pdQr.innerHTML = '<img alt="手机提词器二维码" src="' + SRV + '/qr.svg?u=' + encodeURIComponent(url) + '&t=' + Date.now() + '">';
+      }
+      pdStatus.textContent = d.clients > 0 ? '已连接 ' + d.clients + ' 台设备' : '服务已启动，等待手机连接';
+      pdStatus.classList.add('ok');
+    }).catch(function () {
+      pdQr.innerHTML = '<span>本地服务未启动</span>';
+      pdUrl.textContent = '';
+      pdStatus.textContent = '请双击“启动 Hanyu Deck.command”，再重新打开手机提词器。';
+      pdStatus.classList.remove('ok');
+    });
+  }
+  function openPrompter() {
+    pd.classList.add('open');
+    refreshPrompterInfo();
+    clearInterval(pdTimer);
+    pdTimer = setInterval(refreshPrompterInfo, 3000);
+  }
+  function closePrompter() {
+    pd.classList.remove('open');
+    clearInterval(pdTimer);
+  }
+
+  // ===== 事件 =====
+  document.getElementById('toolbar').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.ex) { doExport(b.dataset.ex); return; }
+    if (b.dataset.view) { setView(b.dataset.view); return; }
+    var act = b.dataset.act;
+    if (act === 'prev') go(cur - 1);
+    else if (act === 'next') go(cur + 1);
+    else if (act === 'raw') { setExMenu(false); toggleRaw(); }
+    else if (act === 'drawer') toggleDrawer();
+    else if (act === 'prompter') openPrompter();
+    else if (act === 'export') setExMenu(!exMenu.classList.contains('open'));
+  });
+  document.getElementById('notesToggle').addEventListener('click', toggleNotes);
+  document.getElementById('drawerClose').addEventListener('click', function () { setDrawer(false); });
+  document.getElementById('pdClose').addEventListener('click', closePrompter);
+  pd.addEventListener('click', function (e) { if (e.target === pd) closePrompter(); });
+  document.getElementById('zonePrev').addEventListener('click', prev);
+  document.getElementById('zoneNext').addEventListener('click', next);
+
+  var saveTimer = null;
+  EDS.forEach(function (ed) {
+    ed.el.addEventListener('input', function () {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveNote, 400);
+    });
+  });
+
+  // 粘贴净化:外部软件复制来的内容只保留文字与加粗,白底/字色/字号/斜体等样式全部丢弃。
+  // 列表层级不丢:HTML 嵌套列表按深度转成 Markdown 前缀("- "/"    - "),纯文本保留行首缩进,
+  // 落进左栏后由 decorate 的 Markdown 解析吃掉(一级=要点、缩进=关键词)。
+  function pasteClean(e) {
+    e.preventDefault();
+    var esc = function (s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    var out = '';
+    var htmlData = e.clipboardData && e.clipboardData.getData('text/html');
+    if (htmlData) {
+      var doc = new DOMParser().parseFromString(htmlData, 'text/html');
+      var BLOCK = /^(P|DIV|LI|TR|H[1-6]|BLOCKQUOTE|PRE|UL|OL|TABLE|SECTION|ARTICLE|FIGURE)$/;
+      var paras = [], cur = [];
+      var flush = function () {
+        var t = cur.join('');
+        if (t.replace(/<\/?b>|&nbsp;|\s/g, '') !== '') paras.push('<p>' + t + '</p>');
+        cur = [];
+      };
+      var walk = function (node, bold, listDepth) {
+        if (node.nodeType === 3) {
+          if (node.textContent) cur.push(bold ? '<b>' + esc(node.textContent) + '</b>' : esc(node.textContent));
+          return;
+        }
+        if (node.nodeType !== 1 || node.tagName === 'STYLE' || node.tagName === 'SCRIPT') return;
+        if (node.tagName === 'BR') { flush(); return; }
+        var fw = node.style && node.style.fontWeight;
+        var b = bold || node.tagName === 'B' || node.tagName === 'STRONG' ||
+                fw === 'bold' || fw === 'bolder' || parseInt(fw, 10) >= 600;
+        if (node.tagName === 'UL' || node.tagName === 'OL') listDepth++;
+        var isBlock = BLOCK.test(node.tagName);
+        if (isBlock) flush();
+        if (node.tagName === 'LI') cur.push(esc(listDepth > 1 ? '    - ' : '- '));
+        Array.prototype.forEach.call(node.childNodes, function (ch) { walk(ch, b, listDepth); });
+        if (isBlock) flush();
+      };
+      walk(doc.body, false, 0);
+      flush();
+      out = paras.join('');
+    } else {
+      var txt = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
+      out = txt.split(/\n/).map(function (l) { return l.replace(/\s+$/, ''); })
+        .filter(function (l) { return l.trim(); })
+        .map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('');
+    }
+    if (out) document.execCommand('insertHTML', false, out);
+  }
+  edScript.addEventListener('paste', pasteClean);
+  edComm.addEventListener('paste', pasteClean);
+  window.addEventListener('beforeunload', saveNote);
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+      if (document.querySelector('.cv-editing')) return;   // 画布就地编辑中:走浏览器原生撤销
+      if (e.target === edComm || edComm.contains(e.target)) return; // 备注走原生撤销
+      // 批注区撤销/重做:编辑中直接接管;焦点在外时,面板可见即生效
+      if (e.target.isContentEditable ||
+          (!document.body.classList.contains('present') && !document.body.classList.contains('notes-hidden'))) {
+        e.preventDefault();
+        if (e.shiftKey) histRedo(); else histUndo();
+      }
+      return;
+    }
+    if (e.target.isContentEditable) {
+      if (e.key === 'Escape') e.target.blur();
+      return;
+    }
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
+        e.preventDefault(); next(); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
+        e.preventDefault(); prev(); break;
+      case 'Home': e.preventDefault(); go(0); break;
+      case 'End': e.preventDefault(); go(total - 1); break;
+      case 'f': case 'F': case 'p': case 'P': togglePresent(); break;
+      case 'n': case 'N': toggleNotes(); break;
+      case 'o': case 'O': toggleOverview(); break;
+      case 'r': case 'R': toggleRaw(); break;
+      case 'Escape':
+        if (document.body.classList.contains('raw')) setRaw(false);
+        else if (view !== 'default') setView('default');
+        break;
+    }
+  });
+
+  // 演示模式下鼠标移到顶部露出工具条
+  document.addEventListener('mousemove', function (e) {
+    if (!document.body.classList.contains('present')) return;
+    document.body.classList.toggle('reveal-ui', e.clientY < 60);
+  });
+
+  window.addEventListener('resize', fitSlide);
+
+  // ===== 批注面板拖动上缘调高(存 localStorage,画布随拖实时缩放) =====
+  (function () {
+    var grip = document.getElementById('nGrip');
+    var KEY = DECK.key + '.nh';
+    function clampH(h) { return Math.round(Math.min(Math.max(h, 100), Math.max(160, window.innerHeight - 380))); }
+    function applyH(h) { document.documentElement.style.setProperty('--nh', h + 'px'); }
+    var saved = parseInt(localStorage.getItem(KEY), 10);
+    if (saved) { applyH(clampH(saved)); fitSlide(); }
+    var startY = 0, startH = 0, curH = 0, raf = 0;
+    function onMove(e) {
+      curH = clampH(startH + (startY - e.clientY));
+      applyH(curH);
+      if (!raf) raf = requestAnimationFrame(function () { raf = 0; fitSlide(); });
+    }
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+      localStorage.setItem(KEY, curH);
+      fitSlide();
+    }
+    grip.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      if (grip.setPointerCapture) grip.setPointerCapture(e.pointerId);
+      startY = e.clientY;
+      startH = curH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nh'), 10) || 296;
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
+  })();
+
+  // ===== 金句逐字渐显:把 .pend .line 的文本拆成 .ch 字符,进页时按 --i 依次浮现(<br> 原样保留) =====
+  (function () {
+    var line = stage.querySelector('.pend .line');
+    if (!line) return;
+    var n = 0;
+    Array.prototype.slice.call(line.childNodes).forEach(function (node) {
+      if (node.nodeType !== 3) return;
+      var frag = document.createDocumentFragment();
+      node.textContent.split('').forEach(function (ch) {
+        var s = document.createElement('span');
+        s.className = 'ch';
+        s.style.setProperty('--i', n++);
+        s.textContent = ch;
+        frag.appendChild(s);
+      });
+      line.replaceChild(frag, node);
+    });
+  })();
+
+  // ===== 手机提词同步:翻页/步进/改稿时把状态 POST 给本地服务(scripts/prompter_server.py),
+  // 由它在当前局域网内转发给手机提词页；服务没开时静默忽略。
+  // 自动化实例(export_pages/build_pdf/测试的 headless 浏览器,navigator.webdriver=true)不参与——
+  // 否则导出脚本逐页截图会把演示者的手机一路拽着乱跳;测试需要联动时在 URL 加 ?pr=1 显式开启 =====
+  var PR_ON = !navigator.webdriver || /[?&]pr=1/.test(location.search);
+  function prPost(path, data) {
+    if (!PR_ON) return;
+    try { fetch(SRV + path, { method: 'POST', body: JSON.stringify(data) }).catch(function () {}); } catch (e) {}
+  }
+  function prFlip() { prPost('/flip', { page: cur + 1, step: stepOf(cur), steps: stepsOf(cur) }); }
+  function prNotes() {
+    prPost('/notes', { total: total, pages: slides.map(function (s, i) {
+      // 讲稿过 canonNs 再推:手机拿到的恒为行类型类格式(旧标记种子也被转掉)
+      var html = canonNs(i === cur ? edScript.innerHTML : (localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0])));
+      var comm = i === cur ? edComm.innerHTML : (localStorage.getItem(EDS[1].key + (i + 1)) || seedOf(i, EDS[1]));
+      return { n: i + 1, title: s.dataset.title || '', html: html, comm: comm, sec: Math.round(estSec(html)) };
+    }) });
+  }
+  var prTimer = null;
+  edScript.addEventListener('input', function () { clearTimeout(prTimer); prTimer = setTimeout(prNotes, 1200); });
+  edComm.addEventListener('input', function () { clearTimeout(prTimer); prTimer = setTimeout(prNotes, 1200); });
+  // 手机遥控:监听本地服务的 cmd 事件(手机在同步态翻页/点总览时发来);EventSource 断线自动重连。
+  // dir=方向步进,与键盘 → 同走 next()/prev()(页内动画先步进再翻页);page=总览直接跳页
+  if (PR_ON) try {
+    new EventSource(SRV + '/events').addEventListener('cmd', function (e) {
+      var d = JSON.parse(e.data);
+      if (d.dir) { if (d.dir > 0) next(); else prev(); return; }
+      var n = (d.page | 0) - 1;
+      if (n >= 0 && n < total && n !== cur) go(n);
+    });
+  } catch (e) {}
+
+  // ===== 启动 =====
+  var start = 0;
+  var m = location.hash.match(/^#p(\d+)$/);
+  if (m) start = Math.min(Math.max(parseInt(m[1], 10) - 1, 0), total - 1);
+  go(start, true); // 与翻页同一入口:data-autostep 等进页行为在直开链接时同样生效
+  syncToolbar();
+  fitSlide();
+  prNotes();
+})();
+</script>
+</body>
+</html>

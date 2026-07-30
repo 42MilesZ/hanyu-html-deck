@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.pyc
+.prompter-*.json
+.prompter-thumbs/
+.prompter-steps/
+导出图片/
+发送版.html
+图片版.pdf
+

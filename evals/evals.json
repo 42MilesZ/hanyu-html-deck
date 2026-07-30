@@ -1,0 +1,21 @@
+{
+  "skill_name": "hanyu-deck",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create an eight-page Chinese HTML presentation for a product strategy review. Include speaker scripts, revision notes, a comparison page, a data page, and a phone teleprompter. Keep the work local-only.",
+      "expected_output": "A Hanyu Deck-based folder with 1920×1080 slides, natural-paragraph .ns scripts, .nc notes, reused comparison/data patterns, and no public relay."
+    },
+    {
+      "id": 2,
+      "prompt": "Revise an existing Hanyu Deck so the notes drawer is optional and remembered, while the speaker script stays simple plain text. Add exports for the full script and only changed notes.",
+      "expected_output": "Separate deck-scoped localStorage state, plain-paragraph scripts, and export actions named 导出讲稿 and 复制改动的备注."
+    },
+    {
+      "id": 3,
+      "prompt": "Prepare a formal-event mobile prompting workflow for a macOS HTML deck. The venue may have Wi-Fi, otherwise the speaker can use a phone hotspot. Reliability matters more than remote reach.",
+      "expected_output": "A same-LAN workflow with QR refresh, local SSE remote control, script/notes tabs, hotspot fallback instructions, and no public MQTT or hosted page."
+    }
+  ]
+}
+

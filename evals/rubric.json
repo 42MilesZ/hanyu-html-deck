@@ -1,0 +1,35 @@
+{
+  "criteria": [
+    {
+      "name": "uses_hanyu_deck_structure",
+      "description": "Uses .slide > .canvas + aside with one .ns and one .nc block per page.",
+      "weight": 2
+    },
+    {
+      "name": "plain_speaker_script",
+      "description": "Speaker scripts are natural paragraphs rather than a forced purpose/main/sub outline.",
+      "weight": 2
+    },
+    {
+      "name": "optional_notes",
+      "description": "Notes are optional, retain content when hidden, and use a separate deck-scoped localStorage state.",
+      "weight": 2
+    },
+    {
+      "name": "local_only_phone",
+      "description": "Phone prompting uses same-LAN transport and contains no public relay, MQTT, or hosted prompt page.",
+      "weight": 2
+    },
+    {
+      "name": "visual_system",
+      "description": "The result uses the restrained 1920×1080 visual system and reuses suitable page patterns.",
+      "weight": 1
+    },
+    {
+      "name": "export_contract",
+      "description": "Provides full-script export and changed-notes copy with the agreed labels.",
+      "weight": 1
+    }
+  ]
+}
+

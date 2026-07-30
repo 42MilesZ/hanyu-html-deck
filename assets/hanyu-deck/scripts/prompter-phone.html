@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Hanyu Deck 提词器</title>
+<style>
+  :root { --font-size: 22px; --top: 166px; --bottom: 88px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    overflow: hidden; background: #0d0d0d; color: #eceae4;
+    font: 300 16px/1.72 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  button { color: inherit; font: inherit; border: 0; background: none; }
+  header {
+    position: fixed; inset: 0 0 auto; z-index: 5;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px 0;
+    background: rgba(13,13,13,.96); border-bottom: 1px solid #303030;
+  }
+  .preview { display: flex; align-items: center; gap: 13px; height: 94px; }
+  #thumb {
+    width: 142px; aspect-ratio: 16/9; object-fit: cover;
+    background: #181818; border: 1px solid #333;
+  }
+  .meta { flex: 1; min-width: 0; }
+  #position { font-size: 16px; font-weight: 600; }
+  #title { margin-top: 3px; color: #97958e; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #connection { margin-top: 7px; color: #77756e; font-size: 11px; }
+  #connection.ok { color: #9db79e; }
+  .tabs { display: flex; height: 42px; gap: 24px; align-items: stretch; }
+  .tab { position: relative; color: #77756e; font-size: 14px; }
+  .tab.on { color: #eceae4; }
+  .tab.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #eceae4; }
+  #content {
+    position: fixed; top: calc(env(safe-area-inset-top) + var(--top)); bottom: calc(env(safe-area-inset-bottom) + var(--bottom));
+    left: 0; right: 0; overflow-y: auto; padding: 24px 21px 52vh;
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    font-size: var(--font-size); line-height: 1.76;
+  }
+  #content p { margin-bottom: 1em; }
+  #content b, #content strong { color: #fff; font-weight: 600; }
+  #empty { color: #77756e; }
+  footer {
+    position: fixed; inset: auto 0 0; z-index: 5;
+    display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 9px;
+    padding: 10px 16px calc(env(safe-area-inset-bottom) + 10px);
+    background: rgba(13,13,13,.96); border-top: 1px solid #303030;
+  }
+  footer button {
+    height: 58px; border: 1px solid #3b3b3b; background: #181818;
+    font-size: 25px; border-radius: 8px;
+  }
+  footer button:active { background: #2a2a2a; }
+  #sync { font-size: 14px; color: #a9c4aa; }
+  #sync.off { color: #aaa8a1; }
+  #overview {
+    display: none; position: fixed; inset: 0; z-index: 20;
+    background: #0d0d0d; padding: calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 20px);
+  }
+  #overview.open { display: flex; flex-direction: column; }
+  .ov-head { flex: none; display: flex; align-items: center; height: 44px; }
+  .ov-head h2 { flex: 1; font-size: 18px; font-weight: 600; }
+  #ovClose { width: 44px; font-size: 24px; }
+  #grid {
+    flex: 1; min-height: 0; overflow-y: auto; display: grid;
+    grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; padding-top: 10px;
+  }
+  .page { border: 1px solid #303030; background: #171717; text-align: left; }
+  .page.now { border-color: #9db79e; }
+  .page img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #111; }
+  .page span { display: block; padding: 7px 8px; color: #aaa8a1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #overviewOpen {
+    position: fixed; z-index: 6; top: calc(env(safe-area-inset-top) + 18px); right: 16px;
+    width: 38px; height: 34px; border: 1px solid #333; color: #aaa8a1;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="preview">
+    <img id="thumb" alt="">
+    <div class="meta">
+      <div id="position">—</div>
+      <div id="title">等待电脑端讲稿</div>
+      <div id="connection">正在连接</div>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="提词内容">
+    <button class="tab on" data-tab="script">讲稿</button>
+    <button class="tab" data-tab="notes">备注</button>
+  </nav>
+</header>
+<button id="overviewOpen" aria-label="打开总览">▦</button>
+<main id="content"><p id="empty">请先在电脑端打开演示文稿。讲稿会自动同步到这里。</p></main>
+<footer>
+  <button id="previous" aria-label="上一页">‹</button>
+  <button id="sync">跟随电脑</button>
+  <button id="next" aria-label="下一页">›</button>
+</footer>
+<section id="overview">
+  <div class="ov-head"><h2>页面总览</h2><button id="ovClose" aria-label="关闭">×</button></div>
+  <div id="grid"></div>
+</section>
+<script>
+(function () {
+  var data = null;
+  var state = { page: 1, step: 0, steps: 0, seq: -1 };
+  var shown = 1;
+  var tab = 'script';
+  var following = true;
+  var connected = false;
+  var $ = function (id) { return document.getElementById(id); };
+  var content = $('content');
+
+  try { data = JSON.parse(localStorage.getItem('hanyu-deck-phone-cache') || 'null'); } catch (_e) {}
+
+  function pages() { return data && data.notes && data.notes.pages || []; }
+  function page(number) { return pages()[number - 1] || null; }
+  function scrollKey() { return 'hanyu-deck-scroll.' + shown + '.' + tab; }
+  function saveScroll() { sessionStorage.setItem(scrollKey(), String(content.scrollTop)); }
+  function restoreScroll() { content.scrollTop = Number(sessionStorage.getItem(scrollKey()) || 0); }
+  function setConnection(ok) {
+    connected = ok;
+    $('connection').textContent = ok ? '已连接本地服务' : '连接中断，正在重连';
+    $('connection').classList.toggle('ok', ok);
+  }
+  function render() {
+    var list = pages();
+    if (list.length) shown = Math.max(1, Math.min(shown, list.length));
+    var item = page(shown);
+    $('position').textContent = list.length ? 'P' + shown + ' / ' + list.length : '—';
+    $('title').textContent = item ? item.title || '未命名页面' : '等待电脑端讲稿';
+    var frame = shown === state.page && state.steps > 0
+      ? '/steps/' + shown + '-' + state.step + '.jpg'
+      : '/thumbs/' + shown + '.jpg';
+    $('thumb').src = frame;
+    content.innerHTML = item
+      ? (tab === 'script' ? item.html : item.comm) || '<p id="empty">这一页没有' + (tab === 'script' ? '讲稿' : '备注') + '。</p>'
+      : '<p id="empty">请先在电脑端打开演示文稿。讲稿会自动同步到这里。</p>';
+    document.querySelectorAll('.tab').forEach(function (button) {
+      button.classList.toggle('on', button.dataset.tab === tab);
+    });
+    requestAnimationFrame(restoreScroll);
+    buildOverview();
+  }
+  function loadNotes() {
+    fetch('/notes.json').then(function (response) { return response.json(); }).then(function (next) {
+      if (next.notes) {
+        data = next;
+        localStorage.setItem('hanyu-deck-phone-cache', JSON.stringify(next));
+        render();
+      }
+    }).catch(function () {});
+  }
+  function setShown(number) {
+    saveScroll();
+    shown = Math.max(1, Math.min(number, pages().length || 1));
+    render();
+  }
+  function command(body) {
+    fetch('/goto', { method: 'POST', body: JSON.stringify(body) }).catch(function () {
+      setConnection(false);
+    });
+  }
+  function heartbeat() {
+    fetch('/phone-heartbeat', { method: 'POST', body: '{}' }).catch(function () {});
+  }
+  function buildOverview() {
+    var grid = $('grid');
+    grid.innerHTML = '';
+    pages().forEach(function (item, index) {
+      var button = document.createElement('button');
+      button.className = 'page' + (index + 1 === shown ? ' now' : '');
+      button.innerHTML = '<img alt=""><span>P' + (index + 1) + '　' + (item.title || '') + '</span>';
+      button.querySelector('img').src = '/thumbs/' + (index + 1) + '.jpg';
+      button.addEventListener('click', function () {
+        setShown(index + 1);
+        $('overview').classList.remove('open');
+        if (following) command({ page: index + 1 });
+      });
+      grid.appendChild(button);
+    });
+  }
+
+  document.querySelectorAll('.tab').forEach(function (button) {
+    button.addEventListener('click', function () {
+      if (button.dataset.tab === tab) return;
+      saveScroll();
+      tab = button.dataset.tab;
+      render();
+    });
+  });
+  $('previous').addEventListener('click', function () {
+    if (following) command({ dir: -1 }); else setShown(shown - 1);
+  });
+  $('next').addEventListener('click', function () {
+    if (following) command({ dir: 1 }); else setShown(shown + 1);
+  });
+  $('sync').addEventListener('click', function () {
+    following = !following;
+    $('sync').textContent = following ? '跟随电脑' : '自由浏览';
+    $('sync').classList.toggle('off', !following);
+    if (following) setShown(state.page);
+  });
+  $('overviewOpen').addEventListener('click', function () { $('overview').classList.add('open'); });
+  $('ovClose').addEventListener('click', function () { $('overview').classList.remove('open'); });
+  content.addEventListener('scroll', function () {
+    clearTimeout(content._saveTimer);
+    content._saveTimer = setTimeout(saveScroll, 120);
+  }, { passive: true });
+
+  var events = new EventSource('/events');
+  events.addEventListener('open', function () { setConnection(true); });
+  events.addEventListener('error', function () { setConnection(false); });
+  events.addEventListener('state', function (event) {
+    var next = JSON.parse(event.data);
+    if (next.seq < state.seq) return;
+    state = next;
+    if (following) setShown(state.page);
+    else render();
+  });
+  events.addEventListener('notes', loadNotes);
+
+  render();
+  loadNotes();
+  heartbeat();
+  setInterval(heartbeat, 5000);
+})();
+</script>
+</body>
+</html>
