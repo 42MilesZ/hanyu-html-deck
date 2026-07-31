@@ -88,9 +88,20 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 
 ## Source write-back
 
-- `存为默认` writes changed scripts or notes back to `index.html`.
+- Script and note edits are written back to `index.html` automatically, about 1.5 seconds after you stop typing. There is no save button.
+- A status light sits at the bottom right of the script column: green means everything is on disk, amber means some edits still live only in this browser — usually because the local service is not running. Hover it for the reason.
+- Next to the light is history: the script and the notes each keep their own version timeline, and you can restore any snapshot or the original text.
 - Double-click canvas text to edit it; blur writes the updated canvas back.
 - Canvas writes are localhost-only. The service validates page count, structure, and unsafe markup before an atomic replacement.
+
+## Keyboard
+
+- `← / →`: previous page / next step or page
+- `P` or `F`: presentation mode
+- `O`: overview
+- `N`: expand or collapse the script panel
+- `R`: 1:1 pixel view
+- `Esc`: leave the current mode
 
 ## Repository files
 

@@ -195,7 +195,8 @@
   #zonePrev::after { left: 30px; transform: rotate(45deg); }
   #zoneNext::after { right: 30px; transform: rotate(-135deg); }
   .navzone:hover::before, .navzone:hover::after { opacity: 1; }
-  body.present .navzone:hover::before, body.present .navzone:hover::after { opacity: .55; }
+  /* 演示态不显示:工具条都隐掉了,这层提示会亮在投影上被观众看到 */
+  body.present .navzone::before, body.present .navzone::after { display: none; }
 
   /* ===== 进度条 ===== */
   #progress { position: fixed; bottom: 0; left: 0; right: 0; height: 3px; background: #262626; z-index: 60; }
@@ -267,15 +268,31 @@
   #tlTot { position: absolute; right: 0; bottom: 23px; font-size: 11px; color: rgba(240,238,232,.32); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
   /* 语速三档:兔子 / 速度表 / 蜗牛，选中态提高亮度。 */
   #nsRate { display: flex; align-items: center; gap: 8px; margin-right: 16px; }
-  #nsRate .rt, #notesHead .icon-btn {
+  #nsRate .rt, .icon-btn {
     width: 32px; height: 32px; padding: 7px;
     display: inline-flex; align-items: center; justify-content: center;
     color: #8a8880; background: none; border: 0; border-radius: 2px; cursor: pointer;
   }
-  #nsRate .rt svg, #notesHead .icon-btn svg { width: 18px; height: 18px; display: block; }
-  #nsRate .rt:hover, #notesHead .icon-btn:hover { background: var(--paper); color: var(--ink); }
-  #nsRate .rt.act, #notesHead .icon-btn.on { color: #f0eee8; }
-  #notesHead .vsep { width: 1px; height: 17px; background: #4d4d4d; margin-right: 16px; }
+  #nsRate .rt svg, .icon-btn svg { width: 18px; height: 18px; display: block; }
+  #nsRate .rt:hover, .icon-btn:hover { background: var(--paper); color: var(--ink); }
+  #nsRate .rt.act, .icon-btn.on { color: #f0eee8; }
+  .vsep { width: 1px; height: 17px; background: #4d4d4d; }
+  /* 栏内右下角工具条:历史与备注开关跟着各自的栏,面板收起时一并消失。
+     渐变底与栏同色,编辑区滚到底时文字不会从按钮下穿过 */
+  .col-tools {
+    position: absolute; right: 22px; bottom: 6px; z-index: 5;
+    display: flex; align-items: center; gap: 8px; padding-left: 30px;
+  }
+  .col.script .col-tools { background: linear-gradient(90deg, rgba(18,18,18,0), var(--chrome) 26%); }
+  .col.comm .col-tools { background: linear-gradient(90deg, rgba(23,23,23,0), #171717 26%); }
+  body.notes-mini .col-tools { display: none; }
+  /* 同步灯:橙黄=改动可能还没写回文件,绿=已写回。悬停立即给出原因 */
+  .led {
+    width: 9px; height: 9px; border-radius: 50%; flex: none;
+    background: #d99a3a; box-shadow: 0 0 6px rgba(217,154,58,.45);
+    transition: background .3s, box-shadow .3s;
+  }
+  .led.ok { background: #5fa564; box-shadow: 0 0 6px rgba(95,165,100,.4); }
   body.present #notesPanel, body.notes-hidden #notesPanel { display: none; }
   #notesPanel .col {
     min-width: 0; min-height: 0; padding: 12px 22px 0;
@@ -301,6 +318,7 @@
   #notesPanel .ed.dirty { background: #1c222a; }
   #nsCols { position: relative; flex: 1; min-height: 0; display: flex; overflow: hidden; }
   #notesPanel .col.script {
+    position: relative;
     flex: 1; padding-right: 28px;
     transition: margin-right .34s cubic-bezier(.22,.61,.21,1);
   }
@@ -331,13 +349,6 @@
     content: "写下本页的修改意见、补充说明或个人备注……";
     color: #68665f; pointer-events: none;
   }
-  #btnSeed, #btnBk {
-    font: inherit; font-size: 11px; font-weight: 300; letter-spacing: .08em; color: #77756e;
-    background: none; border: none; border-radius: 0;
-    padding: 3px 8px; cursor: pointer;
-  }
-  #btnSeed:hover { background: var(--paper); color: var(--ink); }
-  #histWrap { position: relative; display: flex; }
   #histMenu {
     /* fixed 向上弹:迷你态表头贴屏底,向下弹出界;fixed 也不受面板 overflow:hidden 裁剪 */
     position: fixed; display: none;
@@ -453,10 +464,9 @@
   .psteps[data-step="2"] .st-row:nth-child(-n+2) .ex,
   .psteps[data-step="3"] .st-row .ex { opacity: 1; transform: none; }
   .slide.on .psteps .st-title { opacity: 0; animation: fwUp .6s ease .1s forwards; }
-  .slide.on .psteps .st-row { animation: fwFadeIn .5s ease both; }
-  .slide.on .psteps .st-row:nth-child(1) { animation-delay: .15s; }
-  .slide.on .psteps .st-row:nth-child(2) { animation-delay: .25s; }
-  .slide.on .psteps .st-row:nth-child(3) { animation-delay: .35s; }
+  /* 入场淡入挂在行容器上:行自身的 opacity 专供步进点亮,两者不再抢同一属性
+     (挂在行上再加 both 会把 opacity 锁成 1,压暗规则就永远不生效) */
+  .slide.on .psteps .st-rows { opacity: 0; animation: fwFadeIn .55s ease .15s forwards; }
   /* 总览缩略图与导出:步进页恒显终态(全部点亮),不留半亮的中间帧 */
   .ovItem .psteps .st-row, body.exporting .psteps .st-row { opacity: 1; }
   .ovItem .psteps .st-row .ex, body.exporting .psteps .st-row .ex { opacity: 1; transform: none; }
@@ -635,23 +645,26 @@
       <button class="rt tip-up" data-r="210" data-tip="中 · 210 字/分钟" aria-label="中速"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m12 14l4-4M3.34 19a10 10 0 1 1 17.32 0"/></svg></button>
       <button class="rt tip-up" data-r="180" data-tip="慢 · 180 字/分钟" aria-label="慢速"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M2 13a6 6 0 1 0 12 0a4 4 0 1 0-8 0a2 2 0 0 0 4 0"/><circle cx="10" cy="13" r="8"/><path d="M2 21h12c4.4 0 8-3.6 8-8V7a2 2 0 1 0-4 0v6m0-10l1.1 2.2M22 3l-1.1 2.2"/></g></svg></button>
     </div>
-    <span class="vsep"></span>
-    <button id="btnSeed" title="把所有改动页写回本文件,变成默认稿(要提词服务在跑)">存为默认</button>
-    <span id="histWrap">
-      <button id="btnHist" class="icon-btn tip-up" data-tip="查看历史" aria-label="查看历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
-      <div id="histMenu"></div>
-    </span>
-    <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="打开备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
   </div>
   <div id="nsCols">
     <div class="col script">
       <div class="ed" id="edScript" contenteditable="true"></div>
+      <div class="col-tools">
+        <i id="syncLed" class="led" data-tip-now="正在检查同步状态"></i>
+        <span class="vsep"></span>
+        <button id="btnHist" class="icon-btn tip-up hist-btn" data-ed="0" data-tip="讲稿的历史版本" aria-label="讲稿历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
+        <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="打开备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
+      </div>
     </div>
     <div class="col comm">
       <div class="comm-label"><span>备注</span><button id="drawerClose" aria-label="收起备注">×</button></div>
       <div class="ed" id="edComm" contenteditable="true"></div>
+      <div class="col-tools">
+        <button id="btnHistComm" class="icon-btn tip-up hist-btn" data-ed="1" data-tip="备注的历史版本" aria-label="备注历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
+      </div>
     </div>
   </div>
+  <div id="histMenu"></div>
 </div>
 
 <div id="overview"><div id="ovGrid"></div></div>
@@ -792,13 +805,13 @@
   <div class="canvas pbody">
     <div class="bd-title">改完的字回到源文件</div>
     <div class="bd-text">
-      <p>双击画布上的文字可以直接修改，失焦后写回 index.html。讲稿和备注在浏览器里改完，点「存为默认」写回同一个文件。</p>
+      <p>双击画布上的文字可以直接修改，失焦后写回 index.html。讲稿和备注停止输入约一秒半后自动写回同一个文件，不需要点保存。</p>
       <p>写回只接受本机请求；落盘前核对页数、页面结构和危险标签，再用临时文件原子替换。</p>
     </div>
     <div class="bd-fig"><span>写回示意<br>换成真实截图</span></div>
   </div>
   <aside>
-    <div class="ns"><p>浏览器里的改动不会停在浏览器里。改一两个字不必回到代码，双击画布改完即可写回源文件。</p><p>讲稿和备注同理，点「存为默认」就写回同一个 HTML。写回前会核对页数和结构，文件在别处被改过就拒绝写入。</p></div>
+    <div class="ns"><p>浏览器里的改动不会停在浏览器里。改一两个字不必回到代码，双击画布改完即可写回源文件。</p><p>讲稿和备注同理，停止输入后自动写回，讲稿栏右下角的灯绿了就是已经落盘，橙黄说明还只在浏览器里。写回前会核对页数和结构，文件在别处被改过就拒绝写入。</p></div>
     <div class="nc"><p>这里可以换成一次真实写回的界面截图。</p></div>
   </aside>
 </section>
@@ -878,8 +891,8 @@ var DECK = {
   var ovGrid = document.getElementById('ovGrid');
   var edComm = document.getElementById('edComm');
   var EDS = [
-    { key: DECK.key + '.s.', el: edScript, sel: '.ns', label: '讲稿', canon: canonNs },
-    { key: DECK.key + '.c.', el: edComm, sel: '.nc', label: '备注', canon: canon }
+    { key: DECK.key + '.s.', hkey: DECK.key + '.h.', el: edScript, sel: '.ns', label: '讲稿', canon: canonNs },
+    { key: DECK.key + '.c.', hkey: DECK.key + '.hc.', el: edComm, sel: '.nc', label: '备注', canon: canon }
   ];
   var PANEL_KEY = DECK.key + '.ui.panelExpanded';
   var DRAWER_KEY = DECK.key + '.ui.notesDrawerOpen';
@@ -1279,29 +1292,35 @@ var DECK = {
   });
   nsRate.querySelectorAll('.rt').forEach(function (r) { r.classList.toggle('act', parseInt(r.dataset.r, 10) === rate); });
   edScript.addEventListener('input', updateTime);
-  // ===== 讲稿历史:每页一条时间轴(localStorage 键 <key>.h.N,数组,上限 30 条)。
-  // 记录时机:离开改过的页(go 里)、存为默认前、从历史恢复前——恢复永不丢当前稿 =====
-  var HKEY = DECK.key + '.h.';
-  function histOf(i) {
-    try { return JSON.parse(localStorage.getItem(HKEY + (i + 1))) || []; }
+  // ===== 版本历史:讲稿与备注各一条时间线(localStorage 键 <ed.hkey>N,数组,上限 30 条)。
+  // 记录时机:离开改过的页、自动写回前、从历史恢复前——恢复永不丢当前稿。
+  // 自动写回每次停顿都会记,故同页同栏一分钟内只保留一条,不然 30 条很快被连续输入刷空 =====
+  var SNAP_MERGE_MS = 60000;
+  function histOf(i, ed) {
+    try { return JSON.parse(localStorage.getItem(ed.hkey + (i + 1))) || []; }
     catch (e) { return []; }
   }
-  function snapHist(i) {
-    var h = localStorage.getItem(EDS[0].key + (i + 1));
+  function snapHist(i, ed) {
+    var h = localStorage.getItem(ed.key + (i + 1));
     if (!h) return;                       // 与默认稿一致(无改动)不记
-    var arr = histOf(i);
-    if (arr.length && canonNs(arr[arr.length - 1].h) === canonNs(h)) return;   // 与最近一条相同不重复记
-    arr.push({ t: Date.now(), h: h });
+    var arr = histOf(i, ed);
+    var last = arr[arr.length - 1];
+    if (last && ed.canon(last.h) === ed.canon(h)) return;   // 与最近一条相同不重复记
+    var now = Date.now();
+    if (last && now - last.t < SNAP_MERGE_MS) arr[arr.length - 1] = { t: now, h: h };
+    else arr.push({ t: now, h: h });
     if (arr.length > 30) arr = arr.slice(arr.length - 30);
-    localStorage.setItem(HKEY + (i + 1), JSON.stringify(arr));
+    localStorage.setItem(ed.hkey + (i + 1), JSON.stringify(arr));
   }
+  function snapAll(i) { EDS.forEach(function (ed) { snapHist(i, ed); }); }
   var histMenu = document.getElementById('histMenu');
+  var histMenuEd = EDS[0];
   function fmtT(t) {
     var d = new Date(t);
     function z(n) { return (n < 10 ? '0' : '') + n; }
     return z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes());
   }
-  function buildHist() {
+  function buildHist(ed) {
     histMenu.innerHTML = '';
     function add(label, html, k) {
       normBox.innerHTML = html;
@@ -1312,84 +1331,103 @@ var DECK = {
       t2.textContent = normBox.innerText.replace(/\s+/g, ' ').trim().slice(0, 46);
       b.appendChild(t1); b.appendChild(t2); histMenu.appendChild(b);
     }
-    var arr = histOf(cur);
+    var arr = histOf(cur, ed);
     for (var k = arr.length - 1; k >= 0; k--) add(fmtT(arr[k].t), arr[k].h, String(k));
-    add('默认稿', seedOf(cur, EDS[0]), 'seed');
+    add('默认稿', seedOf(cur, ed), 'seed');
   }
-  document.getElementById('btnHist').addEventListener('click', function () {
-    if (histMenu.classList.contains('open')) { histMenu.classList.remove('open'); return; }
-    buildHist();
-    var r = document.getElementById('histWrap').getBoundingClientRect();
-    var hr = document.getElementById('notesHead').getBoundingClientRect();
-    histMenu.style.right = Math.max(window.innerWidth - r.right, 8) + 'px';
-    histMenu.style.bottom = (window.innerHeight - hr.top + 8) + 'px';   // 锚在整条表头上方,不压表头
-    histMenu.classList.add('open');
+  Array.prototype.forEach.call(document.querySelectorAll('.hist-btn'), function (btn) {
+    btn.addEventListener('click', function () {
+      var ed = EDS[+btn.dataset.ed];
+      if (histMenu.classList.contains('open') && histMenuEd === ed) { histMenu.classList.remove('open'); return; }
+      histMenuEd = ed;
+      buildHist(ed);
+      var r = btn.getBoundingClientRect();
+      histMenu.style.right = Math.max(window.innerWidth - r.right, 8) + 'px';
+      histMenu.style.bottom = (window.innerHeight - r.top + 8) + 'px';   // 锚在按钮上方
+      histMenu.classList.add('open');
+    });
   });
   histMenu.addEventListener('click', function (e) {
     var b = e.target.closest('.hi');
     if (!b) return;
+    var ed = histMenuEd;
     histMenu.classList.remove('open');
     saveNote();
-    snapHist(cur);                        // 当前稿先入历史,再恢复
-    if (b.dataset.k === 'seed') {
-      EDS.forEach(function (ed) { localStorage.removeItem(ed.key + (cur + 1)); });
-    } else {
-      var it = histOf(cur)[+b.dataset.k];
+    snapHist(cur, ed);                    // 当前稿先入历史,再恢复
+    if (b.dataset.k === 'seed') localStorage.removeItem(ed.key + (cur + 1));
+    else {
+      var it = histOf(cur, ed)[+b.dataset.k];
       if (!it) return;
-      localStorage.setItem(EDS[0].key + (cur + 1), it.h);
+      localStorage.setItem(ed.key + (cur + 1), it.h);
     }
     loadNotes(cur);
     saveNote();                           // 恢复的版本若与默认稿一致,顺手清掉覆盖标记
+    scheduleSeed();
   });
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('#histWrap')) histMenu.classList.remove('open');
+    if (!e.target.closest('.hist-btn') && !e.target.closest('#histMenu')) histMenu.classList.remove('open');
   });
 
-  // ===== 存为默认:两栏所有改动页一键经本地提词服务写回本文件源文,写成后清本地覆盖 =====
-  // 讲稿走 canonNs:写回的种子是行类型类格式(不再带 ★/- 标记字符)
+  // ===== 自动写回:输入停顿后把改动页静默写回源文件,不需要用户点保存 =====
+  // 状态只用一盏灯表达:绿=都已落盘,橙黄=还有改动只在浏览器里(服务没开/被拒/正在写)
   function fragOfPage(i, ed) {
     return ed.canon(localStorage.getItem(ed.key + (i + 1)) || '');
   }
-  function saveAsDefault() {
-    saveNote();
-    var changed = [];   // {i, ed} 对
+  var syncLed = document.getElementById('syncLed');
+  function dirtyPages() {
+    var out = [];
     slides.forEach(function (s, i) {
       EDS.forEach(function (ed) {
-        if (localStorage.getItem(ed.key + (i + 1))) changed.push({ i: i, ed: ed });
+        if (localStorage.getItem(ed.key + (i + 1))) out.push({ i: i, ed: ed });
       });
     });
-    if (!changed.length) { alert('没有任何页有改动,现在显示的都是默认稿。'); return; }
-    var names = changed.map(function (c) { return 'P' + (c.i + 1) + c.ed.label; }).join('、');
-    if (!confirm('把 ' + names + ' 的改动写回源文件,存为默认稿?')) return;
-    var oks = [], fails = [], netDown = false;
-    var chain = Promise.resolve();
+    return out;
+  }
+  function setLed(ok, why) {
+    syncLed.classList.toggle('ok', !!ok);
+    syncLed.dataset.tipNow = why;
+  }
+  function refreshLed() {
+    var n = dirtyPages().length;
+    if (!n) setLed(true, '讲稿与备注都已写回 index.html');
+    else setLed(false, n + ' 处改动还没写回文件，只存在这个浏览器里');
+  }
+  var seedTimer = null, seedChain = Promise.resolve(), seedBusy = false;
+  function scheduleSeed() {
+    clearTimeout(seedTimer);
+    refreshLed();
+    seedTimer = setTimeout(seedNow, 1500);
+  }
+  function seedNow() {
+    clearTimeout(seedTimer);
+    var changed = dirtyPages();
+    if (!changed.length || seedBusy) { refreshLed(); return; }
+    seedBusy = true;
+    var down = false;
     changed.forEach(function (c) {
-      var i = c.i, ed = c.ed;
-      chain = chain.then(function () {
-        if (netDown) return;
-        var frag = fragOfPage(i, ed);
-        if (!frag) { fails.push('P' + (i + 1) + ed.label + '(内容为空,跳过)'); return; }
+      seedChain = seedChain.then(function () {
+        if (down) return;
+        var frag = fragOfPage(c.i, c.ed);
+        if (!frag) return;                 // 内容为空不写,留在浏览器里等下一次
         return fetch(SRV + '/seed', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ page: i + 1, html: frag, sel: ed.sel.slice(1) })
+          body: JSON.stringify({ page: c.i + 1, html: frag, sel: c.ed.sel.slice(1) })
         }).then(function (r) { return r.json(); }).then(function (d) {
-          if (!d.ok) { fails.push('P' + (i + 1) + ed.label + '(' + (d.err || '未知原因') + ')'); return; }
-          if (ed === EDS[0]) snapHist(i);
-          var src = slides[i].querySelector('aside ' + ed.sel);
+          if (!d.ok) return;               // 被拒:改动留在浏览器,灯保持橙黄
+          snapHist(c.i, c.ed);
+          var src = slides[c.i].querySelector('aside ' + c.ed.sel);
           if (src) src.innerHTML = frag;
-          localStorage.removeItem(ed.key + (i + 1));
-          oks.push('P' + (i + 1) + ed.label);
-        }, function () { netDown = true; });
+          localStorage.removeItem(c.ed.key + (c.i + 1));
+          if (c.i === cur) c.ed.el.classList.remove('dirty');
+        }, function () { down = true; });   // 服务没在跑:静默留在浏览器
       });
     });
-    chain.then(function () {
-      loadNotes(cur);
-      // 成功静默(确认框已点过一次,dirty 标记消失即回执);只有失败才弹
-      if (netDown) { alert('本地服务没在运行。双击「启动 Hanyu Deck.command」后再点。' + (oks.length ? '(已写回:' + oks.join('、') + ')' : '')); return; }
-      if (fails.length) alert('没写成:' + fails.join(';') + (oks.length ? '\n(已写回:' + oks.join('、') + ')' : ''));
+    seedChain = seedChain.then(function () {
+      seedBusy = false;
+      if (down) setLed(false, '本地服务没在运行，改动只存在这个浏览器里');
+      else refreshLed();
     });
   }
-  document.getElementById('btnSeed').addEventListener('click', saveAsDefault);
 
   // ===== CVEDIT-START（发送版由 build_send.py 剥除）=====
   // ===== 画布就地编辑:双击画布文字直接改,失焦后整块画布经本地提词服务写回本文件源文 =====
@@ -1527,7 +1565,7 @@ var DECK = {
   function go(i, skipSave) {
     if (i < 0 || i >= total) return;
     var dirn = i >= cur ? 1 : -1;
-    if (!skipSave) { saveNote(); snapHist(cur); }
+    if (!skipSave) { saveNote(); snapAll(cur); seedNow(); }
     clearTimeout(autoTimer);
     // 出场:旧页加 .leaving 绝对定位叠在新页上淡出 450ms(快速连翻时立刻清掉上一个 leaving)。
     // .on 在 current 与 leaving 期间都保留:入场动画全部挂 .slide.on 下,选择器在离场时不变,
@@ -1722,7 +1760,7 @@ var DECK = {
     positionThumb();
     var rawBtn = document.querySelector('#toolbar button[data-act="raw"]');
     if (rawBtn) rawBtn.classList.toggle('on', document.body.classList.contains('raw'));
-    var drawerBtn = document.querySelector('#notesHead button[data-act="drawer"]');
+    var drawerBtn = document.getElementById('btnDrawer');
     if (drawerBtn) {
       var drawerOpen = document.body.classList.contains('notes-drawer-open');
       drawerBtn.classList.toggle('on', drawerOpen);
@@ -1835,7 +1873,7 @@ var DECK = {
     tipTarget = null;
   }
   function tipShow(el) {
-    tipEl.textContent = el.dataset.tip;
+    tipEl.textContent = el.dataset.tip || el.dataset.tipNow;
     var r = el.getBoundingClientRect();
     var t = tipEl.getBoundingClientRect();   // visibility:hidden 仍有尺寸,可先量再摆
     var left, top;
@@ -1844,22 +1882,23 @@ var DECK = {
       top = r.top + r.height / 2 - t.height / 2;
     } else {
       left = r.left + r.width / 2 - t.width / 2;
-      top = el.classList.contains('tip-up') ? r.top - t.height - 8 : r.bottom + 8;
+      top = el.classList.contains('tip-up') || el.dataset.tipNow ? r.top - t.height - 8 : r.bottom + 8;
     }
     tipEl.style.left = Math.min(Math.max(left, 8), window.innerWidth - t.width - 8) + 'px';
     tipEl.style.top = Math.min(Math.max(top, 8), window.innerHeight - t.height - 8) + 'px';
     tipEl.classList.add('on');
   }
   document.addEventListener('mouseover', function (e) {
-    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    var el = e.target.closest ? e.target.closest('[data-tip],[data-tip-now]') : null;
     if (el === tipTarget) return;
     tipHide();
     if (!el) return;
     tipTarget = el;
-    tipTimer = setTimeout(function () { if (tipTarget === el) tipShow(el); }, 900);
+    var wait = el.dataset.tipNow ? 0 : 900;   // 状态灯类:悬停即刻给出原因
+    tipTimer = setTimeout(function () { if (tipTarget === el) tipShow(el); }, wait);
   });
   document.addEventListener('mouseout', function (e) {
-    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    var el = e.target.closest ? e.target.closest('[data-tip],[data-tip-now]') : null;
     if (el && el === tipTarget) tipHide();
   });
   document.addEventListener('click', tipHide, true);
@@ -1891,7 +1930,7 @@ var DECK = {
   EDS.forEach(function (ed) {
     ed.el.addEventListener('input', function () {
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveNote, 400);
+      saveTimer = setTimeout(function () { saveNote(); scheduleSeed(); }, 400);
     });
   });
 
@@ -1960,6 +1999,7 @@ var DECK = {
       if (e.key === 'Escape') e.target.blur();
       return;
     }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;   // Cmd+P/F/O/R 等交回浏览器,不误触发演示或 1:1
     switch (e.key) {
       case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
         e.preventDefault(); next(); break;
@@ -2077,6 +2117,8 @@ var DECK = {
   syncToolbar();
   fitSlide();
   prNotes();
+  refreshLed();
+  seedNow();       // 上次没写成的改动(当时服务没开)进页即补写
 })();
 </script>
 </body>

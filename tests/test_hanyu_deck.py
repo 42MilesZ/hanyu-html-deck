@@ -53,18 +53,38 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("localStorage.setItem(PANEL_KEY", self.html)
         self.assertIn("localStorage.setItem(DRAWER_KEY", self.html)
 
-    def test_bottom_header_controls(self):
+    def test_bottom_panel_controls(self):
         toolbar = self.html.split('<div id="toolbar">', 1)[1].split(
             '<div id="stage">', 1
         )[0]
         notes_head = self.html.split('<div id="notesHead">', 1)[1].split(
             '<div id="nsCols">', 1
         )[0]
+        script_col = self.html.split('<div class="col script">', 1)[1].split(
+            '<div class="col comm">', 1
+        )[0]
+        comm_col = self.html.split('<div class="col comm">', 1)[1].split(
+            "</div>\n  </div>", 1
+        )[0]
+
         self.assertNotIn('data-act="drawer"', toolbar)
-        self.assertIn('id="btnDrawer"', notes_head)
-        self.assertLess(notes_head.index('id="btnSeed"'), notes_head.index('id="btnHist"'))
-        self.assertLess(notes_head.index('id="btnHist"'), notes_head.index('id="btnDrawer"'))
         self.assertEqual(notes_head.count('class="rt tip-up"'), 3)
+        for moved in ('id="btnHist"', 'id="btnDrawer"', 'id="syncLed"'):
+            self.assertNotIn(moved, notes_head)
+            self.assertIn(moved, script_col)
+        self.assertIn('id="btnHistComm"', comm_col)
+        self.assertNotIn("btnSeed", self.html)
+
+    def test_write_back_is_automatic_with_status_led(self):
+        self.assertIn("function seedNow()", self.html)
+        self.assertIn("function scheduleSeed()", self.html)
+        self.assertIn("syncLed", self.html)
+        self.assertNotIn("saveAsDefault", self.html)
+
+    def test_history_is_separate_per_column(self):
+        self.assertIn("hkey: DECK.key + '.h.'", self.html)
+        self.assertIn("hkey: DECK.key + '.hc.'", self.html)
+        self.assertIn("function snapHist(i, ed)", self.html)
 
     def test_no_public_transport(self):
         lowered = self.html.lower()
