@@ -923,6 +923,13 @@ var DECK = {
 var SEND_VERSION = false;
 (function () {
   var SRV = 'http://127.0.0.1:' + DECK.port;
+  // 访问凭据:由启动脚本随地址交给本文件。写回要求它——浏览器里的任意网页都能
+  // 伪装成本地文件,只看"来自本机"挡不住,凭据才是网页拿不到的东西。
+  // 直接双击本文件打开时没有凭据:仍可演示与编辑,但改动只留在浏览器里。
+  var TOKEN = (location.search.match(/[?&]t=([^&]+)/) || [])[1] || '';
+  function api(path) {
+    return SRV + path + (path.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(TOKEN);
+  }
   // 存储包装:隐私模式、企业策略或配额写满时,裸调用 localStorage 会抛异常。
   // 这些调用散在初始化与翻页路径上,一抛就整页白屏、演示中翻不动页——
   // 故一律走这里,读写失败就退回内存,功能降级但演示不中断。
@@ -1401,7 +1408,7 @@ var SEND_VERSION = false;
       tlPvPage = i;
       tlPvLbl.textContent = 'P' + (i + 1) + ' · ' + (slides[i].dataset.title || '');
       tlPvImg.style.display = '';
-      tlPvImg.src = SRV + '/thumbs/' + (i + 1) + '.jpg';   // 服务没开时 onerror 隐藏图,只留页码标题
+      tlPvImg.src = api('/thumbs/' + (i + 1) + '.jpg');   // 服务没开时 onerror 隐藏图,只留页码标题
       tlHov.style.left = (tlCums[i] / tlTotSec * 100) + '%';
       tlHov.style.width = ((tlCums[i + 1] - tlCums[i]) / tlTotSec * 100) + '%';
     }
@@ -1534,7 +1541,7 @@ var SEND_VERSION = false;
   var ledPop = document.createElement('div');
   ledPop.id = 'ledPop';
   document.body.appendChild(ledPop);
-  var ledState = { ok: true, why: '', pending: [], down: false };
+  var ledState = { ok: true, why: '', pending: [], down: false, noToken: false };
   function dirtyPages() {
     var out = [];
     slides.forEach(function (s, i) {
@@ -1558,9 +1565,11 @@ var SEND_VERSION = false;
     ledPop.appendChild(head);
     var note = document.createElement('p');
     note.className = 'lp-note';
-    note.textContent = ledState.down
-      ? '本地服务没在运行，改动只存在这个浏览器里。双击「启动本地演示台.command」后会自动补写。'
-      : (ledState.ok ? '停止输入约一秒半后自动写回 index.html，不需要点保存。' : '正在等待写回：停止输入约一秒半后自动落盘。');
+    note.textContent = ledState.noToken
+      ? '这份演示稿不是从「启动本地演示台.command」打开的，没有写回凭据，改动只存在这个浏览器里。双击那个文件即可带凭据重新打开。'
+      : ledState.down
+        ? '本地服务没在运行，改动只存在这个浏览器里。双击「启动本地演示台.command」后会自动补写。'
+        : (ledState.ok ? '停止输入约一秒半后自动写回 index.html，不需要点保存。' : '正在等待写回：停止输入约一秒半后自动落盘。');
     ledPop.appendChild(note);
     if (ledState.pending.length) {
       var list = document.createElement('div');
@@ -1601,15 +1610,15 @@ var SEND_VERSION = false;
   syncLed.parentNode.addEventListener('mouseleave', function () { ledPopHide(); });
   ledPop.addEventListener('mouseenter', function () { clearTimeout(ledPopT); });
   ledPop.addEventListener('mouseleave', function () { ledPopHide(); });
-  function setLed(ok, why, down) {
+  function setLed(ok, why, down, noToken) {
     syncLed.classList.toggle('ok', !!ok);
-    ledState = { ok: !!ok, why: why, pending: dirtyPages(), down: !!down };
+    ledState = { ok: !!ok, why: why, pending: dirtyPages(), down: !!down, noToken: !!noToken };
     if (ledPop.classList.contains('on')) ledPopShow();
   }
   function refreshLed() {
     var n = dirtyPages().length;
-    if (!n) setLed(true, '讲稿与备注都已写回 index.html', false);
-    else setLed(false, n + ' 处改动还没写回文件', ledState.down);
+    if (!n) setLed(true, '讲稿与备注都已写回 index.html', false, false);
+    else setLed(false, n + ' 处改动还没写回文件', ledState.down, ledState.noToken);
   }
   var seedTimer = null, seedChain = Promise.resolve(), seedBusy = false;
   function scheduleSeed() {
@@ -1624,16 +1633,19 @@ var SEND_VERSION = false;
     var changed = dirtyPages();
     if (!changed.length || seedBusy) { refreshLed(); return; }
     seedBusy = true;
-    var down = false;
+    var down = false, noToken = false;
     changed.forEach(function (c) {
       seedChain = seedChain.then(function () {
         if (down) return;
         var frag = fragOfPage(c.i, c.ed);
         if (!frag) return;                 // 内容为空不写,留在浏览器里等下一次
-        return fetch(SRV + '/seed', {
+        return fetch(api('/seed'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ page: c.i + 1, total: total, html: frag, sel: c.ed.sel.slice(1) })
-        }).then(function (r) { return r.json(); }).then(function (d) {
+        }).then(function (r) {
+          if (r.status === 403) noToken = true;   // 缺凭据:得从启动脚本打开才能写回
+          return r.json();
+        }).then(function (d) {
           if (!d.ok) return;               // 被拒:改动留在浏览器,灯保持橙黄
           snapHist(c.i, c.ed);
           var src = slides[c.i].querySelector('aside ' + c.ed.sel);
@@ -1645,7 +1657,8 @@ var SEND_VERSION = false;
     });
     seedChain = seedChain.then(function () {
       seedBusy = false;
-      if (down) setLed(false, '本地服务没在运行，改动只存在这个浏览器里', true);
+      if (down) setLed(false, '本地服务没在运行', true);
+      else if (noToken) setLed(false, '缺少访问凭据', false, true);
       else refreshLed();
     });
   }
@@ -1694,7 +1707,7 @@ var SEND_VERSION = false;
       var pageNo = parseInt(c.closest('.slide').dataset.page, 10);
       var body = JSON.stringify({ page: pageNo, total: total, html: frag });
       postChain = postChain.then(function () {
-        return fetch(SRV + '/canvas', {
+        return fetch(api('/canvas'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
         }).then(function (r) { return r.json(); }).then(function (d) {
           if (d.ok) toast('P' + pageNo + ' 画布改动已写回源文件');
@@ -1763,7 +1776,7 @@ var SEND_VERSION = false;
       if (frag === was || !navigator.sendBeacon) return;
       var payload = JSON.stringify({ page: parseInt(c.closest('.slide').dataset.page, 10), total: total, html: frag });
       // 用 text/plain 发:beacon 不支持预检,服务端只读 body 不看 Content-Type
-      navigator.sendBeacon(SRV + '/canvas', new Blob([payload], { type: 'text/plain' }));
+      navigator.sendBeacon(api('/canvas'), new Blob([payload], { type: 'text/plain' }));
     });
   })();
   // ===== CVEDIT-END =====
@@ -1944,10 +1957,14 @@ var SEND_VERSION = false;
     else fb();
   }
   function exportServer(kind) {
-    fetch(SRV + '/export', {
+    fetch(api('/export'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ what: kind })
-    }).then(function (r) { return r.json(); }).then(function (d) {
+    }).then(function (r) {
+      if (r.status === 403) { alert('缺少访问凭据。请从「启动本地演示台.command」打开演示稿，再试导出。'); return { skip: 1 }; }
+      return r.json();
+    }).then(function (d) {
+      if (d.skip) return;
       if (d.busy) alert('已有一个导出在进行,等它的完成通知即可。');
       else if (d.ok) alert({
         pdf: '开始导出:先逐页截图再合成 PDF,大约两三分钟,完成后有系统通知并在访达里定位到 PDF。',
@@ -2062,19 +2079,23 @@ var SEND_VERSION = false;
   var pdStatus = document.getElementById('pdStatus');
   var pdTimer = null;
   function refreshPrompterInfo() {
-    fetch(SRV + '/info').then(function (r) { return r.json(); }).then(function (d) {
+    fetch(api('/info')).then(function (r) {
+      if (r.status === 403) throw new Error('缺少访问凭据');
+      return r.json();
+    }).then(function (d) {
       var url = d.preferred || (d.urls && d.urls[0]) || '';
       if (!url) throw new Error('没有可用的局域网地址');
       if (pdUrl.textContent !== url) {
         pdUrl.textContent = url;
-        pdQr.innerHTML = '<img alt="手机提词器二维码" src="' + SRV + '/qr.svg?u=' + encodeURIComponent(url) + '&t=' + Date.now() + '">';
+        // 二维码链接由服务端自己拼(含凭据),页面只给序号
+        pdQr.innerHTML = '<img alt="手机提词器二维码" src="' + api(d.qr || '/qr.svg?i=0') + '&v=' + Date.now() + '">';
       }
       pdStatus.textContent = d.clients > 0 ? '已连接 ' + d.clients + ' 台设备' : '服务已启动，等待手机连接';
       pdStatus.classList.add('ok');
-    }).catch(function () {
-      pdQr.innerHTML = '<span>本地服务未启动</span>';
+    }).catch(function (e) {
+      pdQr.innerHTML = '<span>' + (String(e.message).indexOf('凭据') >= 0 ? '缺少访问凭据' : '本地服务未启动') + '</span>';
       pdUrl.textContent = '';
-      pdStatus.textContent = '请双击“启动本地演示台.command”，再重新打开手机提词器。';
+      pdStatus.textContent = '请从“启动本地演示台.command”打开演示稿，再打开手机提词器。';
       pdStatus.classList.remove('ok');
     });
   }
@@ -2350,7 +2371,7 @@ var SEND_VERSION = false;
   var PR_ON = (!navigator.webdriver || /[?&]pr=1/.test(location.search)) && !SEND_VERSION;
   function prPost(path, data) {
     if (!PR_ON) return;
-    try { fetch(SRV + path, { method: 'POST', body: JSON.stringify(data) }).catch(function () {}); } catch (e) {}
+    try { fetch(api(path), { method: 'POST', body: JSON.stringify(data) }).catch(function () {}); } catch (e) {}
   }
   function prFlip() { prPost('/flip', { page: cur + 1, step: stepOf(cur), steps: stepsOf(cur) }); }
   function prNotes() {
@@ -2367,7 +2388,7 @@ var SEND_VERSION = false;
   // 手机遥控:监听本地服务的 cmd 事件(手机在同步态翻页/点总览时发来);EventSource 断线自动重连。
   // dir=方向步进,与键盘 → 同走 next()/prev()(页内动画先步进再翻页);page=总览直接跳页
   if (PR_ON) try {
-    new EventSource(SRV + '/events').addEventListener('cmd', function (e) {
+    new EventSource(api('/events')).addEventListener('cmd', function (e) {
       var d = JSON.parse(e.data);
       if (d.dir) { if (d.dir > 0) next(); else prev(); return; }
       var n = (d.page | 0) - 1;

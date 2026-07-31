@@ -33,9 +33,10 @@ PAGES_DIR = os.path.join(ROOT, "导出图片")
 THUMB_DIR = os.path.join(HERE, ".prompter-thumbs")
 STEPS_DIR = os.path.join(HERE, ".prompter-steps")
 PORT = int(os.environ.get("HANYU_DECK_PORT") or 8123)
-# 手机端凭据:每次启动重新生成,只经二维码交给手机。局域网里的其他设备拿不到,
-# 也就读不到讲稿、连不上事件流。桌面端走回环,不需要它。
-TOKEN = secrets.token_urlsafe(16)
+# 访问凭据:保护写回与手机侧。由启动脚本生成并通过环境变量传入(它要用同一个凭据打开演示稿),
+# 单独运行本脚本时自行生成。浏览器里的任意网页都能伪装成本地文件(Origin: null),
+# 光靠"来自本机"判断挡不住它,故写回也要求凭据——网页拿不到它。
+TOKEN = os.environ.get("HANYU_DECK_TOKEN") or secrets.token_urlsafe(16)
 LOOPBACK = ("127.0.0.1", "::1", "::ffff:127.0.0.1")
 
 sys.path.insert(0, os.path.join(HERE, "vendor"))
@@ -101,6 +102,11 @@ def cached_ips():
 
 def phone_urls():
     return ["http://%s:%d/p?t=%s" % (ip, PORT, TOKEN) for ip in cached_ips()]
+
+
+def display_urls():
+    """给界面显示用的地址:不带凭据。凭据只随二维码交给手机。"""
+    return ["http://%s:%d/p" % (ip, PORT) for ip in cached_ips()]
 
 
 def allowed_hosts():
@@ -489,6 +495,10 @@ class Handler(BaseHTTPRequestHandler):
                 return False, "这个操作只允许本机"
             if not self.origin_ok():
                 return False, "来源不被信任，拒绝写入"
+            if not self.token_ok():
+                # 浏览器里的任意网页都能伪装成本地文件,只看"来自本机"挡不住它;
+                # 凭据由启动脚本随地址交给演示稿,网页拿不到
+                return False, "缺少访问凭据：请从「启动本地演示台.command」打开演示稿"
             return True, ""
         if path in PHONE_PATHS:
             if self.from_loopback() or self.token_ok():
@@ -526,26 +536,34 @@ class Handler(BaseHTTPRequestHandler):
             with open(PHONE_FILE, "rb") as handle:
                 self.send_bytes(handle.read(), "text/html; charset=utf-8")
         elif path == "/info":
-            urls = phone_urls()
+            urls = display_urls()
             now = time.time()
             with lock:
                 stale = [ip for ip, seen in phone_seen.items() if now - seen > 12]
                 for ip in stale:
                     phone_seen.pop(ip, None)
                 phone_count = len(phone_seen)
+            preferred = preferred_url(urls)
             self.send_json(
                 {
-                    "urls": urls,
-                    "preferred": preferred_url(urls),
+                    "urls": urls,                       # 不带凭据:界面只用来显示
+                    "preferred": preferred,
+                    "qr": "/qr.svg?i=%d" % (urls.index(preferred) if preferred in urls else 0),
                     "clients": phone_count,
                     "port": PORT,
                 }
             )
         elif path == "/qr.svg":
-            target = urllib.parse.parse_qs(parsed.query).get("u", [""])[0]
-            if not target.startswith("http://"):
-                self.send_json({"err": "bad url"}, 400)
+            # 只收序号,链接由服务端自己拼:凭据不经过调用方,也就不会被读走
+            try:
+                index = int(urllib.parse.parse_qs(parsed.query).get("i", ["0"])[0])
+            except ValueError:
+                index = 0
+            urls = phone_urls()
+            if not urls:
+                self.send_json({"err": "no lan address"}, 404)
                 return
+            target = urls[index] if 0 <= index < len(urls) else urls[0]
             image = qrcode.make(target, image_factory=qrcode.image.svg.SvgPathImage)
             output = io.BytesIO()
             image.save(output)

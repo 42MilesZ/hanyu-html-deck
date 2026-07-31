@@ -237,6 +237,22 @@ class ServerTests(unittest.TestCase):
         self.assertNotIn("https://evil.example", origins)
         self.assertGreaterEqual(len(mod.TOKEN), 16)
 
+    def test_write_side_requires_token(self):
+        """只看回环挡不住浏览器里伪装成 Origin: null 的网页,写侧必须要凭据。"""
+        source = SERVER.read_text(encoding="utf-8")
+        allow_body = source.split("def allow(self, path):", 1)[1].split("def guard", 1)[0]
+        local_branch = allow_body.split("if path in LOCAL_ONLY:", 1)[1].split("if path in PHONE_PATHS", 1)[0]
+        self.assertIn("token_ok()", local_branch)
+
+    def test_service_does_not_hand_out_token_bearing_urls(self):
+        mod = self.module
+        self.assertTrue(all(mod.TOKEN not in url for url in mod.display_urls()))
+        self.assertTrue(all("t=" + mod.TOKEN in url for url in mod.phone_urls()))
+        source = SERVER.read_text(encoding="utf-8")
+        info_branch = source.split('elif path == "/info":', 1)[1].split('elif path == "/qr.svg"', 1)[0]
+        self.assertIn("display_urls()", info_branch)
+        self.assertNotIn("phone_urls()", info_branch)
+
     def test_find_block_is_balanced(self):
         mod = self.module
         doc = '<aside><div class="nc"><div class="x">内层</div><p>正文</p></div></aside>'
