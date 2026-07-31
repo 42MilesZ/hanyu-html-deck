@@ -25,7 +25,8 @@ fi
 if [ -f "index.html" ]; then
   # 写回凭据由服务写进 index.html。必须等服务开始应答再打开页面,
   # 否则页面读到的是上一次运行留下的空值,写回会被拒。
-  # --noproxy:配了系统代理时,回环请求会被代理接手,探测会变慢甚至由代理代答。
+  # --noproxy:curl 只认环境变量里的代理(不读 macOS 系统设置)。环境里漏进
+  # http_proxy 时,回环探测会被代理接手,可能在凭据写好前就返回成功。
   (
     for _ in $(seq 1 60); do
       if /usr/bin/curl -s -o /dev/null -m 1 --noproxy '*' "http://127.0.0.1:$PORT/" ; then break; fi
