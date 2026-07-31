@@ -37,7 +37,7 @@ The local service stays on the current LAN. It does not use a public relay or up
 ## Quick start
 
 ```bash
-git clone <repository url>
+git clone https://github.com/42MilesZ/hanyu-html-deck.git
 cd hanyu-html-deck
 python3 scripts/create_deck.py ~/Documents/my-deck
 ```

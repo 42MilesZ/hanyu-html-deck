@@ -37,7 +37,7 @@
 ## 快速开始
 
 ```bash
-git clone <仓库地址>
+git clone https://github.com/42MilesZ/hanyu-html-deck.git
 cd hanyu-html-deck
 python3 scripts/create_deck.py ~/Documents/my-deck
 ```
