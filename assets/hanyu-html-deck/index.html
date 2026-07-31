@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>本地演示台 · Hanyu HTML Deck</title>
+<title>Hanyu HTML Deck</title>
 <!-- ============================================================
      本地演示台 / Hanyu HTML Deck — 面向 AI 生成 HTML 演示文稿的本地优先框架。
      复制整个 hanyu-html-deck/ 目录到项目文件夹，将本文件改名为 index.html，
@@ -429,7 +429,7 @@
   #notesPanel .col.comm .ed p.c-ref { color: #85837c; }
   #notesPanel .col.comm .ed p.c-flag { color: #d8b98a; border-left: 2px solid #a2582f; padding-left: 8px; }
   #edComm:empty::before {
-    content: "写下本页的修改意见、补充说明或个人备注……";
+    content: "Add revision notes, context, or personal reminders…";
     color: #68665f; pointer-events: none;
   }
   #histMenu {
@@ -495,14 +495,14 @@
   .pcover .ph-img { position: absolute; inset: 0; background: radial-gradient(ellipse 90% 70% at 50% 42%, #3a3835, #141312 78%); }
   .pcover .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.30) 0%, rgba(0,0,0,.54) 42%, rgba(0,0,0,.54) 60%, rgba(0,0,0,.24) 100%); }
   .pcover .cover-title { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: #fff; text-shadow: 0 2px 28px rgba(0,0,0,.45); }
-  .pcover .co-part { font-size: 26px; font-weight: 300; letter-spacing: .35em; text-indent: .35em; color: rgba(255,255,255,.88); margin-bottom: 46px; }
-  .pcover .zh { font-size: 104px; font-weight: 300; letter-spacing: .16em; text-indent: .16em; }
-  .pcover .cv-cap { position: absolute; left: 48px; bottom: 40px; font-size: 24px; font-weight: 300; letter-spacing: .06em; color: rgba(255,255,255,.62); }
+  .pcover .co-part { font-size: 26px; font-weight: 200; letter-spacing: .35em; text-indent: .35em; color: rgba(255,255,255,.88); margin-bottom: 46px; }
+  .pcover .zh { font-size: 104px; font-weight: 200; letter-spacing: .16em; text-indent: .16em; }
+  .pcover .cv-cap { position: absolute; left: 48px; bottom: 40px; font-size: 24px; font-weight: 200; letter-spacing: .06em; color: rgba(255,255,255,.62); }
   .slide.on .pcover .co-part { opacity: 0; animation: fwUp .7s ease .25s forwards; }
   .slide.on .pcover .zh { opacity: 0; animation: fwUp .8s ease .45s forwards; }
 
   /* --- 示例:正文页(线/面层级:标题成线,正文成段) --- */
-  .pbody .bd-title { position: absolute; top: 96px; left: 100px; font-size: 72px; font-weight: 300; letter-spacing: .04em; }
+  .pbody .bd-title { position: absolute; top: 96px; left: 100px; font-size: 72px; font-weight: 200; letter-spacing: .04em; }
   .pbody .bd-text { position: absolute; top: 320px; left: 100px; width: 900px; font-size: 26px; line-height: 1.9; }
   .pbody .bd-text p + p { margin-top: 40px; }
   .pbody .bd-fig { position: absolute; top: 280px; right: 100px; width: 680px; height: 560px; background: #dedbd2; }
@@ -531,12 +531,12 @@
 
   /* --- 示例:分步页(data-steps 步进:→ 逐项点亮,未点亮压暗细字;讲到哪亮到哪) --- */
   .psteps { background: #000; color: #fff; }
-  .psteps .st-title { position: absolute; top: 88px; left: 100px; font-size: 60px; font-weight: 300; letter-spacing: .1em; }
+  .psteps .st-title { position: absolute; top: 88px; left: 100px; font-size: 60px; font-weight: 200; letter-spacing: .1em; }
   .psteps .st-rows { position: absolute; top: 300px; left: 100px; right: 100px; display: flex; flex-direction: column; gap: 0; }
   .psteps .st-row { display: flex; align-items: baseline; gap: 40px; padding: 52px 0; border-top: 1px solid #2c2c2c; opacity: .28; transition: opacity .5s; }
-  .psteps .st-row .no { font-size: 44px; font-weight: 300; width: 90px; flex: none; }
-  .psteps .st-row .w { font-size: 44px; font-weight: 300; letter-spacing: .04em; transition: font-weight 0s .1s; }
-  .psteps .st-row .ex { font-size: 24px; font-weight: 300; color: rgba(255,255,255,.62); margin-left: auto; opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
+  .psteps .st-row .no { font-size: 44px; font-weight: 200; width: 90px; flex: none; }
+  .psteps .st-row .w { font-size: 44px; font-weight: 200; letter-spacing: .04em; transition: font-weight 0s .1s; }
+  .psteps .st-row .ex { font-size: 24px; font-weight: 200; color: rgba(255,255,255,.62); margin-left: auto; opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
   .psteps[data-step="1"] .st-row:nth-child(1),
   .psteps[data-step="2"] .st-row:nth-child(-n+2),
   .psteps[data-step="3"] .st-row { opacity: 1; }
@@ -556,7 +556,7 @@
 
   /* --- 参考骨架:能力矩阵。一列功能 + 两列标记,按 data-step 逐列点亮,
          适合讲「哪些能力自带、哪些需要额外条件」这类二维对照。 --- */
-  .pmatrix .mx-title { position: absolute; left: 100px; top: 88px; font-size: 66px; font-weight: 300; }
+  .pmatrix .mx-title { position: absolute; left: 100px; top: 88px; font-size: 66px; font-weight: 200; }
   .pmatrix .mx { position: absolute; left: 100px; right: 100px; top: 290px; }
   .pmatrix .mx-head, .pmatrix .mx-row { display: grid; grid-template-columns: 1fr 300px 300px; align-items: center; }
   .pmatrix .mx-head { padding-bottom: 16px; font-size: 24px; letter-spacing: .1em; color: #6f6b64; }
@@ -573,7 +573,7 @@
 
   /* --- 参考骨架:可展开图像列。悬停聚焦一列，其余退后，适合讲分类与案例。 --- */
   .paccordion { display: flex; background: #050505; color: #fff; }
-  .paccordion .ac-title { position: absolute; left: 72px; top: 58px; z-index: 5; font-size: 54px; font-weight: 300; }
+  .paccordion .ac-title { position: absolute; left: 72px; top: 58px; z-index: 5; font-size: 54px; font-weight: 200; }
   .paccordion .ac-col {
     position: relative; flex: 1; min-width: 0; height: 100%;
     border-right: 2px solid #050505; overflow: hidden;
@@ -587,7 +587,7 @@
   .paccordion:has(.ac-col:hover) .ac-col:not(:hover) { filter: brightness(.42) saturate(.55); }
   .paccordion .ac-copy { position: absolute; left: 42px; right: 42px; bottom: 58px; white-space: nowrap; }
   .paccordion .ac-no { font-size: 24px; letter-spacing: .15em; color: rgba(255,255,255,.58); }
-  .paccordion .ac-name { margin-top: 12px; font-size: 38px; font-weight: 300; }
+  .paccordion .ac-name { margin-top: 12px; font-size: 38px; font-weight: 200; }
   .paccordion .ac-desc { margin-top: 14px; max-width: 500px; font-size: 24px; line-height: 1.65; color: rgba(255,255,255,.68); opacity: 0; transition: opacity .35s .14s; }
   .paccordion .ac-col:hover .ac-desc { opacity: 1; }
   body.exporting .paccordion .ac-col { flex: 1; }
@@ -603,7 +603,7 @@
   .psplit .sp-half:last-child { background: linear-gradient(135deg,#232323,#050505); }
   .psplit .sp-half + .sp-half { border-left: 2px solid #000; }
   .psplit .sp-label { position: absolute; top: 58px; left: 64px; font-size: 24px; letter-spacing: .14em; color: rgba(255,255,255,.68); }
-  .psplit .sp-word { position: absolute; left: 64px; bottom: 112px; font-size: 92px; font-weight: 300; }
+  .psplit .sp-word { position: absolute; left: 64px; bottom: 112px; font-size: 92px; font-weight: 200; }
   .psplit .sp-copy { position: absolute; left: 68px; right: 68px; bottom: 58px; font-size: 24px; color: rgba(255,255,255,.68); }
   .slide.on .psplit .sp-half:first-child { animation: splitLeft .8s cubic-bezier(.22,.61,.21,1); }
   .slide.on .psplit .sp-half:last-child { animation: splitRight .8s cubic-bezier(.22,.61,.21,1); }
@@ -611,7 +611,7 @@
   @keyframes splitRight { from { transform: translateX(36px); opacity: 0; } }
 
   /* --- 参考骨架:条形数据。进入页面后按排序依次生长。 --- */
-  .pbars .bar-title { position: absolute; left: 100px; top: 86px; font-size: 66px; font-weight: 300; }
+  .pbars .bar-title { position: absolute; left: 100px; top: 86px; font-size: 66px; font-weight: 200; }
   .pbars .bar-list { position: absolute; left: 100px; right: 100px; top: 300px; }
   .pbars .bar-row { display: grid; grid-template-columns: 230px 1fr 120px; align-items: center; gap: 28px; padding: 28px 0; border-top: 1px solid #ccc9c0; }
   .pbars .bar-name { font-size: 24px; }
@@ -626,7 +626,7 @@
 
   /* --- 参考骨架:单词概念页。作为章节停顿或叙事转折。 --- */
   .pword { background: #000; color: #fff; display: flex; align-items: center; justify-content: center; }
-  .pword .word { font-size: 208px; font-weight: 300; letter-spacing: .12em; text-indent: .12em; }
+  .pword .word { font-size: 208px; font-weight: 200; letter-spacing: .12em; text-indent: .12em; }
   .pword .word::after { content: ""; display: block; width: 0; height: 1px; margin: 28px auto 0; background: #fff; }
   .slide.on .pword .word { animation: wordLand .9s cubic-bezier(.22,.61,.21,1); }
   .slide.on .pword .word::after { animation: wordLine .9s ease .55s forwards; }
@@ -636,7 +636,7 @@
   /* --- 示例:结语(满幅深底+金句拆字渐显,拆字由引擎 JS 自动做,文本写在 .line 里即可) --- */
   .pend .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .35), rgba(0, 0, 0, .68) 38%, rgba(0, 0, 0, .68) 72%, rgba(0, 0, 0, .35)); }
   .pend .ph-img { position: absolute; inset: 0; background: radial-gradient(ellipse 90% 70% at 50% 60%, #33322f, #101010 80%); }
-  .pend .line { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: #fff; font-size: 62px; font-weight: 300; line-height: 2; letter-spacing: .1em; }
+  .pend .line { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: #fff; font-size: 62px; font-weight: 200; line-height: 2; letter-spacing: .1em; }
   .pend .line .ch { display: inline-block; white-space: pre; } /* pre:拆字后空格仍占宽,英文词不粘连 */
   .slide.on .pend .line .ch { opacity: 0; filter: blur(4px); animation: chIn 1.4s ease forwards; animation-delay: calc(var(--i) * 95ms + .5s); }
 
@@ -688,6 +688,17 @@
     letter-spacing: -.055em;
   }
   .v-title em { color: var(--v-signal); font-style: normal; font-weight: 600; }
+  .v-title::after {
+    display: block;
+    margin-top: 24px;
+    font: 600 22px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .v-generate .v-title::after { content: "One prompt. A complete presentation."; }
+  .v-edit .v-title::after { content: "Edit directly on the canvas."; }
+  .v-phone .v-title::after { content: "Your phone becomes the prompter."; }
+  .v-export .v-title::after { content: "Ready to deliver."; }
   .v-caption {
     position: absolute;
     z-index: 3;
@@ -697,6 +708,14 @@
     font-size: 23px;
     font-weight: 200;
     letter-spacing: .02em;
+  }
+  .v-caption span,
+  .v-caption small { display: block; }
+  .v-caption small {
+    margin-top: 9px;
+    font: 600 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .12em;
+    text-transform: uppercase;
   }
   .v-corner {
     position: absolute;
@@ -742,6 +761,14 @@
     letter-spacing: -.07em;
   }
   .v-cover .cover-thesis em { color: #fff; font-style: normal; font-weight: 600; }
+  .v-cover .cover-thesis::after {
+    content: "AI-made decks, ready to present.";
+    display: block;
+    margin-top: 30px;
+    font: 600 22px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+  }
   .v-cover .cover-features {
     position: absolute;
     right: 86px;
@@ -761,6 +788,14 @@
     transition: color .25s, transform .35s cubic-bezier(.22,.61,.21,1), border-color .25s;
   }
   .v-cover .cover-feature:last-child { border-bottom: 1px solid rgba(255,255,255,.18); }
+  .v-cover .cover-feature span small {
+    display: block;
+    margin-top: 11px;
+    font: 600 16px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .13em;
+    color: rgba(255,255,255,.44);
+    text-transform: uppercase;
+  }
   .v-cover .cover-feature i {
     width: 8px;
     height: 8px;
@@ -1082,6 +1117,14 @@
     font-weight: 200;
     letter-spacing: -.055em;
   }
+  .v-end .end-line::after {
+    content: "Make AI presentations work better.";
+    display: block;
+    margin-top: 28px;
+    font: 600 22px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+  }
   .v-end .end-name {
     position: absolute;
     left: 0;
@@ -1178,20 +1221,20 @@
 <div id="toolbar">
   <div id="segView">
     <i class="thumb noanim"></i>
-    <button data-view="overview" data-tip="总览（O）" aria-label="总览"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M12 3v18m-9-9h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></g></svg></button>
-    <button data-view="default" class="on" data-tip="默认（Esc）" aria-label="默认视图"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" rx="2"/></svg></button>
-    <button data-view="present" data-tip="演示（P / F）" aria-label="演示"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2 3h20m-1 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3m4 18l5-5l5 5"/></svg></button>
+    <button data-view="overview" data-tip="Overview (O)" aria-label="Overview"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M12 3v18m-9-9h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></g></svg></button>
+    <button data-view="default" class="on" data-tip="Default view (Esc)" aria-label="Default view"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" rx="2"/></svg></button>
+    <button data-view="present" data-tip="Present (P / F)" aria-label="Present"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2 3h20m-1 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3m4 18l5-5l5 5"/></svg></button>
   </div>
-  <button data-act="prompter" data-tip="手机提词器" aria-label="手机提词器"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  <button data-act="prompter" data-tip="Phone prompter" aria-label="Phone prompter"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
   <span id="exWrap">
-    <button data-act="export" data-tip="导出" aria-label="导出菜单"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M12 3v12m9 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 8l5-5l5 5"/></g></svg><i class="caret"></i></button>
+    <button data-act="export" data-tip="Export" aria-label="Export menu"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M12 3v12m9 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 8l5-5l5 5"/></g></svg><i class="caret"></i></button>
     <div id="exMenu">
-      <button data-ex="script" data-tip="把全部页面的讲稿下载成一个 Markdown 文件">导出讲稿</button>
-      <button data-ex="diff-notes" data-tip="只复制你改过的备注，按页分组，便于粘贴给 AI">复制改动的备注</button>
-      <button data-ex="imgs" data-tip="逐页截图成 PNG，需要本地服务与 Playwright">导出每页图片</button>
-      <button data-ex="pdf" data-tip="先逐页截图再合成 PDF，版面与动效终态一致">导出 PDF</button>
-      <button data-ex="send" data-tip="单文件 HTML：内联字体图片，剥掉备注与写回代码">导出单独发送版</button>
-      <button class="toggle" data-act="raw" data-tip="关掉画布缩放，按真实 1920 × 1080 显示，供 Figma 等抓取工具读取">切换为 1:1 像素</button>
+      <button data-ex="script" data-tip="Download all speaker notes as one Markdown file">Export script</button>
+      <button data-ex="diff-notes" data-tip="Copy only edited notes, grouped by page for AI revision">Copy changed notes</button>
+      <button data-ex="imgs" data-tip="Capture every page as PNG; requires the local service and Playwright">Export page images</button>
+      <button data-ex="pdf" data-tip="Capture each page and combine the final motion states into a PDF">Export PDF</button>
+      <button data-ex="send" data-tip="Build one HTML file with assets inline and private notes removed">Export standalone HTML</button>
+      <button class="toggle" data-act="raw" data-tip="Disable canvas scaling and expose the true 1920 × 1080 layout">Use 1:1 pixels</button>
     </div>
   </span>
 </div>
@@ -1200,12 +1243,12 @@
 <div id="zonePrev" class="navzone"></div>
 <div id="zoneNext" class="navzone"></div>
 
-<button id="notesToggle" data-tip="展开或收起讲稿（N）" aria-label="展开或收起讲稿"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m18 15l-6-6l-6 6"/></svg></button>
+<button id="notesToggle" data-tip="Expand or collapse script (N)" aria-label="Expand or collapse script"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m18 15l-6-6l-6 6"/></svg></button>
 <div id="notesPanel">
-  <div id="nGrip" title="拖动调节面板高度"></div>
+  <div id="nGrip" title="Drag to resize panel height"></div>
   <div id="notesHead">
     <span id="headChip"><span id="pageNum"><span id="pnCur"></span><span id="pnSep"></span></span><span id="pageTitle"></span></span>
-    <div id="tl" title="全场时间轴:游标=讲到本页的时间点,高亮段=当前页,段下数字=本页讲稿时长">
+    <div id="tl" title="Full timeline: cursor = current point, highlight = current page, number = page duration">
       <div id="tlIn">
         <div class="trk"></div>
         <div id="tlFill"></div>
@@ -1213,7 +1256,7 @@
         <div id="tlHov"></div>
         <div id="tlHead"></div>
         <span id="tlNow"></span>
-        <span id="tlSec" title="本页讲稿时长"></span>
+        <span id="tlSec" title="Page duration"></span>
         <span id="tlTot"></span>
       </div>
       <div id="tlPv">
@@ -1222,7 +1265,7 @@
       </div>
     </div>
     <div id="rateWrap">
-      <button id="rateBtn" class="tip-up" data-tip="讲稿语速" aria-label="讲稿语速"><span id="rateNow">×1.0</span><i class="caret"></i></button>
+      <button id="rateBtn" class="tip-up" data-tip="Speaking speed" aria-label="Speaking speed"><span id="rateNow">×1.0</span><i class="caret"></i></button>
       <div id="rateMenu"></div>
     </div>
   </div>
@@ -1230,17 +1273,17 @@
     <div class="col script">
       <div class="ed" id="edScript" contenteditable="true"></div>
       <div class="col-tools">
-        <span class="led-box"><i id="syncLed" class="led" aria-label="写回状态"></i></span>
-        <button id="btnHist" class="icon-btn tip-up hist-btn" data-ed="0" data-tip="讲稿的历史版本" aria-label="讲稿历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
-        <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="打开备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
+        <span class="led-box"><i id="syncLed" class="led" aria-label="Write-back status"></i></span>
+        <button id="btnHist" class="icon-btn tip-up hist-btn" data-ed="0" data-tip="Script history" aria-label="Script history"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
+        <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="Open notes" aria-label="Open notes"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
       </div>
     </div>
     <div class="col comm">
-      <div id="drawerGrip" title="拖动调整备注区宽度"></div>
+      <div id="drawerGrip" title="Drag to resize notes width"></div>
       <div class="ed" id="edComm" contenteditable="true"></div>
       <div class="col-tools">
-        <span class="col-tag">备注</span>
-        <button id="btnHistComm" class="icon-btn tip-up hist-btn" data-ed="1" data-tip="备注的历史版本" aria-label="备注历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
+        <span class="col-tag">NOTES</span>
+        <button id="btnHistComm" class="icon-btn tip-up hist-btn" data-ed="1" data-tip="Notes history" aria-label="Notes history"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
       </div>
     </div>
   </div>
@@ -1250,15 +1293,15 @@
 <div id="overview"><div id="ovGrid"></div></div>
 <div id="progress"><div id="progressBar"></div></div>
 <div id="cvToast"></div>
-<div id="prompterDialog" role="dialog" aria-modal="true" aria-label="手机提词器">
+<div id="prompterDialog" role="dialog" aria-modal="true" aria-label="Phone prompter">
   <div class="pd-card">
-    <button id="pdClose" aria-label="关闭">×</button>
-    <p class="pd-kicker">手机提词器</p>
-    <h2>用手机扫描二维码</h2>
-    <div id="pdQr"><span>正在连接本地服务…</span></div>
+    <button id="pdClose" aria-label="Close">×</button>
+    <p class="pd-kicker">PHONE PROMPTER</p>
+    <h2>Scan with your phone</h2>
+    <div id="pdQr"><span>Connecting to local service…</span></div>
     <p id="pdUrl"></p>
-    <p class="pd-help">手机和电脑连接同一个 Wi-Fi。没有可用网络时，可开启手机热点并让电脑连接；网络变化后二维码会自动刷新。</p>
-    <p id="pdStatus">等待本地服务</p>
+    <p class="pd-help">Keep the phone and computer on the same Wi-Fi. If needed, use the phone hotspot; the QR code refreshes when the network changes.</p>
+    <p id="pdStatus">Waiting for local service</p>
   </div>
 </div>
 
@@ -1273,15 +1316,15 @@
     <div class="cover-thesis">让 AI 做的 PPT，<br><em>直接拿来讲</em></div>
     <div class="v-signal"></div>
     <div class="cover-features">
-      <div class="cover-feature"><i></i><span>AI 生成整场演示</span></div>
-      <div class="cover-feature"><i></i><span>在页面上直接改</span></div>
-      <div class="cover-feature"><i></i><span>手机提词与遥控</span></div>
-      <div class="cover-feature"><i></i><span>讲完立即交付</span></div>
+      <div class="cover-feature"><i></i><span>AI 生成整场演示<small>Generate the full deck</small></span></div>
+      <div class="cover-feature"><i></i><span>在页面上直接改<small>Edit on canvas</small></span></div>
+      <div class="cover-feature"><i></i><span>手机提词与遥控<small>Prompt and control</small></span></div>
+      <div class="cover-feature"><i></i><span>讲完立即交付<small>Export and deliver</small></span></div>
     </div>
     <div class="cover-foot">本地演示台 · 从第一版到正式上台</div>
   </div>
   <aside>
-    <div class="ns"><p>这是本地演示台。它让 AI 做的 PPT 不只停在第一版，而是直接走完生成、修改、提词和交付。</p><p>接下来只看四个最亮眼的功能。</p></div>
+    <div class="ns"><p>这是本地演示台。它让 AI 做的 PPT 不只停在第一版，而是直接走完生成、修改、提词和交付。</p><p>This is Hanyu HTML Deck. It takes an AI-made presentation from the first draft through editing, prompting, and final delivery.</p><p>接下来只看四个最亮眼的功能。</p><p>Here are the four features that matter most.</p></div>
     <div class="nc"><p>视频开场直接切入四个亮点；鼠标扫过右侧功能时可录下轻微位移反馈。</p></div>
   </aside>
 </section>
@@ -1298,10 +1341,10 @@
       <div class="v-sheet"><div class="sheet-type">SCRIPT</div><div class="sheet-main">逐页讲稿</div><div class="sheet-lines"><i></i><i></i></div></div>
       <div class="v-sheet"><div class="sheet-type">MOTION</div><div class="sheet-main">讲解动画</div></div>
     </div>
-    <div class="v-caption">不是一组静态页面，而是一场可以直接讲的演示。</div>
+    <div class="v-caption"><span>不是一组静态页面，而是一场可以直接讲的演示。</span><small>A presentation ready to deliver</small></div>
   </div>
   <aside>
-    <div class="ns"><p>给 AI 一份内容，它会同时生成演示页面、逐页讲稿和讲解动画。</p><p>拿到的不是一组静态页面，而是一场可以直接讲的演示。</p></div>
+    <div class="ns"><p>给 AI 一份内容，它会同时生成演示页面、逐页讲稿和讲解动画。</p><p>Give AI the source content, and it creates the slides, page-by-page script, and explanatory motion together.</p><p>拿到的不是一组静态页面，而是一场可以直接讲的演示。</p><p>The result is not a stack of static pages. It is a presentation ready to deliver.</p></div>
     <div class="nc"><p>画面中的三张内容层会依次装配；悬停可让三层稍微展开。</p></div>
   </aside>
 </section>
@@ -1317,10 +1360,10 @@
       <div class="edit-after">所见即所改<i class="edit-caret"></i></div>
       <div class="edit-status">● 本地演示台已同步</div>
     </div>
-    <div class="v-caption">打开本地演示台，页面、讲稿、备注会自动同步回文件。</div>
+    <div class="v-caption"><span>页面、讲稿、备注，自动同步回文件。</span><small>Every edit returns to the source</small></div>
   </div>
   <aside>
-    <div class="ns"><p>看到不合适的文字，直接在页面上改。讲稿和备注也能在同一个界面里调整。</p><p>启动本地演示台后，修改会自动回到源文件，改完就是下一版。</p></div>
+    <div class="ns"><p>看到不合适的文字，直接在页面上改。讲稿和备注也能在同一个界面里调整。</p><p>When a line feels wrong, edit it on the page. The script and notes live in the same workspace.</p><p>启动本地演示台后，修改会自动回到源文件，改完就是下一版。</p><p>With the local service running, every change writes back to the source. The moment you finish editing, the next version is ready.</p></div>
     <div class="nc"><p>页面自动演示“旧文案划掉—新文案出现—写回完成”，适合直接录屏。</p></div>
   </aside>
 </section>
@@ -1340,10 +1383,10 @@
         <div class="phone-controls"><span>←</span><span>→</span></div>
       </div>
     </div>
-    <div class="v-caption">不用背稿，也不用额外准备遥控器。</div>
+    <div class="v-caption"><span>不用背稿，也不用额外准备遥控器。</span><small>Prompt and control from one phone</small></div>
   </div>
   <aside>
-    <div class="ns"><p>打开手机，就能同步看到当前页讲稿。需要时，还可以切换备注。</p><p>手机前后翻页，电脑会同步响应。一部手机，就是提词器和遥控器。</p></div>
+    <div class="ns"><p>打开手机，就能同步看到当前页讲稿。需要时，还可以切换备注。</p><p>Open the phone prompter to see the current page script in sync, with notes one tap away.</p><p>手机前后翻页，电脑会同步响应。一部手机，就是提词器和遥控器。</p><p>Move forward or back on the phone and the computer follows. One phone becomes both prompter and remote.</p></div>
     <div class="nc"><p>同步线连接电脑与手机；录制时可悬停手机，让设备轻微抬起。</p></div>
   </aside>
 </section>
@@ -1363,10 +1406,10 @@
       <div class="v-output o-html">HTML</div>
       <div class="v-master-page"></div>
     </div>
-    <div class="v-caption">图片、PDF、独立发送版，一次准备齐。</div>
+    <div class="v-caption"><span>图片、PDF、独立发送版，一次准备齐。</span><small>PNG · PDF · Standalone HTML</small></div>
   </div>
   <aside>
-    <div class="ns"><p>演示完成后，可以直接导出每页图片、PDF，或者一份可以独立打开的 HTML。</p><p>不用再整理第二套文件，讲完就能发出去。</p></div>
+    <div class="ns"><p>演示完成后，可以直接导出每页图片、PDF，或者一份可以独立打开的 HTML。</p><p>When the presentation is ready, export page images, a PDF, or a standalone HTML file directly.</p><p>不用再整理第二套文件，讲完就能发出去。</p><p>There is no second package to rebuild. Finish the talk, then send it.</p></div>
     <div class="nc"><p>三个交付物从母版向外展开；悬停其中一个格式可点亮。</p></div>
   </aside>
 </section>
@@ -1379,7 +1422,7 @@
     <div class="end-name">本地演示台 · HANYU HTML DECK</div>
   </div>
   <aside>
-    <div class="ns"><p>从第一版到正式上台，本地演示台把演示需要的每一步连在一起。</p><p>让 AI 做的 PPT，直接走到台前。</p></div>
+    <div class="ns"><p>从第一版到正式上台，本地演示台把演示需要的每一步连在一起。</p><p>From the first draft to the live stage, Hanyu HTML Deck connects every step of the presentation workflow.</p><p>让 AI 做的 PPT，直接走到台前。</p><p>Take an AI-made presentation all the way to the stage.</p></div>
     <div class="nc"><p>封尾停留两秒后结束视频。</p></div>
   </aside>
 </section>
@@ -1488,8 +1531,8 @@ var SEND_VERSION = false;
   var ovGrid = document.getElementById('ovGrid');
   var edComm = document.getElementById('edComm');
   var EDS = [
-    { key: DECK.key + '.s.', hkey: DECK.key + '.h.', el: edScript, sel: '.ns', label: '讲稿', canon: canonNs },
-    { key: DECK.key + '.c.', hkey: DECK.key + '.hc.', el: edComm, sel: '.nc', label: '备注', canon: canon }
+    { key: DECK.key + '.s.', hkey: DECK.key + '.h.', el: edScript, sel: '.ns', label: 'Script', canon: canonNs },
+    { key: DECK.key + '.c.', hkey: DECK.key + '.hc.', el: edComm, sel: '.nc', label: 'Notes', canon: canon }
   ];
   var PANEL_KEY = DECK.key + '.ui.panelExpanded';
   var DRAWER_KEY = DECK.key + '.ui.notesDrawerOpen';
@@ -1509,7 +1552,7 @@ var SEND_VERSION = false;
   function seedOf(i, ed) {
     var aside = slides[i].querySelector('aside');
     var src = aside ? aside.querySelector(ed.sel) : null;
-    return src ? src.innerHTML : '<p>无</p>';
+    return src ? src.innerHTML : '<p>None</p>';
   }
   var normBox = document.createElement('div');
   // 讲稿的行类型类(结构真源,规范化与写回种子时保留)
@@ -1780,7 +1823,7 @@ var SEND_VERSION = false;
       b.className = m === curM ? 'act' : '';
       b.dataset.r = cpm;
       var s1 = document.createElement('span'); s1.className = 'mult'; s1.textContent = fmtMult(m);
-      var s2 = document.createElement('span'); s2.className = 'cpm'; s2.textContent = cpm + ' 字/分钟';
+      var s2 = document.createElement('span'); s2.className = 'cpm'; s2.textContent = cpm + ' chars/min';
       b.appendChild(s1); b.appendChild(s2);
       rateMenu.appendChild(b);
     });
@@ -1972,7 +2015,7 @@ var SEND_VERSION = false;
     }
     var arr = histOf(cur, ed);
     for (var k = arr.length - 1; k >= 0; k--) add(fmtT(arr[k].t), arr[k].h, String(k));
-    add('默认稿', seedOf(cur, ed), 'seed');
+    add('Default', seedOf(cur, ed), 'seed');
   }
   Array.prototype.forEach.call(document.querySelectorAll('.hist-btn'), function (btn) {
     btn.addEventListener('click', function () {
@@ -2035,16 +2078,16 @@ var SEND_VERSION = false;
     dot.className = 'led' + (ledState.ok ? ' ok' : '');
     head.appendChild(dot);
     var title = document.createElement('span');
-    title.textContent = ledState.ok ? '讲稿与备注都已写回文件' : ledState.pending.length + ' 处改动还没写回文件';
+    title.textContent = ledState.ok ? 'Script and notes are saved to file' : ledState.pending.length + ' change(s) not written to file';
     head.appendChild(title);
     ledPop.appendChild(head);
     var note = document.createElement('p');
     note.className = 'lp-note';
     note.textContent = ledState.noToken
-      ? '这个页面在本地服务启动之前就打开了，没拿到写回凭据，改动只存在这个浏览器里。刷新一下页面即可。'
+      ? 'This page opened before the local service and has no write-back token. Refresh the page to reconnect.'
       : ledState.down
-        ? '本地服务没在运行，改动只存在这个浏览器里。双击「启动本地演示台.command」后会自动补写。'
-        : (ledState.ok ? '停止输入约一秒半后自动写回 index.html，不需要点保存。' : '正在等待写回：停止输入约一秒半后自动落盘。');
+        ? 'The local service is offline. Changes remain in this browser until you start the launcher.'
+        : (ledState.ok ? 'Changes write back to index.html about 1.5 seconds after you stop typing.' : 'Waiting to write back after typing stops.');
     ledPop.appendChild(note);
     if (ledState.pending.length) {
       var list = document.createElement('div');
@@ -2060,7 +2103,7 @@ var SEND_VERSION = false;
         var more = document.createElement('span');
         more.className = 'lp-item';
         more.style.cursor = 'default';
-        more.textContent = '还有 ' + (ledState.pending.length - 8) + ' 处';
+        more.textContent = (ledState.pending.length - 8) + ' more';
         list.appendChild(more);
       }
       ledPop.appendChild(list);
@@ -2092,8 +2135,8 @@ var SEND_VERSION = false;
   }
   function refreshLed() {
     var n = dirtyPages().length;
-    if (!n) setLed(true, '讲稿与备注都已写回 index.html', false, false);
-    else setLed(false, n + ' 处改动还没写回文件', ledState.down, ledState.noToken);
+    if (!n) setLed(true, 'Script and notes are saved to index.html', false, false);
+    else setLed(false, n + ' change(s) not written to file', ledState.down, ledState.noToken);
   }
   var seedTimer = null, seedChain = Promise.resolve(), seedBusy = false;
   function scheduleSeed() {
@@ -2132,8 +2175,8 @@ var SEND_VERSION = false;
     });
     seedChain = seedChain.then(function () {
       seedBusy = false;
-      if (down) setLed(false, '本地服务没在运行', true);
-      else if (noToken) setLed(false, '缺少访问凭据', false, true);
+      if (down) setLed(false, 'Local service offline', true);
+      else if (noToken) setLed(false, 'Access token missing', false, true);
       else refreshLed();
     });
   }
@@ -2185,10 +2228,10 @@ var SEND_VERSION = false;
         return fetch(api('/canvas'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
         }).then(function (r) { return r.json(); }).then(function (d) {
-          if (d.ok) toast('P' + pageNo + ' 画布改动已写回源文件');
-          else toast('没写回:' + (d.err || '未知原因'), true);
+          if (d.ok) toast('P' + pageNo + ' canvas changes written to source');
+          else toast('Write-back failed. Check the local service.', true);
         }, function () {
-          toast('本地服务没在运行，改动只在当前窗口（刷新会丢）。双击「启动本地演示台.command」后再改任意一个字即可补存。', true);
+          toast('The local service is offline. Changes remain in this window and will be lost on refresh. Start the launcher, then edit once to write them back.', true);
         });
       });
       return postChain;
@@ -2376,7 +2419,7 @@ var SEND_VERSION = false;
   }
   function exportChangedNotes() {
     saveNote();
-    var lines = ['# ' + DECK.name + '｜改动的备注', ''];
+    var lines = ['# ' + DECK.name + ' | Changed notes', ''];
     var count = 0;
     slides.forEach(function (s, i) {
       var raw = localStorage.getItem(EDS[1].key + (i + 1));
@@ -2386,8 +2429,8 @@ var SEND_VERSION = false;
       count++;
       lines.push('## P' + (i + 1) + ' ' + (s.dataset.title || ''), '', txt, '');
     });
-    if (!count) { alert('还没有改动过的备注。'); return; }
-    copyOut(lines.join('\n'), '已复制 ' + count + ' 页改动的备注。');
+    if (!count) { alert('No notes have been changed yet.'); return; }
+    copyOut(lines.join('\n'), 'Copied changed notes from ' + count + ' page(s).');
   }
 
   // ===== 导出菜单:批注走剪贴板;图片/PDF 让本地提词服务代跑导出脚本(后台跑,完成弹系统通知) =====
@@ -2406,16 +2449,16 @@ var SEND_VERSION = false;
   }
   function exportScript() {
     saveNote();
-    var lines = ['# ' + DECK.name + '｜讲稿', ''];
+    var lines = ['# ' + DECK.name + ' | Speaker script', ''];
     slides.forEach(function (s, i) {
       lines.push('## P' + (i + 1) + ' ' + (s.dataset.title || ''), '');
       var txt = textOf(localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0]), EDS[0]);
-      lines.push(txt || '(无讲稿)', '');
+      lines.push(txt || '(No script)', '');
     });
     var blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = (DECK.name || 'deck') + '-讲稿.md';
+    a.download = (DECK.name || 'deck') + '-speaker-script.md';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
@@ -2424,7 +2467,7 @@ var SEND_VERSION = false;
       var ta = document.createElement('textarea');
       ta.value = md; document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); alert(ok); }
-      catch (e) { prompt('复制失败,手动拷贝:', md); }
+      catch (e) { prompt('Copy failed. Copy manually:', md); }
       document.body.removeChild(ta);
     }
     if (navigator.clipboard && navigator.clipboard.writeText)
@@ -2436,19 +2479,19 @@ var SEND_VERSION = false;
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ what: kind })
     }).then(function (r) {
-      if (r.status === 403) { alert('缺少访问凭据：这个页面比本地服务先打开。刷新页面后再试导出。'); return { skip: 1 }; }
+      if (r.status === 403) { alert('Access token missing. Refresh the page, then try exporting again.'); return { skip: 1 }; }
       return r.json();
     }).then(function (d) {
       if (d.skip) return;
-      if (d.busy) alert('已有一个导出在进行,等它的完成通知即可。');
+      if (d.busy) alert('An export is already running. Wait for its completion notification.');
       else if (d.ok) alert({
-        pdf: '开始导出:先逐页截图再合成 PDF,大约两三分钟,完成后有系统通知并在访达里定位到 PDF。',
-        imgs: '开始逐页截图,大约两三分钟,完成后有系统通知并打开图片文件夹。',
-        send: '开始导出发送版:单文件内联打包并剥除内部注记,完成后有系统通知并定位到文件。'
+        pdf: 'PDF export started. Pages will be captured and combined; a system notification will appear when it is ready.',
+        imgs: 'Page image export started. A system notification will appear and open the output folder when ready.',
+        send: 'Standalone HTML export started. Assets will be inlined and private notes removed.'
       }[kind]);
-      else alert('导出没能启动:' + (d.err || '未知原因'));
+      else alert('Export could not start. Check the local service log.');
     }).catch(function () {
-      alert('本地服务没在运行。双击「启动本地演示台.command」后再试。');
+      alert('The local service is offline. Start the launcher, then try again.');
     });
   }
   document.addEventListener('click', function (e) {
@@ -2483,8 +2526,8 @@ var SEND_VERSION = false;
     if (drawerBtn) {
       var drawerOpen = document.body.classList.contains('notes-drawer-open');
       drawerBtn.classList.toggle('on', drawerOpen);
-      drawerBtn.dataset.tip = drawerOpen ? '收起备注' : '打开备注';
-      drawerBtn.setAttribute('aria-label', drawerOpen ? '收起备注' : '打开备注');
+      drawerBtn.dataset.tip = drawerOpen ? 'Close notes' : 'Open notes';
+      drawerBtn.setAttribute('aria-label', drawerOpen ? 'Close notes' : 'Open notes');
     }
   }
   function setView(v) {
@@ -2555,25 +2598,25 @@ var SEND_VERSION = false;
   var pdTimer = null;
   function refreshPrompterInfo() {
     fetch(api('/info')).then(function (r) {
-      if (r.status === 403) throw new Error('缺少访问凭据');
+      if (r.status === 403) throw new Error('Access token missing');
       return r.json();
     }).then(function (d) {
       var url = d.preferred || (d.urls && d.urls[0]) || '';
-      if (!url) throw new Error('没有可用的局域网地址');
+      if (!url) throw new Error('No local network address available');
       if (pdUrl.textContent !== url) {
         pdUrl.textContent = url;
         // 二维码链接由服务端自己拼(含凭据),页面只给序号
-        pdQr.innerHTML = '<img alt="手机提词器二维码" src="' + api(d.qr || '/qr.svg?i=0') + '&v=' + Date.now() + '">';
+        pdQr.innerHTML = '<img alt="Phone prompter QR code" src="' + api(d.qr || '/qr.svg?i=0') + '&v=' + Date.now() + '">';
       }
-      pdStatus.textContent = d.clients > 0 ? '已连接 ' + d.clients + ' 台设备' : '服务已启动，等待手机连接';
+      pdStatus.textContent = d.clients > 0 ? d.clients + ' device(s) connected' : 'Service ready. Waiting for phone';
       pdStatus.classList.add('ok');
     }).catch(function (e) {
-      var noToken = String(e.message).indexOf('凭据') >= 0;
-      pdQr.innerHTML = '<span>' + (noToken ? '缺少访问凭据' : '本地服务未启动') + '</span>';
+      var noToken = String(e.message).indexOf('token') >= 0;
+      pdQr.innerHTML = '<span>' + (noToken ? 'Access token missing' : 'Local service offline') + '</span>';
       pdUrl.textContent = '';
       pdStatus.textContent = noToken
-        ? '这个页面比本地服务先打开，刷新页面后再试。'
-        : '双击“启动本地演示台.command”启动服务后再试。';
+        ? 'This page opened before the local service. Refresh it and try again.'
+        : 'Start the local launcher, then try again.';
       pdStatus.classList.remove('ok');
     });
   }

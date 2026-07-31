@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>本地演示台提词器</title>
+<title>Hanyu HTML Deck · Phone Prompter</title>
 <style>
   :root { --font-size: 22px; --top: 166px; --bottom: 88px; }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -84,24 +84,24 @@
     <img id="thumb" alt="">
     <div class="meta">
       <div id="position">—</div>
-      <div id="title">等待电脑端讲稿</div>
-      <div id="connection">正在连接</div>
+      <div id="title">Waiting for the desktop script</div>
+      <div id="connection">Connecting</div>
     </div>
   </div>
-  <nav class="tabs" aria-label="提词内容">
-    <button class="tab on" data-tab="script">讲稿</button>
-    <button class="tab" data-tab="notes">备注</button>
+  <nav class="tabs" aria-label="Prompter content">
+    <button class="tab on" data-tab="script">Script</button>
+    <button class="tab" data-tab="notes">Notes</button>
   </nav>
 </header>
-<button id="overviewOpen" aria-label="打开总览">▦</button>
-<main id="content"><p id="empty">请先在电脑端打开演示文稿。讲稿会自动同步到这里。</p></main>
+<button id="overviewOpen" aria-label="Open overview">▦</button>
+<main id="content"><p id="empty">Open the deck on your computer. The script will sync here automatically.</p></main>
 <footer>
-  <button id="previous" aria-label="上一页">‹</button>
-  <button id="sync">跟随电脑</button>
-  <button id="next" aria-label="下一页">›</button>
+  <button id="previous" aria-label="Previous page">‹</button>
+  <button id="sync">Follow desktop</button>
+  <button id="next" aria-label="Next page">›</button>
 </footer>
 <section id="overview">
-  <div class="ov-head"><h2>页面总览</h2><button id="ovClose" aria-label="关闭">×</button></div>
+  <div class="ov-head"><h2>Page overview</h2><button id="ovClose" aria-label="Close">×</button></div>
   <div id="grid"></div>
 </section>
 <script>
@@ -129,7 +129,7 @@
   }
   function setConnection(ok) {
     connected = ok;
-    $('connection').textContent = ok ? '已连接本地服务' : '连接中断，正在重连';
+    $('connection').textContent = ok ? 'Connected to local service' : 'Connection lost. Reconnecting';
     $('connection').classList.toggle('ok', ok);
   }
   function render() {
@@ -137,14 +137,14 @@
     if (list.length) shown = Math.max(1, Math.min(shown, list.length));
     var item = page(shown);
     $('position').textContent = list.length ? 'P' + shown + ' / ' + list.length : '—';
-    $('title').textContent = item ? item.title || '未命名页面' : '等待电脑端讲稿';
+    $('title').textContent = item ? item.title || 'Untitled page' : 'Waiting for the desktop script';
     var frame = shown === state.page && state.steps > 0
       ? '/steps/' + shown + '-' + state.step + '.jpg'
       : '/thumbs/' + shown + '.jpg';
     $('thumb').src = api(frame);
     content.innerHTML = item
-      ? (tab === 'script' ? item.html : item.comm) || '<p id="empty">这一页没有' + (tab === 'script' ? '讲稿' : '备注') + '。</p>'
-      : '<p id="empty">请先在电脑端打开演示文稿。讲稿会自动同步到这里。</p>';
+      ? (tab === 'script' ? item.html : item.comm) || '<p id="empty">This page has no ' + (tab === 'script' ? 'script' : 'notes') + '.</p>'
+      : '<p id="empty">Open the deck on your computer. The script will sync here automatically.</p>';
     document.querySelectorAll('.tab').forEach(function (button) {
       button.classList.toggle('on', button.dataset.tab === tab);
     });
@@ -211,7 +211,7 @@
   });
   $('sync').addEventListener('click', function () {
     following = !following;
-    $('sync').textContent = following ? '跟随电脑' : '自由浏览';
+    $('sync').textContent = following ? 'Follow desktop' : 'Browse freely';
     $('sync').classList.toggle('off', !following);
     if (following) setShown(state.page);
   });

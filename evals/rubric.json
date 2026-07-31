@@ -7,8 +7,13 @@
     },
     {
       "name": "plain_speaker_script",
-      "description": "Speaker scripts are natural paragraphs rather than a forced purpose/main/sub outline.",
+      "description": "Speaker scripts pair Chinese and English in natural paragraphs rather than a forced purpose/main/sub outline.",
       "weight": 2
+    },
+    {
+      "name": "language_policy",
+      "description": "Non-content deck UI and hover help use English; important slide information is concise Chinese-English bilingual content.",
+      "weight": 1
     },
     {
       "name": "optional_notes",
@@ -32,4 +37,3 @@
     }
   ]
 }
-

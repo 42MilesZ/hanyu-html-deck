@@ -55,6 +55,28 @@ The skill lets an AI coding tool build decks against this project's conventions.
 
 When invoking it, state the content, the occasion, and the page count, and ask explicitly for the Hanyu HTML Deck skill.
 
+### Combining it with PPT / slides skills
+
+Hanyu HTML Deck can work with an existing PPT, slides, presentation-structure, or visual-design skill. Those skills decide what to say, how to pace it, and what each page should look like; Hanyu HTML Deck puts the result into an HTML runtime with presenting, prompting, write-back, and export.
+
+A typical sequence is:
+
+1. A PPT / slides skill defines the story, page order, and conclusion of each page.
+2. A visual-design skill defines the visual subject, layout, and motion.
+3. Hanyu HTML Deck uses `assets/hanyu-html-deck/index.html` to implement the pages, bilingual script, and interactions.
+
+You can also package this sequence into one primary skill. Let its `SKILL.md` route the content, visual, and runtime stages while referencing the existing rules and assets. The Hanyu template remains the final runtime, so one skill invocation is enough without maintaining duplicate presentation engines.
+
+Example:
+
+> Use my slides content rules to build a six-page structure, apply the visual-design rules, then produce a presentation-ready HTML with Hanyu HTML Deck. Keep tool UI in English, and make important content and every page script bilingual in Chinese and English.
+
+### Language convention
+
+- Non-content deck text defaults to English: toolbar controls, speed units such as `min` and `chars/min`, hover explanations, export controls, and status messages.
+- Slide content follows the primary audience language. Important titles, conclusions, data, and key selling points are bilingual, with short scannable English.
+- Every page script is bilingual. Keep the Chinese and corresponding English in separate paragraphs and deliver them in sequence; the duration estimate counts both languages.
+
 ## Script and notes
 
 The bottom script panel starts collapsed to a single header row. Press `N` to expand it. Speaker scripts are plain paragraphs with no required outline structure.
@@ -65,12 +87,12 @@ Panel and drawer state are stored separately in localStorage and scoped by `DECK
 
 The export menu includes:
 
-- `导出讲稿`: downloads all speaker scripts as Markdown.
-- `复制改动的备注`: copies only user-modified notes, grouped by page.
-- `导出每页图片`: renders one PNG per page; needs the local service and Playwright.
-- `导出 PDF`: captures every page, then assembles an image-based PDF.
-- `导出单独发送版`: one self-contained HTML file with fonts and images inlined, notes and write-back code stripped.
-- `切换为 1:1 像素`: disables canvas scaling so DOM or Figma capture tools see true 1920 × 1080 coordinates.
+- `Export script`: downloads all speaker scripts as Markdown.
+- `Copy changed notes`: copies only user-modified notes, grouped by page.
+- `Export page images`: renders one PNG per page; needs the local service and Playwright.
+- `Export PDF`: captures every page, then assembles an image-based PDF.
+- `Export standalone HTML`: one self-contained HTML file with fonts and images inlined, notes and write-back code stripped.
+- `Use 1:1 pixels`: disables canvas scaling so DOM or Figma capture tools see true 1920 × 1080 coordinates.
 
 Hovering a menu item for about 0.2 seconds shows a one-line explanation.
 
@@ -80,7 +102,7 @@ Start the local service, then click the phone icon in the deck. Scan the LAN QR 
 
 Use the same trusted Wi-Fi by default. If no suitable Wi-Fi is available, enable the phone hotspot and connect the computer to it.
 
-The phone starts on the speaker script. A `讲稿 / 备注` control switches views, and each page/view keeps its own scroll position. The phone can follow the computer or browse independently.
+The phone starts on the speaker script. A `Script / Notes` control switches views, and each page/view keeps its own scroll position. The phone can follow the computer or browse independently.
 
 For a formal presentation, test the connection 5–10 minutes early, move forward and back two pages, disable VPNs, prevent auto-lock, and keep the phone powered.
 

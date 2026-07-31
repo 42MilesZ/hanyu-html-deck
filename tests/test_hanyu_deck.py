@@ -8,6 +8,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "assets" / "hanyu-html-deck" / "index.html"
 SERVER = ROOT / "assets" / "hanyu-html-deck" / "scripts" / "prompter_server.py"
+PHONE = ROOT / "assets" / "hanyu-html-deck" / "scripts" / "prompter-phone.html"
 
 
 class TemplateTests(unittest.TestCase):
@@ -43,13 +44,14 @@ class TemplateTests(unittest.TestCase):
 
     def test_agreed_product_labels(self):
         for label in (
-            "导出讲稿",
-            "复制改动的备注",
-            "导出每页图片",
-            "导出 PDF",
-            "导出单独发送版",
-            "切换为 1:1 像素",
-            "写下本页的修改意见、补充说明或个人备注……",
+            "Export script",
+            "Copy changed notes",
+            "Export page images",
+            "Export PDF",
+            "Export standalone HTML",
+            "Use 1:1 pixels",
+            "Add revision notes, context, or personal reminders…",
+            "chars/min",
         ):
             self.assertIn(label, self.html)
         self.assertNotIn(">改动的批注<", self.html)
@@ -61,6 +63,46 @@ class TemplateTests(unittest.TestCase):
         self.assertEqual(len(items), 6)
         for item in items:
             self.assertIn("data-tip=", item)
+
+    def test_non_content_tooltips_default_to_english(self):
+        phone = PHONE.read_text(encoding="utf-8")
+        attributes = []
+        for source in (self.html, phone):
+            attributes.extend(
+                re.findall(
+                    r'(?:data-tip|aria-label|(?<!data-)title)="([^"]*)"',
+                    source,
+                )
+            )
+        for value in attributes:
+            self.assertIsNone(re.search(r"[\u4e00-\u9fff]", value), value)
+
+    def test_speaker_scripts_are_bilingual(self):
+        scripts = re.findall(r'<div class="ns">(.*?)</div>', self.html, re.S)
+        self.assertEqual(len(scripts), 6)
+        for script in scripts:
+            self.assertRegex(script, r"[\u4e00-\u9fff]")
+            self.assertRegex(script, r"[A-Za-z]{3,}")
+
+    def test_key_slide_content_is_bilingual(self):
+        cover = self.html.split('<div class="cover-features">', 1)[1].split(
+            "</div>\n    </div>", 1
+        )[0]
+        self.assertEqual(cover.count("<small>"), 4)
+        self.assertGreaterEqual(self.html.count('<div class="v-caption"><span>'), 4)
+        for translation in (
+            "AI-made decks, ready to present.",
+            "One prompt. A complete presentation.",
+            "Edit directly on the canvas.",
+            "Your phone becomes the prompter.",
+            "Ready to deliver.",
+            "Make AI presentations work better.",
+        ):
+            self.assertIn(translation, self.html)
+
+    def test_reusable_content_patterns_use_two_weights(self):
+        patterns = self.html.split("示例页样式", 1)[1].split("产品短片版式", 1)[0]
+        self.assertNotRegex(patterns, r"font(?:-weight)?:\s*300")
 
     def test_state_is_separate_and_deck_scoped(self):
         self.assertIn("DECK.key + '.ui.panelExpanded'", self.html)
@@ -208,6 +250,20 @@ class ServerTests(unittest.TestCase):
         ):
             ok, why = mod.check_markup(payload, mod.NOTE_TAGS, mod.NOTE_ATTRS)
             self.assertTrue(ok, payload + " → " + why)
+
+    def test_template_note_markup_is_writeback_safe(self):
+        mod = self.module
+        html = TEMPLATE.read_text(encoding="utf-8")
+        fragments = re.findall(r'<div class="n[sc]">(.*?)</div>', html, re.S)
+        self.assertEqual(len(fragments), 12)
+        for fragment in fragments:
+            ok, why = mod.check_markup(fragment, mod.NOTE_TAGS, mod.NOTE_ATTRS)
+            self.assertTrue(ok, fragment + " → " + why)
+
+    def test_export_notifications_are_english(self):
+        source = SERVER.read_text(encoding="utf-8")
+        self.assertIn('notify("Hanyu HTML Deck", "Export complete")', source)
+        self.assertIn('notify("Hanyu HTML Deck · Export failed"', source)
 
     def test_canvas_markup_whitelist(self):
         mod = self.module

@@ -9,6 +9,8 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 模板提供的是演示引擎与页面骨架，不是要照搬的视觉方案。示例页只作结构参考，版面按当次内容重新组织。
 
+本 skill 可以与已有的 PPT / slides 内容 skill、演讲结构 skill 或视觉设计 skill 串联，也可以由一个主 skill 统一路由。组合时让其他 skill 负责内容与视觉判断，本 skill 负责最终 HTML 结构、讲稿、交互、写回和导出；引用已有规则，不在本 skill 内复制它们。
+
 ## 开始前
 
 1. 如果目标目录还没有演示稿，在本 skill 目录下运行：
@@ -37,7 +39,9 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 - 所有页面使用 `.slide > .canvas + aside` 结构，`.canvas` 紧跟 `<aside>`（写回按这个约定定位，别打破）。
 - 页面正文服务于演讲，不把讲稿压到画布上。
-- 讲稿写在 `.ns` 中，用自然段纯文本；每个意思单独成段，不强制项目列表。
+- Deck 的非内容性文字默认使用英文，包括工具栏、速度单位（`min` / `chars/min`）、hover 说明、导出菜单与状态提示。
+- PPT 内容以主要受众的语言为主；每页选择最重要的 1–2 处（通常是标题、关键结论、核心卖点或关键数据）使用中英双语，英文短而可扫读，不把每个辅助标签都机械翻译一遍。
+- 讲稿写在 `.ns` 中，使用中英双语自然段；中文与对应英文分别成段，每个意思单独成段，不强制项目列表。
 - 备注写在 `.nc` 中。它既可保存修改意见，也可保存补充说明或个人提醒。
 - 优先复用模板中的页面骨架，只有真实内容无法表达时才新增页面类型：
 
@@ -63,7 +67,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 - localStorage 一律走模板内的安全包装，不裸调用：禁用存储或配额写满时要降级，不能白屏。
 - 讲稿与备注各自维护版本历史（`.h.` / `.hc.` 前缀），不共用一条时间线。
 - 写回自动进行，不设保存按钮；状态只由讲稿栏右下角的同步灯表达。
-- 手机端默认打开讲稿；备注通过 `讲稿 / 备注` 切换显示。
+- 手机端默认打开讲稿；备注通过 `Script / Notes` 切换显示。
 - 手机端只使用同一局域网。首选同一 Wi-Fi；没有可用网络时，使用手机热点并让电脑连接。
 - 不接入公网中继、公共 MQTT 或托管提词页。
 

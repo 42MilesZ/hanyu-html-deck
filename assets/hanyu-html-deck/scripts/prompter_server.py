@@ -448,11 +448,11 @@ def run_export(kind):
             result = subprocess.run(command, capture_output=True, text=True, timeout=900)
             if result.returncode:
                 detail = (result.stderr or result.stdout or "")[-400:]
-                raise RuntimeError("%s：%s" % (script, detail.strip()))
-        notify("本地演示台", "导出已完成")
+                raise RuntimeError("%s: %s" % (script, detail.strip()))
+        notify("Hanyu HTML Deck", "Export complete")
     except Exception as error:
         print("[导出失败]", error)
-        notify("本地演示台导出失败", str(error)[:120])
+        notify("Hanyu HTML Deck · Export failed", "Check the local service log for details.")
     finally:
         export_busy = False
 
