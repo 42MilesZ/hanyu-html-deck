@@ -68,7 +68,8 @@ class TemplateTests(unittest.TestCase):
         )[0]
 
         self.assertNotIn('data-act="drawer"', toolbar)
-        self.assertEqual(notes_head.count('class="rt tip-up"'), 3)
+        self.assertIn('id="rateBtn"', notes_head)
+        self.assertNotIn('class="rt tip-up"', notes_head)
         for moved in ('id="btnHist"', 'id="btnDrawer"', 'id="syncLed"'):
             self.assertNotIn(moved, notes_head)
             self.assertIn(moved, script_col)
@@ -85,6 +86,12 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("hkey: DECK.key + '.h.'", self.html)
         self.assertIn("hkey: DECK.key + '.hc.'", self.html)
         self.assertIn("function snapHist(i, ed)", self.html)
+
+    def test_rate_is_a_five_step_multiplier_menu(self):
+        self.assertIn("var RATE_BASE = 210;", self.html)
+        self.assertIn("var RATE_MULTS = [0.8, 0.9, 1.0, 1.1, 1.2];", self.html)
+        self.assertIn("RATE_MIN / rate * 100", self.html)
+        self.assertNotIn("180 / rate", self.html)
 
     def test_no_public_transport(self):
         lowered = self.html.lower()

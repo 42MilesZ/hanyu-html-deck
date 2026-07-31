@@ -127,11 +127,13 @@
   }
   #exMenu.open { display: flex; }
   #exMenu button { text-align: left; justify-content: flex-start; padding: 8px 16px; white-space: nowrap; background: none; border-radius: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  /* 可切换项:选中显示对勾,未选中留空槽位保持文字对齐 */
   #exMenu button.toggle::before {
-    content: ""; width: 8px; height: 8px; margin-right: 9px;
-    border: 1px solid #666; background: transparent;
+    content: ""; width: 9px; height: 5px; margin-right: 9px;
+    border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg) translate(1px, -2px); opacity: 0;
   }
-  #exMenu button.toggle.on::before { background: #f0eee8; border-color: #f0eee8; }
+  #exMenu button.toggle.on::before { opacity: 1; }
   body.present #toolbar { opacity: 0; pointer-events: none; }
   body.present #toolbar:hover,
   body.present.reveal-ui #toolbar { opacity: 1; pointer-events: auto; }
@@ -228,8 +230,8 @@
   #pnSep { font-size: 12px; font-weight: 300; color: rgba(255,255,255,.32); margin-left: 7px; letter-spacing: .1em; }
   /* 固定槽位:标题长短不再推移时间轴起点,超长省略 */
   #pageTitle {
-    font-weight: 600; color: #b8b5ae; letter-spacing: .08em; margin-left: 14px;
-    flex: none; width: 168px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 15px; font-weight: 600; color: #7c7973; letter-spacing: .06em; margin-left: 8px;
+    flex: none; width: 182px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   /* 全场时间轴:细线=全稿,页边界 1px 刻度;亮线=已讲完,3px 高亮段=当前页(时长标注挂段中点下方),
      白色游标=讲到本页的时间点(累计时间在其上方)。轴线落在 34px 盒子的垂直中点,与表头文字同一中线 */
@@ -266,17 +268,41 @@
   #tlNow { position: absolute; bottom: 23px; transform: translateX(-50%); font-size: 11px; color: rgba(240,238,232,.8); letter-spacing: .06em; font-variant-numeric: tabular-nums; transition: left .55s cubic-bezier(.22,.61,.21,1); }
   #tlSec { position: absolute; bottom: 1px; transform: translateX(-50%); font-size: 11px; color: rgba(240,238,232,.55); letter-spacing: .06em; font-variant-numeric: tabular-nums; transition: left .55s cubic-bezier(.22,.61,.21,1); }
   #tlTot { position: absolute; right: 0; bottom: 23px; font-size: 11px; color: rgba(240,238,232,.32); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
-  /* 语速三档:兔子 / 速度表 / 蜗牛，选中态提高亮度。 */
-  #nsRate { display: flex; align-items: center; gap: 8px; margin-right: 16px; }
-  #nsRate .rt, .icon-btn {
+  /* 图标钮统一规格:32×32 方盒 + 18px 线性图标,悬停反底 */
+  .icon-btn {
     width: 32px; height: 32px; padding: 7px;
     display: inline-flex; align-items: center; justify-content: center;
     color: #8a8880; background: none; border: 0; border-radius: 2px; cursor: pointer;
   }
-  #nsRate .rt svg, .icon-btn svg { width: 18px; height: 18px; display: block; }
-  #nsRate .rt:hover, .icon-btn:hover { background: var(--paper); color: var(--ink); }
-  #nsRate .rt.act, .icon-btn.on { color: #f0eee8; }
-  .vsep { width: 1px; height: 17px; background: #4d4d4d; }
+  .icon-btn svg { width: 18px; height: 18px; display: block; }
+  .icon-btn:hover { background: var(--paper); color: var(--ink); }
+  .icon-btn.on { color: #f0eee8; }
+  /* 语速下拉:按倍数选，×1.0 = 210 字/分钟。菜单向上弹,不被面板裁剪(位置由 JS 算) */
+  #rateWrap { position: relative; display: flex; }
+  #rateBtn {
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 32px; padding: 0 8px; cursor: pointer;
+    font: inherit; font-size: 13px; letter-spacing: .04em; font-variant-numeric: tabular-nums;
+    color: #b5b3ac; background: none; border: 0; border-radius: 2px;
+  }
+  #rateBtn:hover { background: var(--paper); color: var(--ink); }
+  #rateWrap.open #rateBtn { color: #f0eee8; }
+  #rateWrap.open .caret { transform: rotate(180deg); }
+  #rateMenu {
+    position: fixed; display: none; flex-direction: column; min-width: 148px;
+    background: var(--chrome); border: 1px solid var(--chair); padding: 5px 0; z-index: 60;
+  }
+  #rateMenu.open { display: flex; }
+  #rateMenu button {
+    display: flex; align-items: baseline; gap: 12px; text-align: left;
+    font: inherit; font-size: 12px; font-weight: 300; color: #98968f;
+    background: none; border: 0; padding: 7px 14px; cursor: pointer;
+  }
+  #rateMenu button:hover { background: var(--paper); color: var(--ink); }
+  #rateMenu button.act { color: #f0eee8; }
+  #rateMenu .mult { min-width: 34px; font-variant-numeric: tabular-nums; }
+  #rateMenu .cpm { font-size: 11px; color: #6f6d67; }
+  #rateMenu button:hover .cpm { color: #55524b; }
   /* 栏内右下角工具条:历史与备注开关跟着各自的栏,面板收起时一并消失。
      渐变底与栏同色,编辑区滚到底时文字不会从按钮下穿过 */
   .col-tools {
@@ -284,15 +310,26 @@
     display: flex; align-items: center; gap: 8px; padding-left: 30px;
   }
   .col.script .col-tools { background: linear-gradient(90deg, rgba(18,18,18,0), var(--chrome) 26%); }
-  .col.comm .col-tools { background: linear-gradient(90deg, rgba(23,23,23,0), #171717 26%); }
+  /* 备注栏:角标贴左、历史贴右,同一行 */
+  .col.comm .col-tools {
+    left: 22px; justify-content: space-between; padding-left: 0;
+    background: linear-gradient(180deg, rgba(23,23,23,0), #171717 40%);
+  }
   body.notes-mini .col-tools { display: none; }
-  /* 同步灯:橙黄=改动可能还没写回文件,绿=已写回。悬停立即给出原因 */
+  /* 备注角标:填色小标签,高度压在同行图标之内 */
+  .col-tag {
+    display: inline-flex; align-items: center; height: 20px; padding: 0 8px;
+    background: #262b33; color: #9d9b94; border-radius: 2px;
+    font-size: 11px; letter-spacing: .12em;
+  }
+  /* 同步灯:小圆点 + 微弱发光。方盒与图标钮同尺寸,灯与两个图标间距一致 */
+  .led-box { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; }
   .led {
-    width: 9px; height: 9px; border-radius: 50%; flex: none;
-    background: #d99a3a; box-shadow: 0 0 6px rgba(217,154,58,.45);
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #d99a3a; box-shadow: 0 0 4px 1px rgba(217,154,58,.35);
     transition: background .3s, box-shadow .3s;
   }
-  .led.ok { background: #5fa564; box-shadow: 0 0 6px rgba(95,165,100,.4); }
+  .led.ok { background: #5fa564; box-shadow: 0 0 4px 1px rgba(95,165,100,.32); }
   body.present #notesPanel, body.notes-hidden #notesPanel { display: none; }
   #notesPanel .col {
     min-width: 0; min-height: 0; padding: 12px 22px 0;
@@ -331,16 +368,9 @@
   body.notes-drawer-open #notesPanel .col.script { margin-right: min(38vw, 620px); }
   body.notes-drawer-open #notesPanel .col.comm { transform: translateX(0); }
   .comm-label {
-    display: flex; align-items: center; justify-content: space-between;
-    height: 24px; margin-bottom: 6px; color: #77756e;
-    font-size: 11px; letter-spacing: .12em;
+    display: flex; align-items: center; justify-content: flex-end;
+    height: 32px; margin-bottom: 2px;
   }
-  #drawerClose {
-    width: 32px; height: 32px; margin: -4px -8px -4px 0;
-    border: 0; background: none; color: #77756e; cursor: pointer;
-    font: inherit; font-size: 18px; line-height: 1;
-  }
-  #drawerClose:hover { color: #f0eee8; }
   #notesPanel .col.comm .ed { font-size: 14px; color: #a9a79f; }
   #notesPanel .col.comm .ed p { margin-bottom: 10px; }
   #notesPanel .col.comm .ed p.c-ref { color: #85837c; }
@@ -596,13 +626,13 @@
 <div id="toolbar">
   <div id="segView">
     <i class="thumb noanim"></i>
-    <button data-view="overview" data-tip="总览（O）" aria-label="总览"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3v18m-9-9h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></g></svg></button>
-    <button data-view="default" class="on" data-tip="默认（Esc）" aria-label="默认视图"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" rx="2"/></svg></button>
-    <button data-view="present" data-tip="演示（P / F）" aria-label="演示"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 3h20m-1 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3m4 18l5-5l5 5"/></svg></button>
+    <button data-view="overview" data-tip="总览（O）" aria-label="总览"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M12 3v18m-9-9h18"/><rect width="18" height="18" x="3" y="3" rx="2"/></g></svg></button>
+    <button data-view="default" class="on" data-tip="默认（Esc）" aria-label="默认视图"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" rx="2"/></svg></button>
+    <button data-view="present" data-tip="演示（P / F）" aria-label="演示"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2 3h20m-1 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3m4 18l5-5l5 5"/></svg></button>
   </div>
-  <button data-act="prompter" data-tip="手机提词器" aria-label="手机提词器"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  <button data-act="prompter" data-tip="手机提词器" aria-label="手机提词器"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
   <span id="exWrap">
-    <button data-act="export" data-tip="导出" aria-label="导出菜单"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3v12m9 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 8l5-5l5 5"/></g></svg><i class="caret"></i></button>
+    <button data-act="export" data-tip="导出" aria-label="导出菜单"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M12 3v12m9 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 8l5-5l5 5"/></g></svg><i class="caret"></i></button>
     <div id="exMenu">
       <button data-ex="script" data-tip="把全部页面的讲稿下载成一个 Markdown 文件">导出讲稿</button>
       <button data-ex="diff-notes" data-tip="只复制你改过的备注，按页分组，便于粘贴给 AI">复制改动的备注</button>
@@ -618,7 +648,7 @@
 <div id="zonePrev" class="navzone"></div>
 <div id="zoneNext" class="navzone"></div>
 
-<button id="notesToggle" data-tip="展开或收起讲稿（N）" aria-label="展开或收起讲稿"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m18 15l-6-6l-6 6"/></svg></button>
+<button id="notesToggle" data-tip="展开或收起讲稿（N）" aria-label="展开或收起讲稿"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m18 15l-6-6l-6 6"/></svg></button>
 <div id="notesPanel">
   <div id="nGrip" title="拖动调节面板高度"></div>
   <div id="notesHead">
@@ -640,27 +670,26 @@
         <div class="lbl"></div>
       </div>
     </div>
-    <div id="nsRate" aria-label="讲稿语速">
-      <button class="rt tip-up" data-r="240" data-tip="快 · 240 字/分钟" aria-label="快速"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M13 16a3 3 0 0 1 2.24 5M18 12h.01"/><path d="M18 21h-8a4 4 0 0 1-4-4a7 7 0 0 1 7-7h.2L9.6 6.4a1 1 0 1 1 2.8-2.8L15.8 7h.2c3.3 0 6 2.7 6 6v1a2 2 0 0 1-2 2h-1a3 3 0 0 0-3 3"/><path d="M20 8.54V4a2 2 0 1 0-4 0v3m-8.388 5.524a3 3 0 1 0-1.6 4.3"/></g></svg></button>
-      <button class="rt tip-up" data-r="210" data-tip="中 · 210 字/分钟" aria-label="中速"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m12 14l4-4M3.34 19a10 10 0 1 1 17.32 0"/></svg></button>
-      <button class="rt tip-up" data-r="180" data-tip="慢 · 180 字/分钟" aria-label="慢速"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M2 13a6 6 0 1 0 12 0a4 4 0 1 0-8 0a2 2 0 0 0 4 0"/><circle cx="10" cy="13" r="8"/><path d="M2 21h12c4.4 0 8-3.6 8-8V7a2 2 0 1 0-4 0v6m0-10l1.1 2.2M22 3l-1.1 2.2"/></g></svg></button>
+    <div id="rateWrap">
+      <button id="rateBtn" class="tip-up" data-tip="讲稿语速" aria-label="讲稿语速"><span id="rateNow">×1.0</span><i class="caret"></i></button>
+      <div id="rateMenu"></div>
     </div>
   </div>
   <div id="nsCols">
     <div class="col script">
       <div class="ed" id="edScript" contenteditable="true"></div>
       <div class="col-tools">
-        <i id="syncLed" class="led" data-tip-now="正在检查同步状态"></i>
-        <span class="vsep"></span>
-        <button id="btnHist" class="icon-btn tip-up hist-btn" data-ed="0" data-tip="讲稿的历史版本" aria-label="讲稿历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
-        <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="打开备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
+        <span class="led-box"><i id="syncLed" class="led" data-tip-now="正在检查同步状态"></i></span>
+        <button id="btnHist" class="icon-btn tip-up hist-btn" data-ed="0" data-tip="讲稿的历史版本" aria-label="讲稿历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
+        <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="打开备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
       </div>
     </div>
     <div class="col comm">
-      <div class="comm-label"><span>备注</span><button id="drawerClose" aria-label="收起备注">×</button></div>
+      <div class="comm-label"><button id="drawerClose" class="icon-btn" data-tip="收起备注" aria-label="收起备注"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="ed" id="edComm" contenteditable="true"></div>
       <div class="col-tools">
-        <button id="btnHistComm" class="icon-btn tip-up hist-btn" data-ed="1" data-tip="备注的历史版本" aria-label="备注历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
+        <span class="col-tag">备注</span>
+        <button id="btnHistComm" class="icon-btn tip-up hist-btn" data-ed="1" data-tip="备注的历史版本" aria-label="备注历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
       </div>
     </div>
   </div>
@@ -1158,9 +1187,60 @@ var DECK = {
   })();
 
   // ===== 讲稿时长估算 + 全场时间轴:中文按字、英文按词(1 词≈1.2 字),(→ …) 舞台指示不计 =====
+  // 语速用倍数表示:×1.0 = 210 字/分钟。轴长以最慢档为满幅基准
   var RATE_KEY = DECK.key + '.rate';
-  var rate = parseInt(localStorage.getItem(RATE_KEY), 10) || 210;
-  var nsRate = document.getElementById('nsRate');
+  var RATE_BASE = 210;
+  var RATE_MULTS = [0.8, 0.9, 1.0, 1.1, 1.2];
+  var RATE_MIN = Math.round(RATE_BASE * RATE_MULTS[0]);
+  var rate = parseInt(localStorage.getItem(RATE_KEY), 10) || RATE_BASE;
+  var rateWrap = document.getElementById('rateWrap');
+  var rateBtn = document.getElementById('rateBtn');
+  var rateMenu = document.getElementById('rateMenu');
+  var rateNow = document.getElementById('rateNow');
+  function fmtMult(m) { return '×' + m.toFixed(1); }
+  function nearestMult(r) {
+    return RATE_MULTS.reduce(function (a, b) {
+      return Math.abs(RATE_BASE * b - r) < Math.abs(RATE_BASE * a - r) ? b : a;
+    });
+  }
+  function buildRateMenu() {
+    rateMenu.innerHTML = '';
+    var curM = nearestMult(rate);
+    RATE_MULTS.forEach(function (m) {
+      var cpm = Math.round(RATE_BASE * m);
+      var b = document.createElement('button');
+      b.className = m === curM ? 'act' : '';
+      b.dataset.r = cpm;
+      var s1 = document.createElement('span'); s1.className = 'mult'; s1.textContent = fmtMult(m);
+      var s2 = document.createElement('span'); s2.className = 'cpm'; s2.textContent = cpm + ' 字/分钟';
+      b.appendChild(s1); b.appendChild(s2);
+      rateMenu.appendChild(b);
+    });
+  }
+  function syncRateBtn() { rateNow.textContent = fmtMult(nearestMult(rate)); }
+  function setRateMenu(on) {
+    rateWrap.classList.toggle('open', on);
+    rateMenu.classList.toggle('open', on);
+    if (!on) return;
+    buildRateMenu();
+    var r = rateBtn.getBoundingClientRect();
+    rateMenu.style.right = Math.max(window.innerWidth - r.right, 8) + 'px';
+    rateMenu.style.bottom = (window.innerHeight - r.top + 6) + 'px';   // 向上弹,不压表头
+  }
+  rateBtn.addEventListener('click', function () { setRateMenu(!rateMenu.classList.contains('open')); });
+  rateMenu.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    rate = parseInt(b.dataset.r, 10);
+    localStorage.setItem(RATE_KEY, rate);
+    setRateMenu(false);
+    syncRateBtn();
+    updateTime();
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#rateWrap')) setRateMenu(false);
+  });
+  syncRateBtn();
   var tlSec = document.getElementById('tlSec');
   var tlIn = document.getElementById('tlIn');
   var tlFill = document.getElementById('tlFill');
@@ -1201,7 +1281,7 @@ var DECK = {
       ticks.push(t);
     }
     ticks.forEach(function (t, j) { t.style.left = (cums[j + 1] / totalSec * 100) + '%'; });
-    tlIn.style.width = (180 / rate * 100) + '%'; // 慢 180=顶满,轴长正比于该语速下的总时长
+    tlIn.style.width = (RATE_MIN / rate * 100) + '%'; // 最慢档顶满,轴长正比于该语速下的总时长
     var pos = cums[cur] / totalSec * 100;
     tlFill.style.width = pos + '%';
     tlCur.style.left = pos + '%';
@@ -1282,15 +1362,6 @@ var DECK = {
     var r = tl.getBoundingClientRect();
     if (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right) tlPvHide();
   });
-  nsRate.addEventListener('click', function (e) {
-    var el = e.target.closest('.rt');
-    if (!el) return;
-    rate = parseInt(el.dataset.r, 10);
-    localStorage.setItem(RATE_KEY, rate);
-    nsRate.querySelectorAll('.rt').forEach(function (r) { r.classList.toggle('act', r === el); });
-    updateTime();
-  });
-  nsRate.querySelectorAll('.rt').forEach(function (r) { r.classList.toggle('act', parseInt(r.dataset.r, 10) === rate); });
   edScript.addEventListener('input', updateTime);
   // ===== 版本历史:讲稿与备注各一条时间线(localStorage 键 <ed.hkey>N,数组,上限 30 条)。
   // 记录时机:离开改过的页、自动写回前、从历史恢复前——恢复永不丢当前稿。
@@ -1587,7 +1658,7 @@ var DECK = {
     pageTitle.textContent = slides[cur].dataset.title || '';
     // 标题超出固定槽位就缩字号(下限 10px),槽位宽度不动、时间轴起点才稳
     pageTitle.style.fontSize = '';
-    for (var fs = 13; fs > 10 && pageTitle.scrollWidth > pageTitle.clientWidth; fs -= 0.5) {
+    for (var fs = 15; fs > 11 && pageTitle.scrollWidth > pageTitle.clientWidth; fs -= 0.5) {
       pageTitle.style.fontSize = fs + 'px';
     }
     // 画布带 nav-narrow 类的页:翻页热区收窄到 4%,给页内悬停交互让位
