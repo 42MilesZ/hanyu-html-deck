@@ -330,6 +330,14 @@
     transition: background .3s, box-shadow .3s;
   }
   .led.ok { background: #5fa564; box-shadow: 0 0 4px 1px rgba(95,165,100,.32); }
+  /* 发送版:去掉一切依赖本地服务的入口与备注 */
+  body.send #toolbar button[data-act="prompter"],
+  body.send #exMenu button[data-ex="imgs"],
+  body.send #exMenu button[data-ex="pdf"],
+  body.send #exMenu button[data-ex="send"],
+  body.send .led-box,
+  body.send #btnDrawer,
+  body.send #notesPanel .col.comm { display: none; }
   body.present #notesPanel, body.notes-hidden #notesPanel { display: none; }
   #notesPanel .col {
     min-width: 0; min-height: 0; padding: 12px 22px 0;
@@ -866,8 +874,42 @@ var DECK = {
   key: 'hanyu-deck-v3', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
   port: 8123          // 本地提词服务端口
 };
+// 发送版标记:build_send.py 导出时置 true。发送版不联本地服务,
+// 不写回、不提词、不导出,备注与相关入口一并隐藏。
+var SEND_VERSION = false;
 (function () {
   var SRV = 'http://127.0.0.1:' + DECK.port;
+  // 存储包装:隐私模式、企业策略或配额写满时,裸调用 localStorage 会抛异常。
+  // 这些调用散在初始化与翻页路径上,一抛就整页白屏、演示中翻不动页——
+  // 故一律走这里,读写失败就退回内存,功能降级但演示不中断。
+  var localStorage = (function () {
+    var mem = {};
+    var real = null;
+    try {
+      real = window.localStorage;
+      var probe = '__hd_probe__';
+      real.setItem(probe, '1');
+      real.removeItem(probe);
+    } catch (e) {
+      real = null;
+    }
+    return {
+      getItem: function (k) {
+        try { return real ? real.getItem(k) : (k in mem ? mem[k] : null); }
+        catch (e) { return k in mem ? mem[k] : null; }
+      },
+      setItem: function (k, v) {
+        mem[k] = String(v);
+        try { if (real) real.setItem(k, v); } catch (e) {}
+      },
+      removeItem: function (k) {
+        delete mem[k];
+        try { if (real) real.removeItem(k); } catch (e) {}
+      },
+      key: function (i) { try { return real ? real.key(i) : Object.keys(mem)[i]; } catch (e) { return null; } },
+      get length() { try { return real ? real.length : Object.keys(mem).length; } catch (e) { return 0; } }
+    };
+  })();
   var tpl = document.getElementById('slides');
   var slides = Array.prototype.slice.call(tpl.content.querySelectorAll('.slide'));
   var stage = document.getElementById('stage');
@@ -1465,11 +1507,13 @@ var DECK = {
   }
   var seedTimer = null, seedChain = Promise.resolve(), seedBusy = false;
   function scheduleSeed() {
+    if (SEND_VERSION) return;              // 发送版不写回:收件人本机可能也跑着服务
     clearTimeout(seedTimer);
     refreshLed();
     seedTimer = setTimeout(seedNow, 1500);
   }
   function seedNow() {
+    if (SEND_VERSION) return;
     clearTimeout(seedTimer);
     var changed = dirtyPages();
     if (!changed.length || seedBusy) { refreshLed(); return; }
@@ -1929,6 +1973,7 @@ var DECK = {
     });
   }
   function openPrompter() {
+    if (SEND_VERSION) return;
     pd.classList.add('open');
     refreshPrompterInfo();
     clearInterval(pdTimer);
@@ -2158,7 +2203,7 @@ var DECK = {
   // 由它在当前局域网内转发给手机提词页；服务没开时静默忽略。
   // 自动化实例(export_pages/build_pdf/测试的 headless 浏览器,navigator.webdriver=true)不参与——
   // 否则导出脚本逐页截图会把演示者的手机一路拽着乱跳;测试需要联动时在 URL 加 ?pr=1 显式开启 =====
-  var PR_ON = !navigator.webdriver || /[?&]pr=1/.test(location.search);
+  var PR_ON = (!navigator.webdriver || /[?&]pr=1/.test(location.search)) && !SEND_VERSION;
   function prPost(path, data) {
     if (!PR_ON) return;
     try { fetch(SRV + path, { method: 'POST', body: JSON.stringify(data) }).catch(function () {}); } catch (e) {}
@@ -2187,6 +2232,7 @@ var DECK = {
   } catch (e) {}
 
   // ===== 启动 =====
+  if (SEND_VERSION) document.body.classList.add('send');
   var start = 0;
   var m = location.hash.match(/^#p(\d+)$/);
   if (m) start = Math.min(Math.max(parseInt(m[1], 10) - 1, 0), total - 1);
