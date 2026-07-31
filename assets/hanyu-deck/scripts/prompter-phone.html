@@ -122,6 +122,11 @@
   function scrollKey() { return 'hanyu-deck-scroll.' + shown + '.' + tab; }
   function saveScroll() { sessionStorage.setItem(scrollKey(), String(content.scrollTop)); }
   function restoreScroll() { content.scrollTop = Number(sessionStorage.getItem(scrollKey()) || 0); }
+  // 访问令牌来自二维码链接的 t 参数:局域网里其他设备没有它,读不到讲稿也连不上事件流
+  var TOKEN = new URLSearchParams(location.search).get('t') || '';
+  function api(path) {
+    return path + (path.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(TOKEN);
+  }
   function setConnection(ok) {
     connected = ok;
     $('connection').textContent = ok ? '已连接本地服务' : '连接中断，正在重连';
@@ -136,7 +141,7 @@
     var frame = shown === state.page && state.steps > 0
       ? '/steps/' + shown + '-' + state.step + '.jpg'
       : '/thumbs/' + shown + '.jpg';
-    $('thumb').src = frame;
+    $('thumb').src = api(frame);
     content.innerHTML = item
       ? (tab === 'script' ? item.html : item.comm) || '<p id="empty">这一页没有' + (tab === 'script' ? '讲稿' : '备注') + '。</p>'
       : '<p id="empty">请先在电脑端打开演示文稿。讲稿会自动同步到这里。</p>';
@@ -147,7 +152,7 @@
     buildOverview();
   }
   function loadNotes() {
-    fetch('/notes.json').then(function (response) { return response.json(); }).then(function (next) {
+    fetch(api('/notes.json')).then(function (response) { return response.json(); }).then(function (next) {
       if (next.notes) {
         data = next;
         localStorage.setItem('hanyu-deck-phone-cache', JSON.stringify(next));
@@ -161,12 +166,12 @@
     render();
   }
   function command(body) {
-    fetch('/goto', { method: 'POST', body: JSON.stringify(body) }).catch(function () {
+    fetch(api('/goto'), { method: 'POST', body: JSON.stringify(body) }).catch(function () {
       setConnection(false);
     });
   }
   function heartbeat() {
-    fetch('/phone-heartbeat', { method: 'POST', body: '{}' }).catch(function () {});
+    fetch(api('/phone-heartbeat'), { method: 'POST', body: '{}' }).catch(function () {});
   }
   function buildOverview() {
     var grid = $('grid');
@@ -174,8 +179,13 @@
     pages().forEach(function (item, index) {
       var button = document.createElement('button');
       button.className = 'page' + (index + 1 === shown ? ' now' : '');
-      button.innerHTML = '<img alt=""><span>P' + (index + 1) + '　' + (item.title || '') + '</span>';
-      button.querySelector('img').src = '/thumbs/' + (index + 1) + '.jpg';
+      var img = document.createElement('img');
+      img.alt = '';
+      img.src = api('/thumbs/' + (index + 1) + '.jpg');
+      var label = document.createElement('span');
+      label.textContent = 'P' + (index + 1) + '　' + (item.title || '');
+      button.appendChild(img);
+      button.appendChild(label);
       button.addEventListener('click', function () {
         setShown(index + 1);
         $('overview').classList.remove('open');
@@ -212,7 +222,7 @@
     content._saveTimer = setTimeout(saveScroll, 120);
   }, { passive: true });
 
-  var events = new EventSource('/events');
+  var events = new EventSource(api('/events'));
   events.addEventListener('open', function () { setConnection(true); });
   events.addEventListener('error', function () { setConnection(false); });
   events.addEventListener('state', function (event) {

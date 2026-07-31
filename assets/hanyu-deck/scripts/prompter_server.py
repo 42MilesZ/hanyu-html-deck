@@ -11,6 +11,7 @@ import json
 import os
 import queue
 import re
+import secrets
 import socket
 import subprocess
 import sys
@@ -30,6 +31,10 @@ PAGES_DIR = os.path.join(ROOT, "导出图片")
 THUMB_DIR = os.path.join(HERE, ".prompter-thumbs")
 STEPS_DIR = os.path.join(HERE, ".prompter-steps")
 PORT = int(os.environ.get("HANYU_DECK_PORT") or 8123)
+# 手机端凭据:每次启动重新生成,只经二维码交给手机。局域网里的其他设备拿不到,
+# 也就读不到讲稿、连不上事件流。桌面端走回环,不需要它。
+TOKEN = secrets.token_urlsafe(16)
+LOOPBACK = ("127.0.0.1", "::1", "::ffff:127.0.0.1")
 
 sys.path.insert(0, os.path.join(HERE, "vendor"))
 import qrcode  # noqa: E402
@@ -81,8 +86,35 @@ def local_ips():
     return sorted({ip for ip in found if ip and not ip.startswith(blocked)})
 
 
+_ip_cache = {"at": 0.0, "ips": []}
+
+
+def cached_ips():
+    now = time.time()
+    if now - _ip_cache["at"] > 5:
+        _ip_cache["ips"] = local_ips()
+        _ip_cache["at"] = now
+    return _ip_cache["ips"]
+
+
 def phone_urls():
-    return ["http://%s:%d/p" % (ip, PORT) for ip in local_ips()]
+    return ["http://%s:%d/p?t=%s" % (ip, PORT, TOKEN) for ip in cached_ips()]
+
+
+def allowed_hosts():
+    names = ["127.0.0.1", "localhost", "[::1]", "::1"] + cached_ips()
+    hosts = set()
+    for name in names:
+        hosts.add(name)
+        hosts.add("%s:%d" % (name, PORT))
+    return hosts
+
+
+def allowed_origins():
+    origins = {"null", "file://"}
+    for name in ["127.0.0.1", "localhost", "[::1]"] + cached_ips():
+        origins.add("http://%s:%d" % (name, PORT))
+    return origins
 
 
 def preferred_url(urls):
@@ -121,24 +153,39 @@ def thumb_path(number):
     os.makedirs(THUMB_DIR, exist_ok=True)
     target = os.path.join(THUMB_DIR, "%02d.jpg" % number)
     if not os.path.exists(target) or os.path.getmtime(target) < os.path.getmtime(source):
-        subprocess.run(
-            [
-                "sips",
-                "-s",
-                "format",
-                "jpeg",
-                "-s",
-                "formatOptions",
-                "70",
-                "-Z",
-                "640",
-                source,
-                "--out",
-                target,
-            ],
-            capture_output=True,
-        )
+        try:
+            subprocess.run(
+                [
+                    "sips",
+                    "-s",
+                    "format",
+                    "jpeg",
+                    "-s",
+                    "formatOptions",
+                    "70",
+                    "-Z",
+                    "640",
+                    source,
+                    "--out",
+                    target,
+                ],
+                capture_output=True,
+            )
+        except OSError:
+            return None      # 非 macOS 没有 sips:没有缩略图,但不影响其他功能
     return target if os.path.exists(target) else None
+
+
+notes_lock = threading.Lock()
+
+
+def write_notes_file(raw):
+    """原子写:并发的 /notes 与写回同步不会交错出半截 JSON。"""
+    with notes_lock:
+        tmp = NOTES_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as handle:
+            handle.write(raw)
+        os.replace(tmp, NOTES_FILE)
 
 
 def sync_notes_page(page, fragment, selector):
@@ -153,26 +200,90 @@ def sync_notes_page(page, fragment, selector):
         state["nv"] = hashlib.md5(raw.encode()).hexdigest()[:8]
         state["seq"] += 1
         snapshot = dict(state)
-    with open(NOTES_FILE, "w", encoding="utf-8") as handle:
-        handle.write(raw)
+    write_notes_file(raw)
     broadcast("notes", {"nv": snapshot["nv"]})
     broadcast("state", snapshot)
 
 
-def save_seed(page, fragment, selector):
+NOTE_TAGS = {"p", "br", "b", "strong", "i", "em", "span", "ul", "ol", "li"}
+NOTE_ATTRS = {"class"}
+CANVAS_TAGS = {
+    "div", "span", "p", "br", "b", "strong", "i", "em", "small", "hr",
+    "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote",
+    "table", "thead", "tbody", "tr", "td", "th", "figure", "figcaption",
+    "section", "article", "header", "footer", "img", "code", "pre", "a",
+    "svg", "g", "path", "circle", "rect", "line", "polyline", "polygon",
+    "text", "tspan", "defs", "lineargradient", "radialgradient", "stop", "use",
+}
+CANVAS_ATTRS = {
+    "class", "id", "style", "title", "role", "alt", "src", "srcset", "href",
+    "target", "rel", "loading", "decoding", "width", "height", "colspan",
+    "rowspan", "viewbox", "xmlns", "d", "fill", "fill-rule", "clip-rule",
+    "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin",
+    "stroke-dasharray", "transform", "opacity", "offset", "stop-color",
+    "gradientunits", "patternunits", "preserveaspectratio", "points",
+    "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry",
+    "text-anchor", "dominant-baseline", "font-size", "font-weight",
+}
+TAG_RE = re.compile(r"<\s*(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>")
+ATTR_RE = re.compile(r"([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*(?:=\s*(\"[^\"]*\"|'[^']*'|[^\s\"'>]+))?")
+BAD_URL_RE = re.compile(r"^\s*(javascript:|data:text/html|vbscript:)", re.I)
+
+
+def check_markup(fragment, tags, attrs):
+    """白名单校验:标签与属性都必须在清单里,未列出的一律拒绝(含 on* 事件属性)。"""
+    if "<!--" in fragment:
+        return False, "内容含注释"
+    for match in TAG_RE.finditer(fragment):
+        name = match.group(2).lower()
+        if name not in tags:
+            return False, "不允许的标签 <%s>" % name
+        if match.group(1):            # 闭合标签没有属性
+            continue
+        for attr in ATTR_RE.finditer(match.group(3)):
+            key = attr.group(1).lower()
+            if key.startswith("data-") or key.startswith("aria-"):
+                continue
+            if key not in attrs:
+                return False, "不允许的属性 %s" % key
+            value = (attr.group(2) or "").strip("\"'")
+            if key in ("href", "src", "srcset") and BAD_URL_RE.match(value):
+                return False, "不允许的链接协议"
+    return True, ""
+
+
+def find_block(document, selector, page):
+    """按 div 开闭配平定位第 page 个 .ns/.nc 区块,返回内容区间。
+
+    不能用非贪婪正则:区块内若有嵌套 div,`.*?</div>` 会在中途截断,
+    写回后多出的 </div> 会提前关掉 <aside>,把源文件结构改坏。
+    """
+    opens = [m for m in re.finditer(r'<div class="%s">' % selector, document)]
+    if page > len(opens):
+        return None
+    start = opens[page - 1].end()
+    depth = 1
+    for match in re.finditer(r"<div\b|</div>", document[start:]):
+        depth += 1 if match.group(0).startswith("<div") else -1
+        if depth == 0:
+            return start, start + match.start(), start + match.end()
+    return None
+
+
+def save_seed(page, fragment, selector, dom_total):
     with seed_lock:
         with open(INDEX_FILE, encoding="utf-8") as handle:
             document = handle.read()
-        blocks = list(
-            re.finditer(r'<div class="%s">.*?</div>' % selector, document, re.S)
-        )
-        if page > len(blocks):
+        sections = len(re.findall(r'<section class="slide"[\s>]', document))
+        if dom_total != sections:
+            return False, "源文件页数已变化，请刷新后再修改"
+        found = find_block(document, selector, page)
+        if not found:
             return False, "文件里没有第 %d 页的 %s 区域" % (page, selector)
-        match = blocks[page - 1]
-        replacement = '<div class="%s">%s</div>' % (selector, fragment)
-        document = document[: match.start()] + replacement + document[match.end() :]
+        inner_start, inner_end, _ = found
+        document = document[:inner_start] + fragment + document[inner_end:]
         tmp = INDEX_FILE + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as handle:
+        with open(tmp, "w", encoding="utf-8", newline="\n") as handle:
             handle.write(document)
         os.replace(tmp, INDEX_FILE)
     return True, ""
@@ -215,13 +326,15 @@ def save_canvas(page, fragment, dom_total):
 def notify(title, message):
     if sys.platform != "darwin":
         return
-    safe_title = str(title).replace('"', "'")
-    safe_message = str(message).replace('"', "'")
+
+    def esc(text):
+        return str(text).replace("\\", "\\\\").replace('"', '\\"')
+
     subprocess.run(
         [
             "osascript",
             "-e",
-            'display notification "%s" with title "%s"' % (safe_message, safe_title),
+            'display notification "%s" with title "%s"' % (esc(message), esc(title)),
         ],
         capture_output=True,
     )
@@ -249,6 +362,10 @@ def run_export(kind):
         export_busy = False
 
 
+LOCAL_ONLY = ("/canvas", "/seed", "/export", "/notes", "/flip", "/info", "/qr.svg")
+PHONE_PATHS = ("/", "/p", "/notes.json", "/events", "/goto", "/phone-heartbeat")
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -257,7 +374,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def headers_base(self, content_type):
         self.send_header("Content-Type", content_type)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin")
+        if origin and origin in allowed_origins():
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         self.send_header("Cache-Control", "no-store")
 
     def send_bytes(self, data, content_type, code=200):
@@ -272,24 +392,71 @@ class Handler(BaseHTTPRequestHandler):
 
     def body_json(self):
         size = int(self.headers.get("Content-Length") or 0)
+        if size > 8 * 1024 * 1024:
+            raise ValueError("body too large")
         return json.loads(self.rfile.read(size) or b"{}")
 
-    def write_allowed(self):
+    def from_loopback(self):
+        return self.client_address[0] in LOOPBACK
+
+    def host_ok(self):
+        """Host 必须指向本机:堵住 DNS rebinding(攻击页把自己的域名重绑到 127.0.0.1)。"""
+        return (self.headers.get("Host") or "") in allowed_hosts()
+
+    def origin_ok(self):
         origin = self.headers.get("Origin")
-        if origin in (None, "null"):
-            return True
-        return origin.split("//")[-1] == (self.headers.get("Host") or "")
+        return origin is None or origin in allowed_origins()
+
+    def token_ok(self):
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        return secrets.compare_digest(query.get("t", [""])[0], TOKEN)
+
+    def allow(self, path):
+        """返回 (是否放行, 拒绝原因)。写侧只认回环,手机侧认回环或令牌。"""
+        if not self.host_ok():
+            return False, "请求的主机名不是本机地址"
+        if path in LOCAL_ONLY or path.startswith("/thumbs/") or path.startswith("/steps/"):
+            if path.startswith("/thumbs/") or path.startswith("/steps/"):
+                if self.from_loopback() or self.token_ok():
+                    return True, ""
+                return False, "需要有效的手机访问令牌"
+            if not self.from_loopback():
+                return False, "这个操作只允许本机"
+            if not self.origin_ok():
+                return False, "来源不被信任，拒绝写入"
+            return True, ""
+        if path in PHONE_PATHS:
+            if self.from_loopback() or self.token_ok():
+                return True, ""
+            return False, "需要有效的手机访问令牌，请重新扫码"
+        return True, ""
+
+    def guard(self, path):
+        ok, why = self.allow(path)
+        if not ok:
+            self.send_json({"err": why}, 403)
+        return ok
 
     def do_OPTIONS(self):
+        origin = self.headers.get("Origin")
+        if not self.host_ok() or not (origin and origin in allowed_origins()):
+            self.send_response(403)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Content-Length", "0")
         self.end_headers()
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        if not self.guard(path):
+            return
         if path in ("/", "/p"):
             with open(PHONE_FILE, "rb") as handle:
                 self.send_bytes(handle.read(), "text/html; charset=utf-8")
@@ -364,18 +531,22 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"err": "not found"}, 404)
 
     def do_POST(self):
+        path = urllib.parse.urlparse(self.path).path
+        if not self.guard(path):
+            return
         try:
             body = self.body_json()
+            if not isinstance(body, dict):
+                raise ValueError("body must be an object")
         except Exception:
             self.send_json({"err": "bad json"}, 400)
             return
-        path = urllib.parse.urlparse(self.path).path
-        if path in ("/canvas", "/seed", "/export") and not self.write_allowed():
-            self.send_json({"err": "来源不被信任，拒绝写入"}, 403)
-            return
-        if path == "/canvas" and self.client_address[0] not in ("127.0.0.1", "::1"):
-            self.send_json({"err": "画布写回只允许本机"}, 403)
-            return
+        try:
+            self.handle_post(path, body)
+        except (TypeError, ValueError):
+            self.send_json({"err": "参数不对"}, 400)
+
+    def handle_post(self, path, body):
         if path == "/flip":
             with lock:
                 state["seq"] += 1
@@ -410,8 +581,7 @@ class Handler(BaseHTTPRequestHandler):
                 if changed:
                     state["seq"] += 1
                 snapshot = dict(state)
-            with open(NOTES_FILE, "w", encoding="utf-8") as handle:
-                handle.write(raw)
+            write_notes_file(raw)
             if changed:
                 broadcast("notes", {"nv": version})
                 broadcast("state", snapshot)
@@ -420,15 +590,18 @@ class Handler(BaseHTTPRequestHandler):
             page = int(body.get("page") or 0)
             fragment = body.get("html") or ""
             selector = body.get("sel") or "ns"
-            if selector not in ("ns", "nc") or not (1 <= page <= 999):
+            dom_total = int(body.get("total") or 0)
+            if selector not in ("ns", "nc") or not (1 <= page <= 999) or dom_total < 1:
                 self.send_json({"err": "参数不对"}, 400)
                 return
-            if not fragment.strip() or re.search(
-                r"</?div|</?aside|<script|<!--", fragment, re.I
-            ):
-                self.send_json({"err": "内容为空或含不安全标签"}, 400)
+            if not fragment.strip():
+                self.send_json({"err": "内容为空"}, 400)
                 return
-            ok, error = save_seed(page, fragment, selector)
+            safe, why = check_markup(fragment, NOTE_TAGS, NOTE_ATTRS)
+            if not safe:
+                self.send_json({"err": why}, 400)
+                return
+            ok, error = save_seed(page, fragment, selector, dom_total)
             if ok:
                 sync_notes_page(page, fragment, selector)
                 self.send_json({"ok": 1})
@@ -436,14 +609,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"err": error}, 500)
         elif path == "/canvas":
             fragment = body.get("html") or ""
-            if re.search(r"<script|<iframe|\son[a-z]+\s*=", fragment, re.I):
-                self.send_json({"err": "内容含脚本或事件属性"}, 400)
+            dom_total = int(body.get("total") or 0)
+            if dom_total < 1:
+                self.send_json({"err": "缺少页数，拒绝写回"}, 400)
                 return
-            ok, error = save_canvas(
-                int(body.get("page") or 0),
-                fragment,
-                int(body.get("total") or 0),
-            )
+            safe, why = check_markup(fragment, CANVAS_TAGS, CANVAS_ATTRS)
+            if not safe:
+                self.send_json({"err": why}, 400)
+                return
+            ok, error = save_canvas(int(body.get("page") or 0), fragment, dom_total)
             self.send_json({"ok": 1} if ok else {"err": error}, 200 if ok else 500)
         elif path == "/export":
             global export_busy
@@ -490,7 +664,7 @@ def main():
     urls = phone_urls()
     print("Hanyu Deck 本地服务已启动：http://127.0.0.1:%d" % PORT)
     if urls:
-        print("手机与电脑在同一网络时，打开：")
+        print("手机与电脑在同一网络时，打开（链接含本次运行的访问令牌）：")
         for url in urls:
             print("  " + url)
     else:
@@ -498,6 +672,10 @@ def main():
     print("关闭这个窗口或按 Ctrl+C 即停止服务。")
     try:
         Server(("0.0.0.0", PORT), Handler).serve_forever()
+    except OSError as error:
+        print("端口 %d 起不来：%s" % (PORT, error))
+        print("可能已有一个 Hanyu Deck 服务在跑；或设置 HANYU_DECK_PORT 换一个端口。")
+        sys.exit(1)
     except KeyboardInterrupt:
         print("\n服务已停止。")
 

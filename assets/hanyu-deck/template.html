@@ -1482,7 +1482,7 @@ var DECK = {
         if (!frag) return;                 // 内容为空不写,留在浏览器里等下一次
         return fetch(SRV + '/seed', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ page: c.i + 1, html: frag, sel: c.ed.sel.slice(1) })
+          body: JSON.stringify({ page: c.i + 1, total: total, html: frag, sel: c.ed.sel.slice(1) })
         }).then(function (r) { return r.json(); }).then(function (d) {
           if (!d.ok) return;               // 被拒:改动留在浏览器,灯保持橙黄
           snapHist(c.i, c.ed);
@@ -1517,6 +1517,12 @@ var DECK = {
     }
     function serializeCanvas(c) {
       var clone = c.cloneNode(true);
+      // 编辑态属性不属于源文:关窗时的 beacon 会在元素仍可编辑时序列化,不清掉就会写进文件
+      Array.prototype.slice.call(clone.querySelectorAll('[contenteditable]')).forEach(function (el) {
+        el.removeAttribute('contenteditable');
+        el.classList.remove('cv-editing');
+        if (!el.className) el.removeAttribute('class');
+      });
       // 页脚线由引擎进页时注入,不属于源文:写回前摘掉,否则每存一次就在源文里多积一条
       Array.prototype.slice.call(clone.querySelectorAll('.pfoot')).forEach(function (f) { f.remove(); });
       // 金句逐字动画把文本拆成了 .ch 字符 span:写回前还原成纯文本,不把几百个 span 烙进源文件

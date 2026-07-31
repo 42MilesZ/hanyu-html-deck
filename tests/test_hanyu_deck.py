@@ -147,6 +147,80 @@ class ServerTests(unittest.TestCase):
             self.assertFalse(ip.startswith("127."))
             self.assertFalse(ip.startswith("198.18."))
 
+    def test_note_markup_whitelist_rejects_injection(self):
+        mod = self.module
+        for payload in (
+            '<p><img src=x onerror="fetch(1)"></p>',
+            '<p><iframe src="http://evil"></iframe></p>',
+            "<p><svg onload=alert(1)></svg></p>",
+            '</section><section class="slide"><p>x</p>',
+            '<p contenteditable="true">x</p>',
+            "<p>x</p><!-- c -->",
+            "<p><script>alert(1)</script></p>",
+        ):
+            ok, _ = mod.check_markup(payload, mod.NOTE_TAGS, mod.NOTE_ATTRS)
+            self.assertFalse(ok, payload)
+        ok, why = mod.check_markup(
+            '<p class="o-main">正常<b>加粗</b><br>换行</p>', mod.NOTE_TAGS, mod.NOTE_ATTRS
+        )
+        self.assertTrue(ok, why)
+
+    def test_canvas_markup_whitelist(self):
+        mod = self.module
+        ok, why = mod.check_markup(
+            '<div class="x"><img src="a.png" alt=""><svg viewBox="0 0 24 24">'
+            '<path d="M0 0" stroke-width="1.5"/></svg></div>',
+            mod.CANVAS_TAGS,
+            mod.CANVAS_ATTRS,
+        )
+        self.assertTrue(ok, why)
+        for payload in (
+            '<div onclick="x()"></div>',
+            '<a href="javascript:alert(1)">x</a>',
+            "<object data=x></object>",
+            '<img src="data:text/html,<script>1</script>">',
+        ):
+            ok, _ = mod.check_markup(payload, mod.CANVAS_TAGS, mod.CANVAS_ATTRS)
+            self.assertFalse(ok, payload)
+
+    def test_local_boundaries_are_declared(self):
+        mod = self.module
+        for path in ("/canvas", "/seed", "/export", "/notes", "/flip", "/info"):
+            self.assertIn(path, mod.LOCAL_ONLY)
+        hosts = mod.allowed_hosts()
+        self.assertIn("127.0.0.1:%d" % mod.PORT, hosts)
+        self.assertNotIn("evil.example:%d" % mod.PORT, hosts)
+        origins = mod.allowed_origins()
+        self.assertIn("null", origins)
+        self.assertNotIn("https://evil.example", origins)
+        self.assertGreaterEqual(len(mod.TOKEN), 16)
+
+    def test_find_block_is_balanced(self):
+        mod = self.module
+        doc = '<aside><div class="nc"><div class="x">内层</div><p>正文</p></div></aside>'
+        start, end, _ = mod.find_block(doc, "nc", 1)
+        self.assertEqual(doc[start:end], '<div class="x">内层</div><p>正文</p>')
+
+    def test_save_seed_rejects_page_count_mismatch(self):
+        mod = self.module
+        with tempfile.TemporaryDirectory() as temp:
+            path = pathlib.Path(temp) / "index.html"
+            path.write_text(
+                '<section class="slide"><aside><div class="ns"><p>a</p></div></aside></section>',
+                encoding="utf-8",
+            )
+            original = mod.INDEX_FILE
+            mod.INDEX_FILE = str(path)
+            try:
+                ok, _ = mod.save_seed(1, "<p>b</p>", "ns", 5)
+                self.assertFalse(ok)
+                self.assertIn("<p>a</p>", path.read_text(encoding="utf-8"))
+                ok, why = mod.save_seed(1, "<p>b</p>", "ns", 1)
+                self.assertTrue(ok, why)
+                self.assertIn("<p>b</p>", path.read_text(encoding="utf-8"))
+            finally:
+                mod.INDEX_FILE = original
+
 
 class SkillEvalSchemaTests(unittest.TestCase):
     def test_eval_schema(self):
