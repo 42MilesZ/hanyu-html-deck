@@ -191,13 +191,24 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("body.notes-anim #stage", self.html)
         self.assertIn("new ResizeObserver", self.html)
         self.assertIn("#overview.open", self.html)
+        self.assertIn("--ease-view: cubic-bezier(.65,0,.35,1)", self.html)
+        self.assertIn("body.ov #stage .slide.current", self.html)
         self.assertIn("function beginViewAnim()", self.html)
+        self.assertIn("}, 560);", self.html)
+        self.assertIn("go(i, false, true)", self.html)
+        self.assertIn("requestAnimationFrame(function () { setView('default'); })", self.html)
         self.assertIn("prefers-reduced-motion: reduce", self.html)
 
     def test_rate_button_uses_the_shared_muted_background(self):
         rule = re.search(r"#rateBtn\s*\{([^}]*)\}", self.html)
         self.assertIsNotNone(rule)
         self.assertIn("background: var(--muted-bg)", rule.group(1))
+
+    def test_fixed_menus_are_not_trapped_by_the_notes_panel(self):
+        rule = re.search(r"#notesPanel\s*\{([^}]*)\}", self.html)
+        self.assertIsNotNone(rule)
+        self.assertIn("transform: none", rule.group(1))
+        self.assertNotIn("transform: translateY(0)", rule.group(1))
 
     def test_history_is_separate_per_column(self):
         self.assertIn("hkey: DECK.key + '.h.'", self.html)
