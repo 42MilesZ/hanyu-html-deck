@@ -59,7 +59,7 @@ When invoking it, state the content, the occasion, and the page count, and ask e
 
 The bottom script panel starts collapsed to a single header row. Press `N` to expand it. Speaker scripts are plain paragraphs with no required outline structure.
 
-Once expanded, a sidebar icon at the bottom right of the script column opens the notes drawer. Notes can hold revision requests, supporting information, or personal reminders. Closing the drawer only changes the view; it does not delete content.
+Once expanded, a sidebar icon at the bottom right of the script column opens the notes drawer, and closes it again. Drag the drawer's left edge to resize the notes column; the width is remembered. Notes can hold revision requests, supporting information, or personal reminders. Closing the drawer only changes the view; it does not delete content.
 
 Panel and drawer state are stored separately in localStorage and scoped by `DECK.key`.
 
@@ -72,7 +72,7 @@ The export menu includes:
 - `导出单独发送版`: one self-contained HTML file with fonts and images inlined, notes and write-back code stripped.
 - `切换为 1:1 像素`: disables canvas scaling so DOM or Figma capture tools see true 1920 × 1080 coordinates.
 
-Hovering a menu item for about a second shows a one-line explanation.
+Hovering a menu item for about 0.2 seconds shows a one-line explanation.
 
 ## Phone teleprompter
 

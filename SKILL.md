@@ -28,7 +28,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 - 入场说明讲解顺序，步进只点亮当前内容，跨页动效保持对象的位置或比例关系。
 - 总览和导出必须显示动画的静态终态：入场动画只挂在 `.slide.on` 下，并为 `.ovItem` 与 `body.exporting` 补终态覆盖。
 - 入场淡入不要和步进点亮争同一个 `opacity`：淡入挂容器，点亮留给行本身。
-- 工具图标统一使用 Lucide 线性 SVG，描边 1.5；悬停约一秒后显示深灰色解释。
+- 工具图标统一使用 Lucide 线性 SVG，描边 1.5；悬停 0.2 秒后显示深灰色解释。
 
 ## 页面制作
 
