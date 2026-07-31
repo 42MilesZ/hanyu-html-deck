@@ -182,6 +182,24 @@
   body.present .navzone { top: 0; bottom: 0; }
   #zonePrev { left: 0; } #zoneNext { right: 0; }
   body.navnarrow .navzone { width: 4%; }
+  /* 悬停反馈:极淡底色 + 线性箭头。两者都用中灰——浅色纸底上偏暗、纯黑画布上偏亮,
+     不必按页面明暗分别写一套 */
+  .navzone::before, .navzone::after {
+    content: ""; position: absolute; opacity: 0;
+    transition: opacity .2s ease; pointer-events: none;
+  }
+  .navzone::before { inset: 0; }
+  #zonePrev::before { background: linear-gradient(90deg, rgba(150,150,150,.16), transparent 62%); }
+  #zoneNext::before { background: linear-gradient(270deg, rgba(150,150,150,.16), transparent 62%); }
+  .navzone::after {
+    top: 50%; width: 15px; height: 15px; margin-top: -8px;
+    border-left: 1.5px solid rgba(150,150,150,.85);
+    border-bottom: 1.5px solid rgba(150,150,150,.85);
+  }
+  #zonePrev::after { left: 30px; transform: rotate(45deg); }
+  #zoneNext::after { right: 30px; transform: rotate(-135deg); }
+  .navzone:hover::before, .navzone:hover::after { opacity: 1; }
+  body.present .navzone:hover::before, body.present .navzone:hover::after { opacity: .55; }
 
   /* ===== 进度条 ===== */
   #progress { position: fixed; bottom: 0; left: 0; right: 0; height: 3px; background: #262626; z-index: 60; }
@@ -399,9 +417,27 @@
   .pbody .bd-text p + p { margin-top: 40px; }
   .pbody .bd-fig { position: absolute; top: 280px; right: 100px; width: 680px; height: 560px; background: #dedbd2; }
   .pbody .bd-fig span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #777; letter-spacing: .2em; }
+  /* 命令行:字面照抄的内容用等宽字与淡底标出,与叙述段落区分 */
+  .pbody .bd-cmd {
+    position: absolute; left: 100px; top: 300px; width: 1000px; padding: 26px 30px; background: #e5e2d9;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 25px; letter-spacing: .01em;
+  }
+  /* 命令之后的操作步骤:编号压暗,内容成行 */
+  .pbody .bd-steps { position: absolute; left: 100px; top: 500px; width: 1000px; font-size: 26px; line-height: 2.6; }
+  .pbody .bd-steps p { display: flex; gap: 22px; }
+  .pbody .bd-steps .no { flex: none; color: #8b877f; font-variant-numeric: tabular-nums; }
+  /* 目录结构:等宽列表,层级靠缩进 */
+  .pbody .bd-tree {
+    position: absolute; top: 296px; right: 100px; width: 640px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 24px; line-height: 2.1; color: #55524b;
+  }
+  .pbody .bd-tree .lv { padding-left: 46px; color: #7b7770; }
   .slide.on .pbody .bd-title { opacity: 0; animation: fwUp .6s ease .1s forwards; }
   .slide.on .pbody .bd-text { opacity: 0; animation: fwFadeIn .7s ease .4s forwards; }
   .slide.on .pbody .bd-fig { opacity: 0; animation: fwFadeIn .7s ease .55s forwards; }
+  .slide.on .pbody .bd-cmd { opacity: 0; animation: fwUp .6s ease .35s forwards; }
+  .slide.on .pbody .bd-steps { opacity: 0; animation: fwFadeIn .7s ease .55s forwards; }
+  .slide.on .pbody .bd-tree { opacity: 0; animation: fwFadeIn .7s ease .55s forwards; }
 
   /* --- 示例:分步页(data-steps 步进:→ 逐项点亮,未点亮压暗细字;讲到哪亮到哪) --- */
   .psteps { background: #000; color: #fff; }
@@ -425,6 +461,26 @@
   .slide.on .psteps .st-row:nth-child(1) { animation-delay: .15s; }
   .slide.on .psteps .st-row:nth-child(2) { animation-delay: .25s; }
   .slide.on .psteps .st-row:nth-child(3) { animation-delay: .35s; }
+  /* 总览缩略图与导出:步进页恒显终态(全部点亮),不留半亮的中间帧 */
+  .ovItem .psteps .st-row, body.exporting .psteps .st-row { opacity: 1; }
+  .ovItem .psteps .st-row .ex, body.exporting .psteps .st-row .ex { opacity: 1; transform: none; }
+
+  /* --- 参考骨架:能力矩阵。一列功能 + 两列标记,按 data-step 逐列点亮,
+         适合讲「哪些能力自带、哪些需要额外条件」这类二维对照。 --- */
+  .pmatrix .mx-title { position: absolute; left: 100px; top: 88px; font-size: 66px; font-weight: 300; }
+  .pmatrix .mx { position: absolute; left: 100px; right: 100px; top: 290px; }
+  .pmatrix .mx-head, .pmatrix .mx-row { display: grid; grid-template-columns: 1fr 300px 300px; align-items: center; }
+  .pmatrix .mx-head { padding-bottom: 16px; font-size: 24px; letter-spacing: .1em; color: #6f6b64; }
+  .pmatrix .mx-head span + span, .pmatrix .mx-row .mk { justify-self: center; }
+  .pmatrix .mx-row { border-top: 1px solid #ccc9c0; padding: 32px 0; font-size: 30px; }
+  .pmatrix .mk { width: 16px; height: 16px; background: var(--ink); opacity: 0; transition: opacity .5s; }
+  /* 标记按列点亮:第一步亮「自带」列,第二步补上「本地服务」列;off = 该组合不支持,恒空 */
+  .pmatrix[data-step="1"] .mk.c1:not(.off), .pmatrix[data-step="2"] .mk:not(.off) { opacity: 1; }
+  .pmatrix .mx-note { position: absolute; left: 100px; right: 100px; bottom: 136px; font-size: 24px; line-height: 1.7; color: #6f6b64; }
+  .slide.on .pmatrix .mx-title { opacity: 0; animation: fwUp .6s ease .1s forwards; }
+  .slide.on .pmatrix .mx { opacity: 0; animation: fwFadeIn .7s ease .35s forwards; }
+  .slide.on .pmatrix .mx-note { opacity: 0; animation: fwFadeIn .7s ease .6s forwards; }
+  .ovItem .pmatrix .mk:not(.off), body.exporting .pmatrix .mk:not(.off) { opacity: 1; }
 
   /* --- 参考骨架:可展开图像列。悬停聚焦一列，其余退后，适合讲分类与案例。 --- */
   .paccordion { display: flex; background: #050505; color: #fff; }
@@ -492,7 +548,7 @@
   .pend .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .35), rgba(0, 0, 0, .68) 38%, rgba(0, 0, 0, .68) 72%, rgba(0, 0, 0, .35)); }
   .pend .ph-img { position: absolute; inset: 0; background: radial-gradient(ellipse 90% 70% at 50% 60%, #33322f, #101010 80%); }
   .pend .line { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: #fff; font-size: 62px; font-weight: 300; line-height: 2; letter-spacing: .1em; }
-  .pend .line .ch { display: inline-block; }
+  .pend .line .ch { display: inline-block; white-space: pre; } /* pre:拆字后空格仍占宽,英文词不粘连 */
   .slide.on .pend .line .ch { opacity: 0; filter: blur(4px); animation: chIn 1.4s ease forwards; animation-delay: calc(var(--i) * 95ms + .5s); }
 
   /* ===== 画布就地编辑:双击画布文字直接改,失焦后经本地服务写回本文件源文 ===== */
@@ -629,107 +685,137 @@
       <div class="co-part">LOCAL-FIRST HTML PRESENTATION</div>
       <div class="zh">Hanyu Deck</div>
     </div>
-    <div class="cv-cap">为 AI 编程工具准备的演示框架</div>
+    <div class="cv-cap">演示引擎与制作流程，不是幻灯片视觉模板</div>
   </div>
   <aside>
-    <div class="ns"><p>Hanyu Deck 是一个本地优先的 HTML 演示框架，主要给使用 Codex、Claude Code 等 AI 编程工具制作演示稿的人使用。</p><p>页面、讲稿和备注放在同一个 HTML 文件里，打开文件就能演示。</p></div>
-    <div class="nc"><p>制作新项目时替换主视觉、标题和定位，保留版式结构即可。</p></div>
+    <div class="ns"><p>Hanyu Deck 是一个本地优先的 HTML 演示框架，主要给使用 Codex、Claude Code 等 AI 编程工具制作演示稿的人使用。</p><p>页面、讲稿和备注放在同一个 HTML 文件里，双击文件就能演示，不需要账号、安装或网络。</p></div>
+    <div class="nc"><p>制作新项目时替换主视觉、标题和这句定位，保留版式结构即可。</p></div>
   </aside>
 </section>
 
-<!-- 产品定位 -->
-<section class="slide" data-title="核心演示不依赖本地服务">
-  <div class="canvas pbody">
-    <div class="bd-title">核心演示不依赖本地服务</div>
-    <div class="bd-text">
-      <p>一个 HTML 文件包含画布、动画、讲稿和备注。无需账号、无需安装额外依赖，也不需要网络。</p>
-      <p>本地服务关闭后，电脑上的翻页、动画和演示仍可继续。</p>
-    </div>
-    <div class="bd-fig"><span>HTML<br>1920 × 1080</span></div>
+<!-- 定位澄清：不是视觉模板 -->
+<section class="slide" data-title="不是视觉模板">
+  <div class="canvas nofoot psplit">
+    <div class="sp-half"><div class="sp-label">不是</div><div class="sp-word">视觉模板</div><div class="sp-copy">不提供主题皮肤、配色方案或成套版式。页面按每份内容现做。</div></div>
+    <div class="sp-half"><div class="sp-label">是</div><div class="sp-word">演示引擎</div><div class="sp-copy">翻页、分步动画、讲稿、备注、手机提词、写回与导出，全部内建。</div></div>
   </div>
   <aside>
-    <div class="ns"><p>正式演示最重要的是稳定。Hanyu Deck 把核心能力放进 HTML，本地服务关闭后，电脑上的演示仍然可以继续。</p><p>把文件交给别人时，对方不用安装依赖或启动本地服务。</p></div>
-    <div class="nc"><p>这里可以换成实际 Deck 的界面截图。</p></div>
+    <div class="ns"><p>这一点最容易被误解：Hanyu Deck 给的不是一套好看的版式，而是一套演示能力。</p><p>模板里的示例页只是页面骨架的起点，真正的版面由 AI 按当次内容重新组织。换句话说，它管的是播放、讲稿、提词、写回和导出这些事，不管你的演示长什么样。</p></div>
+    <div class="nc"><p>对外介绍时先讲这一页，再讲功能，可以少掉一轮误会。</p></div>
+  </aside>
+</section>
+
+<!-- 三类内容同一文件 -->
+<section class="slide" data-title="三类内容同一文件">
+  <div class="canvas nofoot nav-narrow paccordion">
+    <div class="ac-title">页面、讲稿、备注，同一个文件</div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">01</div><div class="ac-name">页面</div><div class="ac-desc">给观众看的画布，固定 1920 × 1080。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">02</div><div class="ac-name">讲稿</div><div class="ac-desc">给演讲者看的自然段，按页估算时长。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">03</div><div class="ac-name">备注</div><div class="ac-desc">修改意见与提醒；改动可复制给 AI。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">04</div><div class="ac-name">手机</div><div class="ac-desc">同步显示当前页的讲稿或备注，并可遥控翻页。</div></div></div>
+  </div>
+  <aside>
+    <div class="ns"><p>一份 Deck 里有三类内容：页面给观众看，讲稿给演讲者看，备注记录修改意见、补充说明和个人提醒。它们都写在同一个 HTML 文件里，不需要另外维护稿件。</p><p>手机端显示当前页的讲稿或备注，两栏可以切换。</p></div>
+    <div class="nc"><p>把鼠标移到某一栏可以单独展开说明。正式项目可为四栏替换同一风格的图片。</p></div>
+  </aside>
+</section>
+
+<!-- 功能边界 -->
+<section class="slide" data-title="功能边界">
+  <div class="canvas pmatrix" data-steps="2" data-step="0">
+    <div class="mx-title">哪些能力自带，哪些需要本地服务</div>
+    <div class="mx">
+      <div class="mx-head"><span>能力</span><span>只打开 HTML</span><span>启动本地服务</span></div>
+      <div class="mx-row"><span>浏览、翻页、总览、演示模式</span><i class="mk c1"></i><i class="mk c2"></i></div>
+      <div class="mx-row"><span>页面内分步动画与悬停交互</span><i class="mk c1"></i><i class="mk c2"></i></div>
+      <div class="mx-row"><span>编辑讲稿与备注，存在浏览器</span><i class="mk c1"></i><i class="mk c2"></i></div>
+      <div class="mx-row"><span>手机提词器与手机遥控</span><i class="mk c1 off"></i><i class="mk c2"></i></div>
+      <div class="mx-row"><span>写回源文件，导出图片 / PDF / 发送版</span><i class="mk c1 off"></i><i class="mk c2"></i></div>
+    </div>
+    <div class="mx-note">本地服务只在当前局域网内工作，不连接公共中继，不上传讲稿。</div>
+  </div>
+  <aside>
+    <div class="ns"><p>这是这份文档里最需要记住的一张表。上面三行只要双击 HTML 就成立，本地服务关掉也不影响演示。</p><p>下面两行需要先启动本地服务：手机提词与遥控，以及写回源文件和三种导出。本地服务是加法，不接管演示本身。</p></div>
+    <div class="nc"><p>按 → 逐列点亮：先讲自带能力，再讲本地服务追加的部分。</p></div>
   </aside>
 </section>
 
 <!-- 制作流程 -->
-<section class="slide" data-title="制作只需生成、校对、交付">
+<section class="slide" data-title="制作三步">
   <div class="canvas psteps" data-steps="3" data-step="0">
     <div class="st-title">从内容到演示，只保留三步</div>
     <div class="st-rows">
-      <div class="st-row"><span class="no">01</span><span class="w">生成</span><span class="ex">让 AI 复用页面骨架，完成内容和版式</span></div>
-      <div class="st-row"><span class="no">02</span><span class="w">校对</span><span class="ex">浏览器本地保存；启动服务后可写回原文件</span></div>
-      <div class="st-row"><span class="no">03</span><span class="w">交付</span><span class="ex">导出图片、PDF 或移除私有备注的发送版</span></div>
+      <div class="st-row"><span class="no">01</span><span class="w">生成</span><span class="ex">让 AI 复用页面骨架，写入内容与讲稿</span></div>
+      <div class="st-row"><span class="no">02</span><span class="w">校对</span><span class="ex">在浏览器里改；启动服务后写回原文件</span></div>
+      <div class="st-row"><span class="no">03</span><span class="w">交付</span><span class="ex">导出图片、PDF，或剥掉备注的发送版</span></div>
     </div>
   </div>
   <aside>
-    <div class="ns"><p>Hanyu Deck 不要求用户自己搭演示引擎。AI 从现成骨架开始，用户在浏览器完成最后校对。未启动本地服务时，改动保存在当前浏览器；启动后可以写回原文件。</p><p>这一页本身也示范了分步点亮。</p></div>
+    <div class="ns"><p>用户不需要自己搭演示引擎。AI 从现成骨架开始生成，用户在浏览器里完成最后校对。</p><p>没启动本地服务时，改动保存在当前浏览器；启动后可以写回原文件。这一页本身也在示范分步点亮。</p></div>
     <div class="nc"><p>需要强调某一步时，可以调整 data-step 的分步顺序。</p></div>
   </aside>
 </section>
 
-<!-- 四项主要能力 -->
-<section class="slide" data-title="页面、讲稿与备注按页组织">
-  <div class="canvas nofoot paccordion">
-    <div class="ac-title">三类内容按页组织，手机同步显示</div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">01</div><div class="ac-name">页面</div><div class="ac-desc">封面、正文、步骤、聚焦、对照、数据、转折和结语。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">02</div><div class="ac-name">讲稿</div><div class="ac-desc">每页用自然段记录演讲内容，并自动估算时间。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">03</div><div class="ac-name">备注</div><div class="ac-desc">记录修改意见、补充说明或个人提醒；改动可复制给 AI。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">04</div><div class="ac-name">手机</div><div class="ac-desc">同步显示当前页的讲稿或备注，并可遥控翻页。</div></div></div>
-  </div>
-  <aside>
-    <div class="ns"><p>页面负责给观众看，讲稿负责给演讲者看，备注记录修改意见、补充说明和个人提醒。手机端显示当前页的讲稿或备注。</p><p>把鼠标移到某一栏，可以单独展开说明。</p></div>
-    <div class="nc"><p>正式项目可为四栏替换同一风格的图片。</p></div>
-  </aside>
-</section>
-
-<!-- 离线与本地服务 -->
-<section class="slide" data-title="本地服务只增加高级功能">
-  <div class="canvas nofoot psplit">
-    <div class="sp-half"><div class="sp-label">直接打开 HTML</div><div class="sp-word">演示</div><div class="sp-copy">翻页、动画、讲稿、备注和浏览器本地保存。</div></div>
-    <div class="sp-half"><div class="sp-label">启动本地服务</div><div class="sp-word">增强</div><div class="sp-copy">手机提词、原文件写回、图片、PDF 和发送版导出。</div></div>
-  </div>
-  <aside>
-    <div class="ns"><p>用户可以只把 Hanyu Deck 当作一个离线演示文件。本地服务提供高级功能，但不会接管演示本身。</p></div>
-    <div class="nc"><p>README 中需要始终明确这两类功能的边界。</p></div>
-  </aside>
-</section>
-
-<!-- Skill 调用方式 -->
-<section class="slide" data-title="安装或读取 Skill 后即可调用">
+<!-- 快速开始 -->
+<section class="slide" data-title="快速开始">
   <div class="canvas pbody">
-    <div class="bd-title">安装后，一句话即可调用 Skill</div>
-    <div class="bd-text">
-      <p>“使用 Hanyu Deck Skill，把这份内容做成一份 8 页 HTML 演示稿。”</p>
-      <p>AI 会从现有模板开始，保留讲稿、备注、导出和手机提词能力。</p>
+    <div class="bd-title">从一条命令开始</div>
+    <div class="bd-cmd">python3 scripts/create_deck.py ~/Documents/my-deck</div>
+    <div class="bd-steps">
+      <p><span class="no">01</span><span>打开 my-deck/index.html</span></p>
+      <p><span class="no">02</span><span>改文件尾部的 DECK.name 与 DECK.key</span></p>
+      <p><span class="no">03</span><span>用模板里的页面骨架替换示例内容</span></p>
+      <p><span class="no">04</span><span>需要高级功能时，双击「启动 Hanyu Deck.command」</span></p>
     </div>
-    <div class="bd-fig"><span>hanyu-deck<br>SKILL.md</span></div>
+    <div class="bd-tree">
+      <div>my-deck/</div>
+      <div class="lv">index.html</div>
+      <div class="lv">fonts/</div>
+      <div class="lv">scripts/</div>
+      <div class="lv">启动 Hanyu Deck.command</div>
+      <div class="lv">README.md</div>
+    </div>
   </div>
   <aside>
-    <div class="ns"><p>Skill 已安装时，用户给出内容、场合和页数，再明确要求使用 Hanyu Deck Skill。未安装时，也可以让 AI 读取仓库里的 SKILL.md。</p><p>生成后可以继续用自然语言要求 AI 改页面，也可以把“改动的备注”直接复制给 AI。</p></div>
-    <div class="nc"><p>这里可以换成一次真实的调用示例或终端截图。</p></div>
+    <div class="ns"><p>这条命令把模板、字体、本地服务和说明复制成一个独立目录，之后这个目录可以整体搬走。</p><p>如果已经安装了 Hanyu Deck Skill，也可以直接让 AI 使用这个 Skill，从模板生成第一版，跳过手动改配置。</p></div>
+    <div class="nc"><p>目录树按实际生成结果写，改动生成脚本后记得同步这一页。</p></div>
   </aside>
 </section>
 
-<!-- 产品原则 -->
-<section class="slide" data-title="手机提词只在局域网传输">
+<!-- 手机提词的网络前提 -->
+<section class="slide" data-title="同一局域网">
   <div class="canvas nofoot pword"><div class="word">同一网络</div></div>
   <aside>
-    <div class="ns"><p>手机和电脑优先连接同一个 Wi-Fi。没有可用网络时，可以开启手机热点并让电脑连接。讲稿和备注只在这个局域网内传输。</p></div>
-    <div class="nc"><p>这条原则决定了 v0.1 不处理手机和电脑跨网络连接。</p></div>
+    <div class="ns"><p>手机提词只有一个前提：手机和电脑在同一个局域网里。优先连同一个 Wi-Fi；没有可用网络时，开启手机热点并让电脑连接。</p><p>讲稿和备注只在这个局域网内传输，不经过公共中继，也不上传到第三方服务。手机和电脑不在同一网络的情况不在这一版的范围内。</p></div>
+    <div class="nc"><p>正式演示前 5–10 分钟扫码预演一次：前后翻两页，关闭 VPN，让手机保持供电。</p></div>
+  </aside>
+</section>
+
+<!-- 源文件写回 -->
+<section class="slide" data-title="写回源文件">
+  <div class="canvas pbody">
+    <div class="bd-title">改完的字回到源文件</div>
+    <div class="bd-text">
+      <p>双击画布上的文字可以直接修改，失焦后写回 index.html。讲稿和备注在浏览器里改完，点「存为默认」写回同一个文件。</p>
+      <p>写回只接受本机请求；落盘前核对页数、页面结构和危险标签，再用临时文件原子替换。</p>
+    </div>
+    <div class="bd-fig"><span>写回示意<br>换成真实截图</span></div>
+  </div>
+  <aside>
+    <div class="ns"><p>浏览器里的改动不会停在浏览器里。改一两个字不必回到代码，双击画布改完即可写回源文件。</p><p>讲稿和备注同理，点「存为默认」就写回同一个 HTML。写回前会核对页数和结构，文件在别处被改过就拒绝写入。</p></div>
+    <div class="nc"><p>这里可以换成一次真实写回的界面截图。</p></div>
   </aside>
 </section>
 
 <!-- 结语 -->
-<section class="slide" data-title="让 AI 从模板开始制作">
+<section class="slide" data-title="从模板开始">
   <div class="canvas dark nofoot pend">
     <div class="ph-img"></div>
     <div class="scrim"></div>
     <div class="line">调用 Hanyu Deck Skill，<br>从模板生成第一版。</div>
   </div>
   <aside>
-    <div class="ns"><p>让 AI 编程工具使用 Hanyu Deck Skill，从模板生成第一版。用户负责内容取舍、页面结构和现场表达。</p></div>
+    <div class="ns"><p>让 AI 编程工具使用 Hanyu Deck Skill，从模板生成第一版。用户负责内容取舍、页面结构和现场表达。</p><p>项目原创代码、模板和 Skill 使用 MIT 许可，字体与二维码生成器的许可见仓库里的第三方声明。</p></div>
     <div class="nc"><p>发布前可在这里放项目地址或使用说明。</p></div>
   </aside>
 </section>
@@ -739,7 +825,7 @@
 // ===== 项目配置:新 deck 只改这里 =====
 var DECK = {
   name: 'Hanyu Deck', // 页脚线左侧的项目名
-  key: 'hanyu-deck-v2', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
+  key: 'hanyu-deck-v3', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
   port: 8123          // 本地提词服务端口
 };
 (function () {

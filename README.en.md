@@ -6,6 +6,12 @@ A local-first framework for AI-generated HTML presentations.
 
 Hanyu Deck ships as both a reusable presentation template and a focused skill. The core HTML needs no install, account, or network connection. A local service adds phone prompting, remote control, source write-back, and exports.
 
+## What it is, and what it is not
+
+Hanyu Deck gives you presentation machinery and a workflow: navigation, step animations, speaker script, notes, phone prompting, source write-back, and exports.
+
+It is not a slide design template. There are no themes, colour schemes, or ready-made layout sets. `template.html` is a running starting point, and its sample pages are page skeletons — the actual layout is built for each deck from its own content. If what you want is a good-looking layout pack, this project does not solve that.
+
 ## Intended use
 
 - Building HTML presentations with AI coding tools such as Codex or Claude Code.

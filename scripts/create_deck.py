@@ -8,6 +8,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "assets" / "hanyu-deck"
+JUNK = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
 
 
 def create(target: pathlib.Path):
@@ -18,7 +19,7 @@ def create(target: pathlib.Path):
         if item.name == "template.html":
             shutil.copy2(item, target / "index.html")
         elif item.is_dir():
-            shutil.copytree(item, target / item.name)
+            shutil.copytree(item, target / item.name, ignore=JUNK)
         else:
             shutil.copy2(item, target / item.name)
     shutil.copy2(ROOT / "assets" / "deck-readme.md", target / "README.md")

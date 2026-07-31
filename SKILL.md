@@ -7,6 +7,8 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 使用本 skill 创建或修改 HTML 演示文稿时，以 `assets/hanyu-deck/template.html` 为底座，不从空白页面重新搭引擎。
 
+模板提供的是演示引擎与页面骨架，不是要照搬的视觉方案。示例页只作结构参考，版面按当次内容重新组织。
+
 ## 开始前
 
 1. 如果目标目录还没有 Hanyu Deck，运行：
@@ -33,7 +35,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 - 页面正文服务于演讲，不把讲稿压到画布上。
 - 讲稿写在 `.ns` 中，用自然段纯文本；每个意思单独成段，不强制项目列表。
 - 备注写在 `.nc` 中。它既可保存修改意见，也可保存补充说明或个人提醒。
-- 优先复用模板中的五种页面骨架：正文、分类聚焦、左右对照、数据排序、章节转折。只有真实内容无法表达时才新增页面类型。
+- 优先复用模板中的页面骨架：正文、分类聚焦、左右对照、能力矩阵、数据排序、章节转折。只有真实内容无法表达时才新增页面类型。
 - 图片应成为页面主体；缺少真实图片时保留克制的中性占位，不用装饰图标填空。
 - 动画用于讲解顺序、比较变化或跨页连续性。无认知作用的动画不要添加。
 
