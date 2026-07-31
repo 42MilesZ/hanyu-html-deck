@@ -640,6 +640,508 @@
   .pend .line .ch { display: inline-block; white-space: pre; } /* pre:拆字后空格仍占宽,英文词不粘连 */
   .slide.on .pend .line .ch { opacity: 0; filter: blur(4px); animation: chIn 1.4s ease forwards; animation-delay: calc(var(--i) * 95ms + .5s); }
 
+  /* ============================================================
+     产品短片版式：投影画布 + 演示游标
+     一条钴蓝信号线贯穿生成、修改、提词和交付，页面只保留一句结论与一个视觉主体。
+     ============================================================ */
+  .vdeck {
+    --v-paper: #f4f7fb;
+    --v-ink: #111318;
+    --v-muted: #707782;
+    --v-blue: #2457ff;
+    --v-blue-soft: #dbe4ff;
+    --v-grid: rgba(17, 19, 24, .10);
+    overflow: hidden;
+    background: var(--v-paper);
+    color: var(--v-ink);
+  }
+  .vdeck::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(90deg, transparent 99.85%, var(--v-grid) 100%),
+      linear-gradient(transparent 99.8%, var(--v-grid) 100%);
+    background-size: 240px 100%, 100% 180px;
+    opacity: .42;
+  }
+  .v-kicker {
+    position: absolute;
+    top: 78px;
+    left: 92px;
+    z-index: 3;
+    font: 600 19px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--v-blue);
+  }
+  .v-title {
+    position: absolute;
+    z-index: 3;
+    left: 90px;
+    top: 138px;
+    max-width: 1120px;
+    font-size: 92px;
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -.055em;
+  }
+  .v-title em { color: var(--v-blue); font-style: normal; }
+  .v-caption {
+    position: absolute;
+    z-index: 3;
+    left: 94px;
+    bottom: 70px;
+    color: var(--v-muted);
+    font-size: 23px;
+    letter-spacing: .02em;
+  }
+  .v-corner {
+    position: absolute;
+    z-index: 3;
+    right: 78px;
+    top: 72px;
+    font: 500 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--v-muted);
+    letter-spacing: .12em;
+  }
+  .v-signal {
+    position: absolute;
+    z-index: 2;
+    width: 5px;
+    background: var(--v-blue);
+    transform-origin: top;
+    box-shadow: 0 0 34px rgba(36, 87, 255, .22);
+  }
+
+  /* 封面：四个卖点就是目录，也是画面的节拍器。 */
+  .v-cover { background: #101218; color: #f7f9ff; }
+  .v-cover::before {
+    background-image:
+      linear-gradient(90deg, transparent 99.85%, rgba(255,255,255,.10) 100%),
+      linear-gradient(transparent 99.8%, rgba(255,255,255,.08) 100%);
+  }
+  .v-cover .v-kicker { color: #8da7ff; }
+  .v-cover .cover-mark {
+    position: absolute;
+    left: 92px;
+    top: 166px;
+    font: 500 24px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .18em;
+    color: rgba(247,249,255,.46);
+  }
+  .v-cover .cover-thesis {
+    position: absolute;
+    left: 88px;
+    top: 258px;
+    width: 970px;
+    font-size: 118px;
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -.07em;
+  }
+  .v-cover .cover-thesis em { color: #5d7fff; font-style: normal; }
+  .v-cover .cover-features {
+    position: absolute;
+    right: 86px;
+    top: 182px;
+    width: 575px;
+    z-index: 4;
+  }
+  .v-cover .cover-feature {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    align-items: center;
+    min-height: 150px;
+    border-top: 1px solid rgba(255,255,255,.18);
+    font-size: 31px;
+    font-weight: 500;
+    color: rgba(247,249,255,.72);
+    transition: color .25s, transform .35s cubic-bezier(.22,.61,.21,1), border-color .25s;
+  }
+  .v-cover .cover-feature:last-child { border-bottom: 1px solid rgba(255,255,255,.18); }
+  .v-cover .cover-feature i {
+    width: 8px;
+    height: 8px;
+    background: #5d7fff;
+    transform: rotate(45deg);
+    transition: transform .35s;
+  }
+  .v-cover .cover-feature:hover {
+    color: #fff;
+    border-color: #5d7fff;
+    transform: translateX(-18px);
+  }
+  .v-cover .cover-feature:hover i { transform: rotate(135deg) scale(1.5); }
+  .v-cover .v-signal { left: 1120px; top: 0; height: 1080px; background: #5d7fff; }
+  .v-cover .cover-foot {
+    position: absolute;
+    left: 94px;
+    bottom: 72px;
+    color: rgba(247,249,255,.48);
+    font-size: 24px;
+  }
+  .slide.on .v-cover .cover-thesis { animation: vThesisIn .75s cubic-bezier(.22,.61,.21,1) both; }
+  .slide.on .v-cover .cover-feature { opacity: 0; animation: vRowIn .5s ease forwards; }
+  .slide.on .v-cover .cover-feature:nth-child(1) { animation-delay: .28s; }
+  .slide.on .v-cover .cover-feature:nth-child(2) { animation-delay: .40s; }
+  .slide.on .v-cover .cover-feature:nth-child(3) { animation-delay: .52s; }
+  .slide.on .v-cover .cover-feature:nth-child(4) { animation-delay: .64s; }
+  .slide.on .v-cover .v-signal { animation: vSignalDown .9s cubic-bezier(.22,.61,.21,1) both; }
+
+  /* 生成：三张内容层从提示词轨道中依次装配。 */
+  .v-generate .v-title { max-width: 920px; }
+  .v-prompt {
+    position: absolute;
+    left: 94px;
+    top: 530px;
+    width: 680px;
+    padding: 28px 34px;
+    border-left: 5px solid var(--v-blue);
+    background: #fff;
+    font-size: 29px;
+    box-shadow: 0 16px 44px rgba(21,31,60,.08);
+  }
+  .v-prompt::after {
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    width: 228px;
+    height: 2px;
+    background: var(--v-blue);
+    transform-origin: left;
+  }
+  .v-stack { position: absolute; right: 90px; top: 185px; width: 760px; height: 690px; }
+  .v-sheet {
+    position: absolute;
+    width: 620px;
+    height: 348px;
+    padding: 34px;
+    border: 2px solid var(--v-ink);
+    background: rgba(255,255,255,.96);
+    box-shadow: 18px 22px 0 rgba(17,19,24,.08);
+    transition: transform .35s cubic-bezier(.22,.61,.21,1);
+  }
+  .v-sheet:nth-child(1) { left: 0; top: 0; transform: rotate(-5deg); }
+  .v-sheet:nth-child(2) { left: 72px; top: 150px; transform: rotate(2deg); }
+  .v-sheet:nth-child(3) { left: 18px; top: 304px; transform: rotate(-1deg); }
+  .v-stack:hover .v-sheet:nth-child(1) { transform: translate(-22px,-18px) rotate(-7deg); }
+  .v-stack:hover .v-sheet:nth-child(2) { transform: translate(25px,-2px) rotate(4deg); }
+  .v-stack:hover .v-sheet:nth-child(3) { transform: translate(-12px,20px) rotate(-2deg); }
+  .v-sheet .sheet-type {
+    font: 600 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .14em;
+    color: var(--v-blue);
+  }
+  .v-sheet .sheet-main { margin-top: 56px; font-size: 53px; font-weight: 650; letter-spacing: -.04em; }
+  .v-sheet .sheet-lines { margin-top: 34px; display: grid; gap: 12px; }
+  .v-sheet .sheet-lines i { display: block; height: 8px; background: #cfd5df; }
+  .v-sheet .sheet-lines i:nth-child(2) { width: 72%; }
+  .slide.on .v-generate .v-prompt { opacity: 0; animation: vRowIn .55s ease .18s forwards; }
+  .slide.on .v-generate .v-prompt::after { animation: vLineOut .55s ease .55s both; }
+  .slide.on .v-generate .v-sheet { opacity: 0; animation: vAssemble .65s cubic-bezier(.22,.61,.21,1) forwards; }
+  .slide.on .v-generate .v-sheet:nth-child(1) { animation-delay: .58s; }
+  .slide.on .v-generate .v-sheet:nth-child(2) { animation-delay: .72s; }
+  .slide.on .v-generate .v-sheet:nth-child(3) { animation-delay: .86s; }
+
+  /* 修改：编辑前后在同一块画布里发生，光标承担视觉主角。 */
+  .v-edit .v-title { top: 122px; }
+  .v-editor {
+    position: absolute;
+    left: 94px;
+    right: 94px;
+    top: 360px;
+    height: 470px;
+    border-top: 2px solid var(--v-ink);
+    border-bottom: 2px solid var(--v-ink);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    background: rgba(255,255,255,.58);
+  }
+  .v-editor .edit-before,
+  .v-editor .edit-after {
+    position: absolute;
+    left: 62px;
+    font-size: 104px;
+    font-weight: 700;
+    letter-spacing: -.06em;
+  }
+  .v-editor .edit-before { color: #a3a9b3; }
+  .v-editor .edit-before::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 57%;
+    height: 5px;
+    background: var(--v-blue);
+    transform-origin: left;
+  }
+  .v-editor .edit-after { color: var(--v-ink); opacity: 0; transform: translateY(40px); }
+  .v-editor .edit-caret {
+    position: absolute;
+    left: 930px;
+    top: 143px;
+    width: 7px;
+    height: 142px;
+    background: var(--v-blue);
+  }
+  .v-editor .edit-status {
+    position: absolute;
+    right: 46px;
+    bottom: 32px;
+    font: 600 20px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--v-blue);
+    letter-spacing: .08em;
+  }
+  .slide.on .v-editor .edit-before { animation: vOldOut .35s ease 1.15s forwards; }
+  .slide.on .v-editor .edit-before::after { animation: vLineOut .45s ease .62s both; }
+  .slide.on .v-editor .edit-after { animation: vNewIn .48s cubic-bezier(.22,.61,.21,1) 1.25s forwards; }
+  .slide.on .v-editor .edit-caret { animation: vCaret 1s steps(1) .25s infinite, vCaretMove .65s cubic-bezier(.22,.61,.21,1) .82s forwards; }
+  .slide.on .v-editor .edit-status { opacity: 0; animation: fwFadeIn .35s ease 1.65s forwards; }
+
+  /* 手机：一条同步信号从电脑画面穿进手机，再由手机把翻页动作送回去。 */
+  .v-phone { background: #111318; color: #f7f9ff; }
+  .v-phone::before {
+    background-image:
+      linear-gradient(90deg, transparent 99.85%, rgba(255,255,255,.10) 100%),
+      linear-gradient(transparent 99.8%, rgba(255,255,255,.08) 100%);
+  }
+  .v-phone .v-kicker { color: #8da7ff; }
+  .v-phone .v-title { color: #fff; max-width: 900px; }
+  .v-phone .v-title em { color: #6f8cff; }
+  .v-phone .v-caption { color: rgba(247,249,255,.48); }
+  .v-device-stage { position: absolute; right: 80px; top: 156px; width: 850px; height: 760px; }
+  .v-screen {
+    position: absolute;
+    left: 0;
+    top: 114px;
+    width: 690px;
+    height: 430px;
+    border: 3px solid rgba(247,249,255,.72);
+    padding: 42px;
+    background: #171a21;
+  }
+  .v-screen .screen-title { font-size: 48px; font-weight: 650; letter-spacing: -.04em; }
+  .v-screen .screen-bar { width: 62%; height: 10px; margin-top: 46px; background: #596170; }
+  .v-screen .screen-bar + .screen-bar { width: 42%; margin-top: 16px; }
+  .v-phone-body {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 300px;
+    height: 650px;
+    border: 4px solid #f7f9ff;
+    background: #f3f6ff;
+    color: var(--v-ink);
+    padding: 54px 30px 28px;
+    box-shadow: -24px 26px 0 rgba(36,87,255,.32);
+    transition: transform .35s cubic-bezier(.22,.61,.21,1);
+  }
+  .v-phone-body:hover { transform: translateY(-18px) rotate(1deg); }
+  .v-phone-body::before {
+    content: "";
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    width: 70px;
+    height: 5px;
+    transform: translateX(-50%);
+    background: #111318;
+  }
+  .v-phone-body .phone-page { font: 600 17px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--v-blue); }
+  .v-phone-body .phone-copy { margin-top: 48px; font-size: 28px; line-height: 1.75; font-weight: 550; }
+  .v-phone-body .phone-copy b { color: var(--v-blue); }
+  .v-phone-body .phone-controls {
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    bottom: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 2px solid var(--v-ink);
+  }
+  .v-phone-body .phone-controls span { padding-top: 19px; font-size: 28px; text-align: center; }
+  .v-phone-body .phone-controls span + span { border-left: 2px solid var(--v-ink); }
+  .v-sync-line {
+    position: absolute;
+    left: 480px;
+    top: 330px;
+    width: 184px;
+    height: 4px;
+    background: #6f8cff;
+    transform-origin: left;
+  }
+  .v-sync-line::after {
+    content: "";
+    position: absolute;
+    right: -7px;
+    top: -5px;
+    width: 14px;
+    height: 14px;
+    background: #6f8cff;
+    transform: rotate(45deg);
+  }
+  .slide.on .v-phone .v-screen { opacity: 0; animation: vDeviceIn .58s ease .20s forwards; }
+  .slide.on .v-phone .v-phone-body { opacity: 0; animation: vPhoneIn .72s cubic-bezier(.22,.61,.21,1) .52s forwards; }
+  .slide.on .v-phone .v-sync-line { animation: vLineOut .55s ease .95s both; }
+
+  /* 交付：一个母版向三种交付物展开，不再用功能列表。 */
+  .v-export .v-title { max-width: 890px; }
+  .v-export-stage { position: absolute; right: 76px; top: 164px; width: 900px; height: 760px; }
+  .v-master-page {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 4;
+    width: 420px;
+    height: 238px;
+    transform: translate(-50%,-50%);
+    border: 3px solid var(--v-ink);
+    background: #fff;
+    box-shadow: 18px 20px 0 var(--v-blue-soft);
+  }
+  .v-master-page::before {
+    content: "";
+    position: absolute;
+    left: 34px;
+    top: 38px;
+    width: 220px;
+    height: 21px;
+    background: var(--v-ink);
+    box-shadow: 0 47px 0 #c8ced8, 0 77px 0 #c8ced8;
+  }
+  .v-master-page::after {
+    content: "▶";
+    position: absolute;
+    right: 32px;
+    bottom: 27px;
+    color: var(--v-blue);
+    font-size: 34px;
+  }
+  .v-output {
+    position: absolute;
+    z-index: 2;
+    width: 250px;
+    height: 150px;
+    border: 2px solid var(--v-ink);
+    background: rgba(255,255,255,.82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 700 34px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .08em;
+    transition: background .25s, color .25s, transform .3s;
+  }
+  .v-output:hover { background: var(--v-blue); color: #fff; transform: scale(1.05); }
+  .v-output.o-png { left: 36px; top: 80px; }
+  .v-output.o-pdf { right: 32px; top: 86px; }
+  .v-output.o-html { left: 324px; bottom: 50px; }
+  .v-output-line {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 290px;
+    background: var(--v-blue);
+    transform-origin: top;
+  }
+  .v-output-line.l1 { transform: rotate(56deg); }
+  .v-output-line.l2 { transform: rotate(-54deg); }
+  .v-output-line.l3 { transform: rotate(0deg); }
+  .slide.on .v-export .v-master-page { opacity: 0; animation: vMasterIn .55s ease .15s forwards; }
+  .slide.on .v-export .v-output-line { animation: vRevealLine .55s ease .56s both; }
+  .slide.on .v-export .v-output { opacity: 0; animation: vPop .45s cubic-bezier(.22,.61,.21,1) forwards; }
+  .slide.on .v-export .o-png { animation-delay: .82s; }
+  .slide.on .v-export .o-pdf { animation-delay: .94s; }
+  .slide.on .v-export .o-html { animation-delay: 1.06s; }
+
+  /* 封尾：蓝色游标收拢为舞台中央的一道竖线。 */
+  .v-end { background: #2457ff; color: #fff; }
+  .v-end::before { display: none; }
+  .v-end .end-mark {
+    position: absolute;
+    left: 50%;
+    top: 134px;
+    width: 4px;
+    height: 166px;
+    background: rgba(255,255,255,.72);
+    transform-origin: top;
+  }
+  .v-end .end-line {
+    position: absolute;
+    left: 160px;
+    right: 160px;
+    top: 390px;
+    text-align: center;
+    font-size: 92px;
+    line-height: 1.28;
+    font-weight: 700;
+    letter-spacing: -.055em;
+  }
+  .v-end .end-name {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 92px;
+    text-align: center;
+    font: 600 21px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .20em;
+    color: rgba(255,255,255,.72);
+  }
+  .slide.on .v-end .end-mark { animation: vSignalDown .8s cubic-bezier(.22,.61,.21,1) both; }
+  .slide.on .v-end .end-line { opacity: 0; animation: vEndIn .75s cubic-bezier(.22,.61,.21,1) .48s forwards; }
+  .slide.on .v-end .end-name { opacity: 0; animation: fwFadeIn .5s ease 1s forwards; }
+
+  .slide.on .vdeck .v-kicker,
+  .slide.on .vdeck .v-title,
+  .slide.on .vdeck .v-caption,
+  .slide.on .vdeck .v-corner { opacity: 0; animation: vRowIn .55s ease forwards; }
+  .slide.on .vdeck .v-kicker { animation-delay: .06s; }
+  .slide.on .vdeck .v-title { animation-delay: .15s; }
+  .slide.on .vdeck .v-caption { animation-delay: .34s; }
+  .slide.on .vdeck .v-corner { animation-delay: .24s; }
+
+  @keyframes vThesisIn { from { opacity: 0; transform: translateY(30px); letter-spacing: -.02em; } }
+  @keyframes vRowIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes vSignalDown { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes vRevealLine { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+  @keyframes vLineOut { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes vAssemble { from { opacity: 0; transform: translateX(160px) rotate(0); } to { opacity: 1; } }
+  @keyframes vOldOut { to { opacity: 0; transform: translateY(-30px); } }
+  @keyframes vNewIn { to { opacity: 1; transform: none; } }
+  @keyframes vCaret { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes vCaretMove { to { left: 1090px; } }
+  @keyframes vDeviceIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+  @keyframes vPhoneIn { from { opacity: 0; transform: translate(70px,35px) rotate(4deg); } to { opacity: 1; transform: none; } }
+  @keyframes vMasterIn { from { opacity: 0; transform: translate(-50%,-50%) scale(.88); } to { opacity: 1; } }
+  @keyframes vPop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
+  @keyframes vEndIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+  /* 总览和导出必须是静态终态，不能截到入场前或动画中间。 */
+  .ovItem .vdeck *, body.exporting .vdeck *, body.raw .vdeck * { animation: none !important; opacity: 1 !important; }
+  .ovItem .vdeck * { pointer-events: none; }
+  .ovItem .v-generate .v-sheet:nth-child(1), body.exporting .v-generate .v-sheet:nth-child(1), body.raw .v-generate .v-sheet:nth-child(1) { transform: rotate(-5deg); }
+  .ovItem .v-generate .v-sheet:nth-child(2), body.exporting .v-generate .v-sheet:nth-child(2), body.raw .v-generate .v-sheet:nth-child(2) { transform: rotate(2deg); }
+  .ovItem .v-generate .v-sheet:nth-child(3), body.exporting .v-generate .v-sheet:nth-child(3), body.raw .v-generate .v-sheet:nth-child(3) { transform: rotate(-1deg); }
+  .ovItem .v-editor .edit-before, body.exporting .v-editor .edit-before, body.raw .v-editor .edit-before { opacity: 0 !important; }
+  .ovItem .v-editor .edit-after, body.exporting .v-editor .edit-after, body.raw .v-editor .edit-after { transform: none; }
+  .ovItem .v-editor .edit-caret, body.exporting .v-editor .edit-caret, body.raw .v-editor .edit-caret { left: 1090px; }
+  @media (prefers-reduced-motion: reduce) {
+    .slide.on .vdeck *, .slide.leaving { animation: none !important; transition: none !important; }
+    .slide.on .vdeck * { opacity: 1 !important; }
+    .slide.on .v-editor .edit-before { opacity: 0 !important; }
+    .slide.on .v-editor .edit-after { transform: none; }
+    .slide.on .v-editor .edit-caret { left: 1090px; }
+    .v-cover .cover-feature:hover, .v-phone-body:hover, .v-output:hover { transform: none; }
+    .v-stack:hover .v-sheet:nth-child(1) { transform: rotate(-5deg); }
+    .v-stack:hover .v-sheet:nth-child(2) { transform: rotate(2deg); }
+    .v-stack:hover .v-sheet:nth-child(3) { transform: rotate(-1deg); }
+  }
+
   /* ===== 画布就地编辑:双击画布文字直接改,失焦后经本地服务写回本文件源文 ===== */
   .cv-editing { outline: 2px dashed rgba(178, 86, 58, .7); outline-offset: 5px; cursor: text; }
   #cvToast { position: fixed; top: 58px; left: 50%; transform: translateX(-50%); background: #2b2a28; color: #f0eee8; font-size: 13px; padding: 8px 16px; border-radius: 6px; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 120; }
@@ -763,150 +1265,126 @@
   </div>
 </div>
 
-<!-- ============ 页面模板(示例页,逐页替换;每页 = .canvas 版面 + aside 讲稿) ============ -->
+<!-- ============ 产品短片：每页一个功能点，每页 = .canvas 版面 + aside 讲稿 ============ -->
 <template id="slides">
 
-<!-- 封面 -->
+<!-- 封面：先给出四个亮点，后四页逐一展开 -->
 <section class="slide" data-title="本地演示台">
-  <div class="canvas dark nofoot pcover">
-    <div class="ph-img"></div>
-    <div class="scrim"></div>
-    <div class="cover-title">
-      <div class="co-part">LOCAL-FIRST HTML PRESENTATION</div>
-      <div class="zh">本地演示台</div>
+  <div class="canvas nofoot vdeck v-cover">
+    <div class="v-kicker">HANYU HTML DECK</div>
+    <div class="cover-mark">AI → STAGE</div>
+    <div class="cover-thesis">让 AI 做的 PPT，<br><em>直接拿来讲</em></div>
+    <div class="v-signal"></div>
+    <div class="cover-features">
+      <div class="cover-feature"><i></i><span>AI 生成整场演示</span></div>
+      <div class="cover-feature"><i></i><span>在页面上直接改</span></div>
+      <div class="cover-feature"><i></i><span>手机提词与遥控</span></div>
+      <div class="cover-feature"><i></i><span>讲完立即交付</span></div>
     </div>
-    <div class="cv-cap">演示引擎与制作流程，不是幻灯片视觉模板</div>
+    <div class="cover-foot">本地演示台 · 从第一版到正式上台</div>
   </div>
   <aside>
-    <div class="ns"><p>本地演示台（hanyu-html-deck）是一个本地优先的 HTML 演示框架，主要给使用 Codex、Claude Code 等 AI 编程工具制作演示稿的人使用。</p><p>页面、讲稿和备注放在同一个 HTML 文件里，双击文件就能演示，不需要账号、安装或网络。</p></div>
-    <div class="nc"><p>制作新项目时替换主视觉、标题和这句定位，保留版式结构即可。</p></div>
+    <div class="ns"><p>这是本地演示台。它让 AI 做的 PPT 不只停在第一版，而是直接走完生成、修改、提词和交付。</p><p>接下来只看四个最亮眼的功能。</p></div>
+    <div class="nc"><p>视频开场直接切入四个亮点；鼠标扫过右侧功能时可录下轻微位移反馈。</p></div>
   </aside>
 </section>
 
-<!-- 定位澄清：不是视觉模板 -->
-<section class="slide" data-title="不是视觉模板">
-  <div class="canvas nofoot psplit">
-    <div class="sp-half"><div class="sp-label">不是</div><div class="sp-word">视觉模板</div><div class="sp-copy">不提供主题皮肤、配色方案或成套版式。页面按每份内容现做。</div></div>
-    <div class="sp-half"><div class="sp-label">是</div><div class="sp-word">演示引擎</div><div class="sp-copy">翻页、分步动画、讲稿、备注、手机提词、写回与导出，全部内建。</div></div>
-  </div>
-  <aside>
-    <div class="ns"><p>这一点最容易被误解：它给的不是一套好看的版式，而是一套演示能力。</p><p>模板里的示例页只是页面骨架的起点，真正的版面由 AI 按当次内容重新组织。换句话说，它管的是播放、讲稿、提词、写回和导出这些事，不管你的演示长什么样。</p></div>
-    <div class="nc"><p>对外介绍时先讲这一页，再讲功能，可以少掉一轮误会。</p></div>
-  </aside>
-</section>
-
-<!-- 三类内容同一文件 -->
-<section class="slide" data-title="三类内容同一文件">
-  <div class="canvas nofoot nav-narrow paccordion">
-    <div class="ac-title">页面、讲稿、备注，同一个文件</div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">01</div><div class="ac-name">页面</div><div class="ac-desc">给观众看的画布，固定 1920 × 1080。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">02</div><div class="ac-name">讲稿</div><div class="ac-desc">给演讲者看的自然段，按页估算时长。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">03</div><div class="ac-name">备注</div><div class="ac-desc">修改意见与提醒；改动可复制给 AI。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">04</div><div class="ac-name">手机</div><div class="ac-desc">同步显示当前页的讲稿或备注，并可遥控翻页。</div></div></div>
-  </div>
-  <aside>
-    <div class="ns"><p>一份 Deck 里有三类内容：页面给观众看，讲稿给演讲者看，备注记录修改意见、补充说明和个人提醒。它们都写在同一个 HTML 文件里，不需要另外维护稿件。</p><p>手机端显示当前页的讲稿或备注，两栏可以切换。</p></div>
-    <div class="nc"><p>把鼠标移到某一栏可以单独展开说明。正式项目可为四栏替换同一风格的图片。</p></div>
-  </aside>
-</section>
-
-<!-- 功能边界 -->
-<section class="slide" data-title="功能边界">
-  <div class="canvas pmatrix" data-steps="2" data-step="0">
-    <div class="mx-title">哪些能力自带，哪些需要本地服务</div>
-    <div class="mx">
-      <div class="mx-head"><span>能力</span><span>只打开 HTML</span><span>启动本地服务</span></div>
-      <div class="mx-row"><span>浏览、翻页、总览、演示模式</span><i class="mk c1"></i><i class="mk c2"></i></div>
-      <div class="mx-row"><span>页面内分步动画与悬停交互</span><i class="mk c1"></i><i class="mk c2"></i></div>
-      <div class="mx-row"><span>编辑讲稿与备注，存在浏览器</span><i class="mk c1"></i><i class="mk c2"></i></div>
-      <div class="mx-row"><span>手机提词器与手机遥控</span><i class="mk c1 off"></i><i class="mk c2"></i></div>
-      <div class="mx-row"><span>写回源文件，导出图片 / PDF / 发送版</span><i class="mk c1 off"></i><i class="mk c2"></i></div>
+<!-- 功能一：AI 生成 -->
+<section class="slide" data-title="AI 生成整场演示">
+  <div class="canvas nofoot vdeck v-generate">
+    <div class="v-kicker">GENERATE</div>
+    <div class="v-corner">01 / 04</div>
+    <div class="v-title">一句话，生成<em>整场演示</em></div>
+    <div class="v-prompt">把这份产品介绍，做成两分钟演讲。</div>
+    <div class="v-stack">
+      <div class="v-sheet"><div class="sheet-type">PAGE</div><div class="sheet-main">演示页面</div></div>
+      <div class="v-sheet"><div class="sheet-type">SCRIPT</div><div class="sheet-main">逐页讲稿</div><div class="sheet-lines"><i></i><i></i></div></div>
+      <div class="v-sheet"><div class="sheet-type">MOTION</div><div class="sheet-main">讲解动画</div></div>
     </div>
-    <div class="mx-note">本地服务只在当前局域网内工作，不连接公共中继，不上传讲稿。</div>
+    <div class="v-caption">不是一组静态页面，而是一场可以直接讲的演示。</div>
   </div>
   <aside>
-    <div class="ns"><p>这是这份文档里最需要记住的一张表。上面三行只要双击 HTML 就成立，本地服务关掉也不影响演示。</p><p>下面两行需要先启动本地服务：手机提词与遥控，以及写回源文件和三种导出。本地服务是加法，不接管演示本身。</p></div>
-    <div class="nc"><p>按 → 逐列点亮：先讲自带能力，再讲本地服务追加的部分。</p></div>
+    <div class="ns"><p>给 AI 一份内容，它会同时生成演示页面、逐页讲稿和讲解动画。</p><p>拿到的不是一组静态页面，而是一场可以直接讲的演示。</p></div>
+    <div class="nc"><p>画面中的三张内容层会依次装配；悬停可让三层稍微展开。</p></div>
   </aside>
 </section>
 
-<!-- 制作流程 -->
-<section class="slide" data-title="制作三步">
-  <div class="canvas psteps" data-steps="3" data-step="0">
-    <div class="st-title">从内容到演示，只保留三步</div>
-    <div class="st-rows">
-      <div class="st-row"><span class="no">01</span><span class="w">生成</span><span class="ex">让 AI 复用页面骨架，写入内容与讲稿</span></div>
-      <div class="st-row"><span class="no">02</span><span class="w">校对</span><span class="ex">在浏览器里改；启动服务后写回原文件</span></div>
-      <div class="st-row"><span class="no">03</span><span class="w">交付</span><span class="ex">导出图片、PDF，或剥掉备注的发送版</span></div>
+<!-- 功能二：直接修改 -->
+<section class="slide" data-title="在页面上直接改">
+  <div class="canvas nofoot vdeck v-edit">
+    <div class="v-kicker">EDIT</div>
+    <div class="v-corner">02 / 04</div>
+    <div class="v-title">改，就在<em>页面上</em></div>
+    <div class="v-editor">
+      <div class="edit-before">回到代码里改</div>
+      <div class="edit-after">所见即所改</div>
+      <div class="edit-caret"></div>
+      <div class="edit-status">● 本地演示台已同步</div>
     </div>
+    <div class="v-caption">打开本地演示台，页面、讲稿、备注会自动同步回文件。</div>
   </div>
   <aside>
-    <div class="ns"><p>用户不需要自己搭演示引擎。AI 从现成骨架开始生成，用户在浏览器里完成最后校对。</p><p>没启动本地服务时，改动保存在当前浏览器；启动后可以写回原文件。这一页本身也在示范分步点亮。</p></div>
-    <div class="nc"><p>需要强调某一步时，可以调整 data-step 的分步顺序。</p></div>
+    <div class="ns"><p>看到不合适的文字，直接在页面上改。讲稿和备注也能在同一个界面里调整。</p><p>启动本地演示台后，修改会自动回到源文件，改完就是下一版。</p></div>
+    <div class="nc"><p>页面自动演示“旧文案划掉—新文案出现—写回完成”，适合直接录屏。</p></div>
   </aside>
 </section>
 
-<!-- 快速开始 -->
-<section class="slide" data-title="快速开始">
-  <div class="canvas pbody">
-    <div class="bd-title">从一条命令开始</div>
-    <div class="bd-cmd">python3 scripts/create_deck.py ~/Documents/my-deck</div>
-    <div class="bd-steps">
-      <p><span class="no">01</span><span>打开 my-deck/index.html</span></p>
-      <p><span class="no">02</span><span>改文件尾部的 DECK.name 与 DECK.key</span></p>
-      <p><span class="no">03</span><span>用模板里的页面骨架替换示例内容</span></p>
-      <p><span class="no">04</span><span>需要高级功能时，双击「启动本地演示台.command」</span></p>
+<!-- 功能三：手机提词与遥控 -->
+<section class="slide" data-title="手机提词与遥控">
+  <div class="canvas nofoot vdeck v-phone">
+    <div class="v-kicker">PRESENT</div>
+    <div class="v-corner">03 / 04</div>
+    <div class="v-title">手机，就是<em>提词器</em></div>
+    <div class="v-device-stage">
+      <div class="v-screen"><div class="screen-title">演示正在进行</div><div class="screen-bar"></div><div class="screen-bar"></div></div>
+      <div class="v-sync-line"></div>
+      <div class="v-phone-body">
+        <div class="phone-page">P03 · 当前页讲稿</div>
+        <div class="phone-copy">讲稿跟着页面走。<br><b>轻点一下</b>，电脑同步翻页。</div>
+        <div class="phone-controls"><span>←</span><span>→</span></div>
+      </div>
     </div>
-    <div class="bd-tree">
-      <div>my-deck/</div>
-      <div class="lv">index.html</div>
-      <div class="lv">fonts/</div>
-      <div class="lv">scripts/</div>
-      <div class="lv">启动本地演示台.command</div>
-      <div class="lv">README.md</div>
+    <div class="v-caption">不用背稿，也不用额外准备遥控器。</div>
+  </div>
+  <aside>
+    <div class="ns"><p>打开手机，就能同步看到当前页讲稿。需要时，还可以切换备注。</p><p>手机前后翻页，电脑会同步响应。一部手机，就是提词器和遥控器。</p></div>
+    <div class="nc"><p>蓝色同步线连接电脑与手机；录制时可悬停手机，让设备轻微抬起。</p></div>
+  </aside>
+</section>
+
+<!-- 功能四：导出交付 -->
+<section class="slide" data-title="讲完立即交付">
+  <div class="canvas nofoot vdeck v-export">
+    <div class="v-kicker">DELIVER</div>
+    <div class="v-corner">04 / 04</div>
+    <div class="v-title">讲完，<em>立即交付</em></div>
+    <div class="v-export-stage">
+      <div class="v-output-line l1"></div>
+      <div class="v-output-line l2"></div>
+      <div class="v-output-line l3"></div>
+      <div class="v-output o-png">PNG</div>
+      <div class="v-output o-pdf">PDF</div>
+      <div class="v-output o-html">HTML</div>
+      <div class="v-master-page"></div>
     </div>
+    <div class="v-caption">图片、PDF、独立发送版，一次准备齐。</div>
   </div>
   <aside>
-    <div class="ns"><p>这条命令把模板、字体、本地服务和说明复制成一个独立目录，之后这个目录可以整体搬走。</p><p>如果已经安装了本地演示台 Skill（hanyu-html-deck），也可以直接让 AI 使用这个 Skill，从模板生成第一版，跳过手动改配置。</p></div>
-    <div class="nc"><p>目录树按实际生成结果写，改动生成脚本后记得同步这一页。</p></div>
+    <div class="ns"><p>演示完成后，可以直接导出每页图片、PDF，或者一份可以独立打开的 HTML。</p><p>不用再整理第二套文件，讲完就能发出去。</p></div>
+    <div class="nc"><p>三个交付物从母版向外展开；悬停其中一个格式可点亮。</p></div>
   </aside>
 </section>
 
-<!-- 手机提词的网络前提 -->
-<section class="slide" data-title="同一局域网">
-  <div class="canvas nofoot pword"><div class="word">同一网络</div></div>
-  <aside>
-    <div class="ns"><p>手机提词只有一个前提：手机和电脑在同一个局域网里。优先连同一个 Wi-Fi；没有可用网络时，开启手机热点并让电脑连接。</p><p>讲稿和备注只在这个局域网内传输，不经过公共中继，也不上传到第三方服务。手机和电脑不在同一网络的情况不在这一版的范围内。</p></div>
-    <div class="nc"><p>正式演示前 5–10 分钟扫码预演一次：前后翻两页，关闭 VPN，让手机保持供电。</p></div>
-  </aside>
-</section>
-
-<!-- 源文件写回 -->
-<section class="slide" data-title="写回源文件">
-  <div class="canvas pbody">
-    <div class="bd-title">改完的字回到源文件</div>
-    <div class="bd-text">
-      <p>双击画布上的文字可以直接修改，失焦后写回 index.html。讲稿和备注停止输入约一秒半后自动写回同一个文件，不需要点保存。</p>
-      <p>写回只接受本机请求；落盘前核对页数、页面结构和危险标签，再用临时文件原子替换。</p>
-    </div>
-    <div class="bd-fig"><span>写回示意<br>换成真实截图</span></div>
+<!-- 封尾 -->
+<section class="slide" data-title="从第一版到正式上台">
+  <div class="canvas nofoot vdeck v-end">
+    <div class="end-mark"></div>
+    <div class="end-line">让 AI 做的 PPT，<br>直接走到台前。</div>
+    <div class="end-name">本地演示台 · HANYU HTML DECK</div>
   </div>
   <aside>
-    <div class="ns"><p>浏览器里的改动不会停在浏览器里。改一两个字不必回到代码，双击画布改完即可写回源文件。</p><p>讲稿和备注同理，停止输入后自动写回，讲稿栏右下角的灯绿了就是已经落盘，橙黄说明还只在浏览器里。写回前会核对页数和结构，文件在别处被改过就拒绝写入。</p></div>
-    <div class="nc"><p>这里可以换成一次真实写回的界面截图。</p></div>
-  </aside>
-</section>
-
-<!-- 结语 -->
-<section class="slide" data-title="从模板开始">
-  <div class="canvas dark nofoot pend">
-    <div class="ph-img"></div>
-    <div class="scrim"></div>
-    <div class="line">调用本地演示台 Skill，<br>从模板生成第一版。</div>
-  </div>
-  <aside>
-    <div class="ns"><p>让 AI 编程工具使用本地演示台 Skill（hanyu-html-deck），从模板生成第一版。用户负责内容取舍、页面结构和现场表达。</p><p>项目原创代码、模板和 Skill 使用 MIT 许可，字体与二维码生成器的许可见仓库里的第三方声明。</p></div>
-    <div class="nc"><p>发布前可在这里放项目地址或使用说明。</p></div>
+    <div class="ns"><p>从第一版到正式上台，本地演示台把演示需要的每一步连在一起。</p><p>让 AI 做的 PPT，直接走到台前。</p></div>
+    <div class="nc"><p>封尾停留两秒后结束视频。</p></div>
   </aside>
 </section>
 
@@ -915,7 +1393,7 @@
 // ===== 项目配置:新 deck 只改这里 =====
 var DECK = {
   name: '本地演示台', // 页脚线左侧的项目名
-  key: 'hanyu-html-deck', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
+  key: 'hanyu-html-deck.v2', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
   port: 8123          // 本地提词服务端口
 };
 // 发送版标记:build_send.py 导出时置 true。发送版不联本地服务,

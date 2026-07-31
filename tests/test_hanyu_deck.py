@@ -16,7 +16,7 @@ class TemplateTests(unittest.TestCase):
         cls.html = TEMPLATE.read_text(encoding="utf-8")
 
     def test_slide_structure_is_writeback_safe(self):
-        self.assertGreaterEqual(self.html.count('<section class="slide"'), 8)
+        self.assertEqual(self.html.count('<section class="slide"'), 6)
         self.assertEqual(
             self.html.count('<section class="slide"'),
             self.html.count('<div class="ns">'),
@@ -26,6 +26,20 @@ class TemplateTests(unittest.TestCase):
             self.html.count('<div class="nc">'),
         )
         self.assertNotIn("</div>\n  \n  <aside>", self.html)
+
+    def test_product_video_story_order(self):
+        titles = re.findall(r'<section class="slide" data-title="([^"]+)">', self.html)
+        self.assertEqual(
+            titles,
+            [
+                "本地演示台",
+                "AI 生成整场演示",
+                "在页面上直接改",
+                "手机提词与遥控",
+                "讲完立即交付",
+                "从第一版到正式上台",
+            ],
+        )
 
     def test_agreed_product_labels(self):
         for label in (
