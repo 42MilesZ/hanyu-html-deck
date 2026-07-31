@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "assets" / "hanyu-html-deck" / "template.html"
+TEMPLATE = ROOT / "assets" / "hanyu-html-deck" / "index.html"
 SERVER = ROOT / "assets" / "hanyu-html-deck" / "scripts" / "prompter_server.py"
 
 
@@ -243,6 +243,47 @@ class ServerTests(unittest.TestCase):
         allow_body = source.split("def allow(self, path):", 1)[1].split("def guard", 1)[0]
         local_branch = allow_body.split("if path in LOCAL_ONLY:", 1)[1].split("if path in PHONE_PATHS", 1)[0]
         self.assertIn("token_ok()", local_branch)
+
+    def test_token_anchor_is_empty_and_not_read_from_url(self):
+        """凭据靠服务写进文件:macOS 的 open 会丢掉 file:// URL 的 query,不能从地址取。"""
+        html = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("var TOKEN = ''; /* HANYU_TOKEN */", html)
+        self.assertNotIn("location.search.match", html)
+
+    def test_stamp_token_writes_and_clears(self):
+        mod = self.module
+        with tempfile.TemporaryDirectory() as temp:
+            path = pathlib.Path(temp) / "index.html"
+            path.write_text("var TOKEN = ''; /* HANYU_TOKEN */\n", encoding="utf-8")
+            original = mod.INDEX_FILE
+            mod.INDEX_FILE = str(path)
+            try:
+                self.assertTrue(mod.stamp_token("abc-123_XY"))
+                self.assertIn("var TOKEN = 'abc-123_XY'; /* HANYU_TOKEN */", path.read_text(encoding="utf-8"))
+                self.assertTrue(mod.stamp_token(""))
+                self.assertIn("var TOKEN = ''; /* HANYU_TOKEN */", path.read_text(encoding="utf-8"))
+                path.write_text("var TOKEN = '';\n", encoding="utf-8")
+                self.assertFalse(mod.stamp_token("abc"))
+            finally:
+                mod.INDEX_FILE = original
+
+    def test_launcher_opens_deck_after_service_answers(self):
+        """凭据在文件里:必须等服务写好凭据、开始应答,再打开页面。"""
+        launcher = (ROOT / "assets" / "hanyu-html-deck" / "启动本地演示台.command").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("?t=", launcher)
+        self.assertIn("curl", launcher)
+        self.assertIn("--noproxy", launcher)
+        self.assertIn('/usr/bin/open "$PWD/index.html"', launcher)
+
+    def test_send_version_clears_token(self):
+        """发送版可能在服务运行时导出,那时源文件里带着本机凭据。"""
+        source = (ROOT / "assets" / "hanyu-html-deck" / "scripts" / "build_send.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("HANYU_TOKEN", source)
+        self.assertIn("写回凭据没清空", source)
 
     def test_service_does_not_hand_out_token_bearing_urls(self):
         mod = self.module

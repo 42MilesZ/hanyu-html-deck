@@ -22,13 +22,17 @@ if [ ! -x "$PY" ]; then
   exit 1
 fi
 
-# 本次运行的访问凭据：服务与演示稿共用。写回要求它，浏览器里的其他网页拿不到。
-HANYU_DECK_TOKEN="$("$PY" -c 'import secrets;print(secrets.token_urlsafe(16))')"
-export HANYU_DECK_TOKEN
-
 if [ -f "index.html" ]; then
-  DECK_URL="file://$PWD/index.html?t=$HANYU_DECK_TOKEN"
-  ( sleep 1; /usr/bin/open "$DECK_URL" ) &
+  # 写回凭据由服务写进 index.html。必须等服务开始应答再打开页面,
+  # 否则页面读到的是上一次运行留下的空值,写回会被拒。
+  # --noproxy:配了系统代理时,回环请求会被代理接手,探测会变慢甚至由代理代答。
+  (
+    for _ in $(seq 1 60); do
+      if /usr/bin/curl -s -o /dev/null -m 1 --noproxy '*' "http://127.0.0.1:$PORT/" ; then break; fi
+      sleep 0.25
+    done
+    /usr/bin/open "$PWD/index.html"
+  ) &
   echo "正在打开演示稿：index.html"
 else
   echo "这个目录里没有 index.html，只启动服务。"

@@ -57,6 +57,10 @@ html, n_cvedit = re.subn(
 # 1c) 置发送版标记：写回、提词推送、事件流、手机弹窗与相关入口一并失效
 html, n_flag = re.subn(r"var SEND_VERSION = false;", "var SEND_VERSION = true;", html)
 
+# 1d) 清空写回凭据：服务运行期间 index.html 里带着本机凭据，不能随发送版外流
+TOKEN_LINE_RE = re.compile(r"(var TOKEN = ')([^']*)('; /\* HANYU_TOKEN \*/)")
+html, n_token = TOKEN_LINE_RE.subn(r"\g<1>\g<3>", html)
+
 # 2) 收集引用的图片与字体
 refs = sorted(set(re.findall(r"(?:images|fonts)/[A-Za-z0-9._-]+\.[A-Za-z0-9]+", html)))
 missing = [r for r in refs if not (BASE / r).exists()]
@@ -105,6 +109,8 @@ if n_cvedit != 1 or "CVEDIT-START" in html:
     fail("画布就地编辑没剥净")
 if n_flag != 1:
     fail("没能置上发送版标记，写回与提词代码仍会联本地服务")
+if n_token != 1 or not re.search(r"var TOKEN = ''; /\* HANYU_TOKEN \*/", html):
+    fail("写回凭据没清空，不能外发")
 left = set(re.findall(r"(?:images|fonts)/[A-Za-z0-9._-]+\.[A-Za-z0-9]+", html))
 if left:
     fail("这些文件没内联成功 %s" % left)

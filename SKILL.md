@@ -5,7 +5,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 # Hanyu HTML Deck（本地演示台）
 
-使用本 skill 创建或修改 HTML 演示文稿时，以本 skill 目录内的 `assets/hanyu-html-deck/template.html` 为底座，不从空白页面重新搭引擎。下文的相对路径都以本 skill 目录（即仓库根）为起点；skill 装在别处时，先定位到该目录再执行命令。
+使用本 skill 创建或修改 HTML 演示文稿时，以本 skill 目录内的 `assets/hanyu-html-deck/index.html` 为底座，不从空白页面重新搭引擎。下文的相对路径都以本 skill 目录（即仓库根）为起点；skill 装在别处时，先定位到该目录再执行命令。
 
 模板提供的是演示引擎与页面骨架，不是要照搬的视觉方案。示例页只作结构参考，版面按当次内容重新组织。
 
@@ -68,7 +68,8 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 本地服务负责手机提词、遥控、源文件写回、图片/PDF/发送版导出。修改这部分时保留以下边界：
 
-- 写侧与桌面控制端点（`/seed`、`/canvas`、`/export`、`/notes`、`/flip`、`/info`、`/qr.svg`）要求回环请求且携带访问凭据。凭据由启动脚本生成、随地址交给演示稿——浏览器里的任意网页都能伪装成本地文件（`Origin: null`），只看「来自本机」挡不住它。
+- 写侧与桌面控制端点（`/seed`、`/canvas`、`/export`、`/notes`、`/flip`、`/info`、`/qr.svg`）要求回环请求且携带访问凭据——浏览器里的任意网页都能伪装成本地文件（`Origin: null`），只看「来自本机」挡不住它。
+- 凭据由服务启动时写进 `index.html` 的 `/* HANYU_TOKEN */` 锚点行、停止时清空。不要改成经打开地址传递：macOS 的 `open` 会丢掉 `file://` URL 上的 query 与 fragment，页面永远拿不到。
 - 手机侧端点（`/p`、`/notes.json`、`/events`、`/thumbs`、`/steps`、`/goto`、`/phone-heartbeat`）接受回环或携带凭据；凭据只经二维码交给手机，接口不回传含凭据的链接。
 - 所有请求校验 `Host` 是否指向本机（堵 DNS rebinding），并只回显白名单内的 `Origin`；未登记的路径默认拒绝。
 - 写回内容用 HTML 分词器逐 token 校验标签与属性白名单，不用正则——正则的属性区会被引号里的 `>` 截断，事件属性会漏过去。

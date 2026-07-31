@@ -923,10 +923,11 @@ var DECK = {
 var SEND_VERSION = false;
 (function () {
   var SRV = 'http://127.0.0.1:' + DECK.port;
-  // 访问凭据:由启动脚本随地址交给本文件。写回要求它——浏览器里的任意网页都能
-  // 伪装成本地文件,只看"来自本机"挡不住,凭据才是网页拿不到的东西。
-  // 直接双击本文件打开时没有凭据:仍可演示与编辑,但改动只留在浏览器里。
-  var TOKEN = (location.search.match(/[?&]t=([^&]+)/) || [])[1] || '';
+  // 访问凭据:本地服务启动时写进下面这一行,停止时清空。写回要求它——浏览器里的
+  // 任意网页都能伪装成本地文件,只看"来自本机"挡不住,凭据才是网页拿不到的东西。
+  // 这行的 HANYU_TOKEN 标记是服务端定位用的锚点,不要删。
+  // 服务没在跑、或页面在服务启动前就打开了:仍可演示与编辑,但改动只留在浏览器里。
+  var TOKEN = ''; /* HANYU_TOKEN */
   function api(path) {
     return SRV + path + (path.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(TOKEN);
   }
@@ -1566,7 +1567,7 @@ var SEND_VERSION = false;
     var note = document.createElement('p');
     note.className = 'lp-note';
     note.textContent = ledState.noToken
-      ? '这份演示稿不是从「启动本地演示台.command」打开的，没有写回凭据，改动只存在这个浏览器里。双击那个文件即可带凭据重新打开。'
+      ? '这个页面在本地服务启动之前就打开了，没拿到写回凭据，改动只存在这个浏览器里。刷新一下页面即可。'
       : ledState.down
         ? '本地服务没在运行，改动只存在这个浏览器里。双击「启动本地演示台.command」后会自动补写。'
         : (ledState.ok ? '停止输入约一秒半后自动写回 index.html，不需要点保存。' : '正在等待写回：停止输入约一秒半后自动落盘。');
@@ -1961,7 +1962,7 @@ var SEND_VERSION = false;
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ what: kind })
     }).then(function (r) {
-      if (r.status === 403) { alert('缺少访问凭据。请从「启动本地演示台.command」打开演示稿，再试导出。'); return { skip: 1 }; }
+      if (r.status === 403) { alert('缺少访问凭据：这个页面比本地服务先打开。刷新页面后再试导出。'); return { skip: 1 }; }
       return r.json();
     }).then(function (d) {
       if (d.skip) return;
@@ -2093,9 +2094,12 @@ var SEND_VERSION = false;
       pdStatus.textContent = d.clients > 0 ? '已连接 ' + d.clients + ' 台设备' : '服务已启动，等待手机连接';
       pdStatus.classList.add('ok');
     }).catch(function (e) {
-      pdQr.innerHTML = '<span>' + (String(e.message).indexOf('凭据') >= 0 ? '缺少访问凭据' : '本地服务未启动') + '</span>';
+      var noToken = String(e.message).indexOf('凭据') >= 0;
+      pdQr.innerHTML = '<span>' + (noToken ? '缺少访问凭据' : '本地服务未启动') + '</span>';
       pdUrl.textContent = '';
-      pdStatus.textContent = '请从“启动本地演示台.command”打开演示稿，再打开手机提词器。';
+      pdStatus.textContent = noToken
+        ? '这个页面比本地服务先打开，刷新页面后再试。'
+        : '双击“启动本地演示台.command”启动服务后再试。';
       pdStatus.classList.remove('ok');
     });
   }

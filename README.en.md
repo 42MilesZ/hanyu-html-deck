@@ -10,7 +10,7 @@ Hanyu HTML Deck ships as both a reusable presentation template and a focused ski
 
 Hanyu HTML Deck gives you presentation mechanics and an authoring workflow: navigation, step animations, speaker script, notes, phone prompting, source write-back, and exports.
 
-It is not a slide design template. There are no themes, color schemes, or ready-made layout sets. `template.html` is a runnable starting point, and its sample pages are page skeletons — the actual layout is built for each deck from its own content. If what you want is a theme or layout pack, this project does not solve that.
+It is not a slide design template. There are no themes, color schemes, or ready-made layout sets. `assets/hanyu-html-deck/index.html` is a runnable starting point, and its sample pages are page skeletons — the actual layout is built for each deck from its own content. If what you want is a theme or layout pack, this project does not solve that.
 
 ## Intended use
 
@@ -42,7 +42,7 @@ cd hanyu-html-deck
 python3 scripts/create_deck.py ~/Documents/my-deck
 ```
 
-Open `my-deck/启动本地演示台.command`: it starts the local service and opens the deck with a one-time credential. Update `DECK.name` and `DECK.key` near the end of `index.html`, then replace the sample content. Double-clicking `index.html` directly also works for offline viewing, but it will not write back.
+Open `my-deck/启动本地演示台.command`: it starts the local service and, once the service is ready, opens the deck. Update `DECK.name` and `DECK.key` near the end of `index.html`, then replace the sample content. Double-clicking `index.html` directly also works for offline viewing, but it will not write back.
 
 The core HTML works in modern browsers on macOS, Windows, and Linux. In version 0.1 the local service, launcher, and export workflow are verified on macOS only: image, PDF, and send-copy exports rely on the macOS `sips` command. On Windows and Linux, run `python3 scripts/prompter_server.py` to use phone prompting and write-back; the exports are unavailable.
 
@@ -99,9 +99,10 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 
 ## Source write-back
 
-- When the deck is opened from `启动本地演示台.command`, script and note edits are written back to `index.html` automatically, about 1.5 seconds after you stop typing. There is no save button.
-- Opened by double-clicking `index.html`, the deck does not write back: edits live in the browser (they survive a reload), and the status light says why. Reopen from the launcher and pending edits are written out.
-- Why: any web page in your browser can present itself as a local file (`Origin: null`) and post to a service on your machine, so "came from this machine" is not a sufficient check. The launcher mints a one-time credential and hands it to the deck through the URL; write-back, exports, and phone prompting all require it, and other pages cannot obtain it.
+- While the local service is running, script and note edits are written back to `index.html` automatically, about 1.5 seconds after you stop typing. There is no save button.
+- With the service stopped, the deck does not write back: edits live in the browser (they survive a reload), and the status light says why. Start the service and change any character to flush the pending edits.
+- Why a credential: any web page in your browser can present itself as a local file (`Origin: null`) and post to a service on your machine, so "came from this machine" is not a sufficient check. On startup the service stamps a one-time credential into `index.html` and clears it on exit; write-back, exports, and phone prompting all require it, and other pages cannot obtain it.
+- So the page has to be opened after the service starts. If it was already open, the status light tells you to reload. The launcher waits for the service to answer before opening the deck.
 - A status light sits at the bottom right of the script column: green means everything is on disk, amber means some edits still live only in the browser. Hover it for a panel listing which pages are pending; click an entry to jump there.
 - Next to the light is history: the script and the notes each keep their own version timeline, and you can restore any snapshot or the original text.
 - Double-click canvas text to edit it; blur writes the updated canvas back.

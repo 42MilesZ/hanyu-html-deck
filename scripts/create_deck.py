@@ -3,12 +3,17 @@
 
 import argparse
 import pathlib
+import re
 import shutil
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "assets" / "hanyu-html-deck"
-JUNK = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
+# 资产目录本身可运行,会留下运行状态与导出中间物,这些不该跟着新演示稿走
+JUNK = shutil.ignore_patterns(
+    "__pycache__", "*.pyc", ".DS_Store", ".prompter-*", "发送版.html", "导出图片"
+)
+TOKEN_LINE_RE = re.compile(r"(var TOKEN = ')([^']*)('; /\* HANYU_TOKEN \*/)")
 
 
 def create(target: pathlib.Path):
@@ -16,12 +21,15 @@ def create(target: pathlib.Path):
         raise SystemExit("目标目录不是空目录：%s" % target)
     target.mkdir(parents=True, exist_ok=True)
     for item in SOURCE.iterdir():
-        if item.name == "template.html":
-            shutil.copy2(item, target / "index.html")
-        elif item.is_dir():
+        if item.is_dir():
             shutil.copytree(item, target / item.name, ignore=JUNK)
-        else:
+        elif not item.name.startswith(".prompter-") and item.name != "发送版.html":
             shutil.copy2(item, target / item.name)
+    deck = target / "index.html"
+    # 模板此刻可能正被本地服务占用,行内带着本机写回凭据:带走它会把新稿的改动写回模板
+    deck.write_text(
+        TOKEN_LINE_RE.sub(r"\g<1>\g<3>", deck.read_text(encoding="utf-8")), encoding="utf-8"
+    )
     shutil.copy2(ROOT / "assets" / "deck-readme.md", target / "README.md")
     # 生成目录会被整体转发,必须自带许可与第三方声明
     shutil.copy2(ROOT / "LICENSE", target / "LICENSE")

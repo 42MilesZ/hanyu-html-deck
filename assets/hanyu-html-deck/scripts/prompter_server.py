@@ -33,9 +33,10 @@ PAGES_DIR = os.path.join(ROOT, "导出图片")
 THUMB_DIR = os.path.join(HERE, ".prompter-thumbs")
 STEPS_DIR = os.path.join(HERE, ".prompter-steps")
 PORT = int(os.environ.get("HANYU_DECK_PORT") or 8123)
-# 访问凭据:保护写回与手机侧。由启动脚本生成并通过环境变量传入(它要用同一个凭据打开演示稿),
-# 单独运行本脚本时自行生成。浏览器里的任意网页都能伪装成本地文件(Origin: null),
+# 访问凭据:保护写回与手机侧。浏览器里的任意网页都能伪装成本地文件(Origin: null),
 # 光靠"来自本机"判断挡不住它,故写回也要求凭据——网页拿不到它。
+# 演示稿是 file:// 页面,而 macOS 的 open 会丢掉 file:// URL 上的 query 与 fragment,
+# 凭据传不进去,故改为启动时写进 index.html(见 stamp_token),退出时清空。
 TOKEN = os.environ.get("HANYU_DECK_TOKEN") or secrets.token_urlsafe(16)
 LOOPBACK = ("127.0.0.1", "::1", "::ffff:127.0.0.1")
 
@@ -319,6 +320,33 @@ def check_markup(fragment, tags, attrs):
     return True, ""
 
 
+TOKEN_LINE_RE = re.compile(r"(var TOKEN = ')([^']*)('; /\* HANYU_TOKEN \*/)")
+
+
+def stamp_token(value):
+    """把本次运行的凭据写进演示稿;传空字符串即清除。
+
+    演示稿是 file:// 页面,凭据没法经 URL 传入,只能落到文件里。服务停止时清空,
+    这样"服务没在跑"与"文件里没有凭据"始终一致。
+    """
+    with seed_lock:
+        try:
+            with open(INDEX_FILE, encoding="utf-8") as handle:
+                document = handle.read()
+        except OSError:
+            return False
+        updated, count = TOKEN_LINE_RE.subn(r"\g<1>" + value + r"\g<3>", document, count=1)
+        if count != 1:
+            return False
+        if updated == document:
+            return True
+        tmp = INDEX_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(updated)
+        os.replace(tmp, INDEX_FILE)
+    return True
+
+
 def find_block(document, selector, page):
     """按 div 开闭配平定位第 page 个 .ns/.nc 区块,返回内容区间。
 
@@ -497,8 +525,8 @@ class Handler(BaseHTTPRequestHandler):
                 return False, "来源不被信任，拒绝写入"
             if not self.token_ok():
                 # 浏览器里的任意网页都能伪装成本地文件,只看"来自本机"挡不住它;
-                # 凭据由启动脚本随地址交给演示稿,网页拿不到
-                return False, "缺少访问凭据：请从「启动本地演示台.command」打开演示稿"
+                # 凭据由服务启动时写进 index.html,网页拿不到
+                return False, "缺少访问凭据：这个页面比服务先打开，刷新一下即可"
             return True, ""
         if path in PHONE_PATHS:
             if self.from_loopback() or self.token_ok():
@@ -790,13 +818,22 @@ def main():
         print("暂未发现手机可访问的局域网地址。切换网络后无需重启，二维码会自动刷新。")
     print("关闭这个窗口或按 Ctrl+C 即停止服务。")
     try:
-        Server(("0.0.0.0", PORT), Handler).serve_forever()
+        server = Server(("0.0.0.0", PORT), Handler)
     except OSError as error:
+        # 先占端口再动文件:端口被占说明另有服务在跑,它写进去的凭据不能被清掉。
         print("端口 %d 起不来：%s" % (PORT, error))
         print("可能已有一个本地演示台服务在跑；或设置 HANYU_DECK_PORT 换一个端口。")
         sys.exit(1)
+    if stamp_token(TOKEN):
+        print("已把本次运行的写回凭据写进 index.html，停止服务时自动清除。")
+    else:
+        print("index.html 里没有凭据锚点（版本较旧），写回与导出会被拒绝。")
+    try:
+        server.serve_forever()
     except KeyboardInterrupt:
         print("\n服务已停止。")
+    finally:
+        stamp_token("")
 
 
 if __name__ == "__main__":
