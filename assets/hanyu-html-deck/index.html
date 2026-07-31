@@ -13,7 +13,11 @@
   /* 本地字体(同目录 fonts/,全量字符):全平台渲染一致；发送版由 build_send.py 内联。
      可变字重用一条声明覆盖 100–900：写成两条会让发送版把同一份字体内联两遍。 */
   @font-face { font-family: "Noto Sans SC"; font-weight: 100 900; src: url("fonts/NotoSansSC.woff2") format("woff2"); }
-  :root { --paper: #f2f1ed; --hair: #d2d0c8; --ink: #111; --chrome: #121212; --chair: #2c2c2c; --nh: 296px; --dw: 420px; }
+  :root {
+    --paper: #f2f1ed; --hair: #d2d0c8; --ink: #111; --chrome: #121212; --chair: #2c2c2c;
+    --muted-bg: rgba(255,255,255,.05); --edit-bg: #202224;
+    --ease-ui: cubic-bezier(.22,.61,.21,1); --nh: 296px; --dw: 420px;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
   body {
@@ -23,6 +27,7 @@
     font-weight: 300;
     overflow: hidden;
   }
+  body { transition: background .32s ease; }
   body.present { background: #0c0c0c; }
 
   /* ===== 1:1 原尺寸模式(R):给 Figma 之类的 DOM 抓取插件用 =====
@@ -79,14 +84,21 @@
     display: flex; align-items: center; justify-content: center;
     background: var(--chrome); border: 1px solid var(--chair); border-bottom: none;
     border-radius: 22px 22px 0 0; color: #b5b3ac;
-    transition: color .18s, bottom .32s cubic-bezier(.22,.61,.21,1);
+    transition: color .18s, bottom .32s var(--ease-ui), opacity .2s ease,
+      transform .32s var(--ease-ui), visibility 0s;
     font: inherit;
   }
   #notesToggle:hover { color: var(--paper); }
   #notesToggle svg { width: 16px; height: 16px; display: block; transition: transform .28s; }
   body:not(.notes-mini) #notesToggle svg { transform: rotate(180deg); } /* 展开态箭头朝下=收起 */
   body.notes-mini #notesToggle { bottom: 46px; }
-  body.present #notesToggle, body.raw #notesToggle, body.notes-hidden #notesToggle { display: none; }
+  body.present #notesToggle {
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateX(-50%) translateY(12px);
+    transition: color .18s, bottom .32s var(--ease-ui), opacity .2s ease,
+      transform .32s var(--ease-ui), visibility 0s linear .32s;
+  }
+  body.raw #notesToggle, body.notes-hidden #notesToggle { display: none; }
   /* 视图三段(演示/默认/总览):互斥单选,淡底托盘+细边读作一组;
      选中不靠各自变底色,而是一个方块(.thumb)在三个位置之间滑动 */
   #segView {
@@ -98,7 +110,7 @@
   #segView .thumb {
     position: absolute; top: 0; left: 0; z-index: 0;
     background: rgba(255,255,255,.16); border-radius: 3px;
-    transition: transform .24s cubic-bezier(.22,.61,.21,1), width .24s, height .24s;
+    transition: transform .32s var(--ease-ui), width .32s var(--ease-ui), height .32s var(--ease-ui);
     pointer-events: none;
   }
   #segView .thumb.noanim { transition: none; }
@@ -147,6 +159,7 @@
     /* 画布布局盒固定 1920,scale 只缩视觉不缩布局——不裁剪的话窄屏(竖屏/4:3)会长出横向滚动条 */
     overflow: hidden;
   }
+  body.view-anim #stage { transition: top .42s var(--ease-ui), bottom .42s var(--ease-ui); }
   body.present #stage { top: 0; bottom: 0; }
   body.notes-hidden:not(.present) #stage { bottom: 16px; }
 
@@ -210,6 +223,8 @@
     position: fixed; bottom: 3px; left: 0; right: 0; height: var(--nh); z-index: 40;
     background: var(--chrome); border-top: 1px solid var(--chair);
     display: flex; flex-direction: column; gap: 0; overflow: hidden;
+    opacity: 1; transform: translateY(0); visibility: visible;
+    transition: opacity .24s ease, transform .36s var(--ease-ui), visibility 0s;
   }
   #nGrip { position: absolute; left: 0; right: 0; top: 0; height: 7px; cursor: ns-resize; z-index: 6; }
   /* 迷你态(默认):正文收起只留表头一条;展开/收起走 .notes-anim 的高度过渡(常态不挂 transition,免得拖动调高被拖慢) */
@@ -218,8 +233,11 @@
   #notesPanel .col { transition: opacity .25s ease; }
   body.notes-mini #notesPanel .col { opacity: 0; }
   body.notes-mini:not(.present) #stage, body.notes-mini:not(.present) .navzone { bottom: 50px; }
-  body.notes-anim #notesPanel { transition: height .32s cubic-bezier(.22,.61,.21,1); }
-  body.notes-anim #stage, body.notes-anim .navzone { transition: bottom .32s cubic-bezier(.22,.61,.21,1); }
+  body.notes-anim #notesPanel {
+    transition: height .32s var(--ease-ui), opacity .24s ease,
+      transform .36s var(--ease-ui), visibility 0s;
+  }
+  body.notes-anim #stage, body.notes-anim .navzone { transition: bottom .32s var(--ease-ui); }
   /* 面板表头:左=页码与标题(同一淡底块),中=全场时间轴,右=语速下拉。
      历史与备注开关在各自栏的右下角工具条里,不在表头 */
   #notesHead {
@@ -230,7 +248,7 @@
   #headChip {
     display: inline-flex; align-items: center; flex: none;
     padding: 3px 12px; margin-right: 18px;
-    background: rgba(255,255,255,.05); border-radius: 3px;
+    background: var(--muted-bg); border-radius: 3px;
   }
   #pageNum { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; min-width: 58px; }
   #pnCur { position: relative; display: inline-block; overflow: hidden; height: 25px; line-height: 25px; font-size: 19px; font-weight: 600; color: #f0eee8; letter-spacing: .04em; }
@@ -296,10 +314,11 @@
     display: inline-flex; align-items: center; gap: 5px;
     height: 32px; padding: 0 8px; cursor: pointer;
     font: inherit; font-size: 13px; letter-spacing: .04em; font-variant-numeric: tabular-nums;
-    color: #b5b3ac; background: none; border: 0; border-radius: 2px;
+    color: #b5b3ac; background: var(--muted-bg); border: 0; border-radius: 2px;
+    transition: background .18s ease, color .18s ease;
   }
   #rateBtn:hover { background: var(--paper); color: var(--ink); }
-  #rateWrap.open #rateBtn { color: #f0eee8; }
+  #rateWrap.open #rateBtn { color: #f0eee8; background: rgba(255,255,255,.08); }
   #rateWrap.open .caret { transform: rotate(180deg); }
   #rateMenu {
     position: fixed; display: none; flex-direction: column; min-width: 148px;
@@ -332,17 +351,25 @@
   /* 备注角标:填色小标签,高度压在同行图标之内 */
   .col-tag {
     display: inline-flex; align-items: center; height: 20px; padding: 0 8px;
-    background: #262b33; color: #9d9b94; border-radius: 2px;
+    background: #292b2c; color: #9d9b94; border-radius: 2px;
     font-size: 11px; letter-spacing: .12em;
   }
-  /* 同步灯:小圆点 + 微弱发光。方盒与图标钮同尺寸,灯与两个图标间距一致 */
-  .led-box { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; }
+  /* 讲稿与备注共用一处保存状态:输入立即存浏览器,停顿后写回文件 */
+  #saveState {
+    height: 32px; min-width: 70px; padding: 0 9px; margin-right: 8px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    background: var(--muted-bg); color: #98968f; border-radius: 2px;
+    font-size: 11px; letter-spacing: .04em; cursor: default;
+    transition: background .18s ease, color .18s ease;
+  }
+  #saveState:hover { background: rgba(255,255,255,.08); color: #d8d6d0; }
   .led {
     width: 6px; height: 6px; border-radius: 50%;
-    background: #d99a3a; box-shadow: 0 0 4px 1px rgba(217,154,58,.35);
+    background: #c3a273; box-shadow: 0 0 0 1px rgba(195,162,115,.22);
     transition: background .3s, box-shadow .3s;
   }
-  .led.ok { background: #5fa564; box-shadow: 0 0 4px 1px rgba(95,165,100,.32); }
+  .led.ok { background: #8dac8e; box-shadow: 0 0 0 1px rgba(141,172,142,.2); }
+  .led.fail { background: #b67d70; box-shadow: 0 0 0 1px rgba(182,125,112,.22); }
   /* 同步灯的悬停浮层:一行字装不下"哪几页没写回",故单独一层(fixed,不受面板裁剪) */
   #ledPop {
     position: fixed; left: 0; top: 0; z-index: 210; width: 268px;
@@ -362,7 +389,7 @@
   #ledPop .lp-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
   #ledPop .lp-item {
     font: inherit; font-size: 11px; color: #b5b3ac; letter-spacing: .04em;
-    background: #262b33; border: 0; border-radius: 2px; padding: 3px 7px; cursor: pointer;
+    background: #292b2c; border: 0; border-radius: 2px; padding: 3px 7px; cursor: pointer;
   }
   #ledPop .lp-item:hover { background: var(--paper); color: var(--ink); }
   /* 发送版:去掉一切依赖本地服务的入口与备注 */
@@ -370,10 +397,14 @@
   body.send #exMenu button[data-ex="imgs"],
   body.send #exMenu button[data-ex="pdf"],
   body.send #exMenu button[data-ex="send"],
-  body.send .led-box,
+  body.send #saveState,
   body.send #btnDrawer,
   body.send #notesPanel .col.comm { display: none; }
-  body.present #notesPanel, body.notes-hidden #notesPanel { display: none; }
+  body.present #notesPanel {
+    opacity: 0; transform: translateY(20px); visibility: hidden; pointer-events: none;
+    transition: opacity .2s ease, transform .36s var(--ease-ui), visibility 0s linear .36s;
+  }
+  body.notes-hidden #notesPanel { display: none; }
   #notesPanel .col {
     min-width: 0; min-height: 0; padding: 12px 22px 0;
     font-size: 13.5px; line-height: 1.8;
@@ -395,7 +426,8 @@
   #notesPanel .ed b, #notesPanel .ed strong, #notesPanel .ed b *, #notesPanel .ed strong * { color: #f0eee8 !important; }
   #notesPanel .ed ul { padding-left: 18px; }
   #notesPanel .ed li { margin-bottom: 4px; }
-  #notesPanel .ed.dirty { background: #1c222a; }
+  #notesPanel .ed { transition: background .22s ease; }
+  #notesPanel .ed.dirty { background: var(--edit-bg); }
   #nsCols { position: relative; flex: 1; min-height: 0; display: flex; overflow: hidden; }
   #notesPanel .col.script {
     position: relative;
@@ -452,9 +484,14 @@
   /* ===== 总览(缩略图恒为静态完成态:入场动画的初始隐藏态只挂 .slide.current/.on 下) ===== */
   #overview {
     position: fixed; inset: 0; z-index: 80; background: rgba(14,14,14,.98);
-    display: none; overflow-y: auto; padding: 56px 44px;
+    display: block; overflow-y: auto; padding: 56px 44px;
+    opacity: 0; visibility: hidden; pointer-events: none; transform: scale(.988);
+    transition: opacity .28s ease, transform .42s var(--ease-ui), visibility 0s linear .42s;
   }
-  #overview.open { display: block; }
+  #overview.open {
+    opacity: 1; visibility: visible; pointer-events: auto; transform: scale(1);
+    transition: opacity .28s ease, transform .42s var(--ease-ui), visibility 0s;
+  }
   #ovGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; max-width: 1500px; margin: 0 auto; }
   .ovItem { cursor: pointer; }
   .ovItem .thumbWrap {
@@ -1203,6 +1240,11 @@
   .pd-help { margin-top: 22px; color: #88867f; font-size: 13px; line-height: 1.65; }
   #pdStatus { margin-top: 12px; padding-top: 12px; border-top: 1px solid #303030; color: #777; font-size: 12px; }
   #pdStatus.ok { color: #a9c6aa; }
+  @media (prefers-reduced-motion: reduce) {
+    body, #overview, #notesPanel, #notesToggle, #segView .thumb,
+    body.notes-anim #stage, body.notes-anim .navzone,
+    body.view-anim #stage { transition: none !important; }
+  }
 </style>
 </head>
 <body class="notes-mini">
@@ -1253,6 +1295,7 @@
         <div class="lbl"></div>
       </div>
     </div>
+    <span id="saveState" aria-label="Script and notes save status"><i id="syncLed" class="led ok"></i><span id="syncText">Saved</span></span>
     <div id="rateWrap">
       <button id="rateBtn" class="tip-up" data-tip="Speaking speed" aria-label="Speaking speed"><span id="rateNow">×1.0</span><i class="caret"></i></button>
       <div id="rateMenu"></div>
@@ -1262,7 +1305,6 @@
     <div class="col script">
       <div class="ed" id="edScript" contenteditable="true"></div>
       <div class="col-tools">
-        <span class="led-box"><i id="syncLed" class="led" aria-label="Write-back status"></i></span>
         <button id="btnHist" class="icon-btn tip-up hist-btn" data-ed="0" data-tip="Script history" aria-label="Script history"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
         <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="Open notes" aria-label="Open notes"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
       </div>
@@ -1345,7 +1387,7 @@
     <div class="v-title">改，就在<em>页面上</em></div>
     <div class="v-editor">
       <div class="edit-before">回到代码里改</div>
-      <div class="edit-after">所见即所改<i class="edit-caret"></i></div>
+      <div class="edit-after">所见即所得<i class="edit-caret"></i></div>
       <div class="edit-status">● 本地演示台已同步</div>
     </div>
     <div class="v-caption"><span>页面、讲稿、备注，自动同步回文件。</span><small>Every edit returns to the source</small></div>
@@ -1522,6 +1564,8 @@ var SEND_VERSION = false;
     { key: DECK.key + '.s.', hkey: DECK.key + '.h.', el: edScript, sel: '.ns', label: 'Script', canon: canonNs },
     { key: DECK.key + '.c.', hkey: DECK.key + '.hc.', el: edComm, sel: '.nc', label: 'Notes', canon: canon }
   ];
+  var WRITEBACK_DELAY = 3000;
+  var writeFlights = {};
   var PANEL_KEY = DECK.key + '.ui.panelExpanded';
   var DRAWER_KEY = DECK.key + '.ui.notesDrawerOpen';
   if (localStorage.getItem(PANEL_KEY) === '1') document.body.classList.remove('notes-mini');
@@ -1535,6 +1579,14 @@ var SEND_VERSION = false;
       var c = s.querySelector('.canvas');
       c.style.transform = raw ? '' : 'scale(' + scale + ')';
     });
+  }
+  // 底栏和视图切换时 stage 会连续改变高度：每帧跟随它重算缩放，画布与面板同步运动。
+  var fitFrame = 0;
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () {
+      if (fitFrame) return;
+      fitFrame = requestAnimationFrame(function () { fitFrame = 0; fitSlide(); });
+    }).observe(stage);
   }
 
   function seedOf(i, ed) {
@@ -1574,7 +1626,9 @@ var SEND_VERSION = false;
   function saveNote() {
     EDS.forEach(function (ed) {
       var key = ed.key + (cur + 1);
-      if (ed.canon(ed.el.innerHTML) === ed.canon(seedOf(cur, ed))) localStorage.removeItem(key);
+      // 旧版正在写回时，即使用户改回当前种子，也要保留显式覆盖：
+      // 旧响应随后会改掉种子，提前删覆盖会把用户刚改回去的版本吞掉。
+      if (!writeFlights[key] && ed.canon(ed.el.innerHTML) === ed.canon(seedOf(cur, ed))) localStorage.removeItem(key);
       else localStorage.setItem(key, ed.el.innerHTML);
       ed.el.classList.toggle('dirty', !!localStorage.getItem(key));
     });
@@ -2044,6 +2098,7 @@ var SEND_VERSION = false;
     return ed.canon(localStorage.getItem(ed.key + (i + 1)) || '');
   }
   var syncLed = document.getElementById('syncLed');
+  var syncText = document.getElementById('syncText');
   var ledPop = document.createElement('div');
   ledPop.id = 'ledPop';
   document.body.appendChild(ledPop);
@@ -2063,7 +2118,7 @@ var SEND_VERSION = false;
     var head = document.createElement('div');
     head.className = 'lp-head';
     var dot = document.createElement('i');
-    dot.className = 'led' + (ledState.ok ? ' ok' : '');
+    dot.className = 'led' + (ledState.ok ? ' ok' : ((ledState.down || ledState.noToken) ? ' fail' : ''));
     head.appendChild(dot);
     var title = document.createElement('span');
     title.textContent = ledState.ok ? 'Script and notes are saved to file' : ledState.pending.length + ' change(s) not written to file';
@@ -2075,7 +2130,7 @@ var SEND_VERSION = false;
       ? 'This page opened before the local service and has no write-back token. Refresh the page to reconnect.'
       : ledState.down
         ? 'The local service is offline. Changes remain in this browser until you start the launcher.'
-        : (ledState.ok ? 'Changes write back to index.html about 1.5 seconds after you stop typing.' : 'Waiting to write back after typing stops.');
+        : (ledState.ok ? 'Changes write back to index.html 3 seconds after you stop typing.' : 'Saved in this browser. Waiting to write back after typing stops.');
     ledPop.appendChild(note);
     if (ledState.pending.length) {
       var list = document.createElement('div');
@@ -2118,6 +2173,8 @@ var SEND_VERSION = false;
   ledPop.addEventListener('mouseleave', function () { ledPopHide(); });
   function setLed(ok, why, down, noToken) {
     syncLed.classList.toggle('ok', !!ok);
+    syncLed.classList.toggle('fail', !!down || !!noToken);
+    syncText.textContent = ok ? 'Saved' : (down ? 'Offline' : (noToken ? 'Reconnect' : 'Saving…'));
     ledState = { ok: !!ok, why: why, pending: dirtyPages(), down: !!down, noToken: !!noToken };
     if (ledPop.classList.contains('on')) ledPopShow();
   }
@@ -2126,18 +2183,19 @@ var SEND_VERSION = false;
     if (!n) setLed(true, 'Script and notes are saved to index.html', false, false);
     else setLed(false, n + ' change(s) not written to file', ledState.down, ledState.noToken);
   }
-  var seedTimer = null, seedChain = Promise.resolve(), seedBusy = false;
+  var seedTimer = null, seedChain = Promise.resolve(), seedBusy = false, seedAgain = false;
   function scheduleSeed() {
     if (SEND_VERSION) return;              // 发送版不写回:收件人本机可能也跑着服务
     clearTimeout(seedTimer);
     refreshLed();
-    seedTimer = setTimeout(seedNow, 1500);
+    seedTimer = setTimeout(seedNow, WRITEBACK_DELAY);
   }
   function seedNow() {
     if (SEND_VERSION) return;
     clearTimeout(seedTimer);
     var changed = dirtyPages();
-    if (!changed.length || seedBusy) { refreshLed(); return; }
+    if (!changed.length) { refreshLed(); return; }
+    if (seedBusy) { seedAgain = true; refreshLed(); return; }
     seedBusy = true;
     var down = false, noToken = false;
     changed.forEach(function (c) {
@@ -2145,6 +2203,8 @@ var SEND_VERSION = false;
         if (down) return;
         var frag = fragOfPage(c.i, c.ed);
         if (!frag) return;                 // 内容为空不写,留在浏览器里等下一次
+        var key = c.ed.key + (c.i + 1);
+        writeFlights[key] = frag;
         return fetch(api('/seed'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ page: c.i + 1, total: total, html: frag, sel: c.ed.sel.slice(1) })
@@ -2152,13 +2212,20 @@ var SEND_VERSION = false;
           if (r.status === 403) noToken = true;   // 缺凭据:得从启动脚本打开才能写回
           return r.json();
         }).then(function (d) {
+          delete writeFlights[key];
           if (!d.ok) return;               // 被拒:改动留在浏览器,灯保持橙黄
           snapHist(c.i, c.ed);
           var src = slides[c.i].querySelector('aside ' + c.ed.sel);
           if (src) src.innerHTML = frag;
-          localStorage.removeItem(c.ed.key + (c.i + 1));
-          if (c.i === cur) c.ed.el.classList.remove('dirty');
-        }, function () { down = true; });   // 服务没在跑:静默留在浏览器
+          // 请求发出后可能又输入了新内容：只清掉本次真正写回的那一版。
+          if (fragOfPage(c.i, c.ed) === frag) {
+            localStorage.removeItem(key);
+            if (c.i === cur) c.ed.el.classList.remove('dirty');
+          }
+        }, function () {
+          delete writeFlights[key];
+          down = true;
+        });                                 // 服务没在跑:静默留在浏览器
       });
     });
     seedChain = seedChain.then(function () {
@@ -2166,6 +2233,8 @@ var SEND_VERSION = false;
       if (down) setLed(false, 'Local service offline', true);
       else if (noToken) setLed(false, 'Access token missing', false, true);
       else refreshLed();
+      // 写回进行中若已经到了下一次定时，新版继续走同一条 3 秒自动写回链。
+      if (seedAgain && !down && !noToken) { seedAgain = false; scheduleSeed(); }
     });
   }
 
@@ -2378,7 +2447,7 @@ var SEND_VERSION = false;
       item.appendChild(wrap);
       item.appendChild(cap);
       item.addEventListener('click', function () {
-        overview.classList.remove('open');
+        setView('default');
         go(i);
       });
       ovGrid.appendChild(item);
@@ -2492,6 +2561,12 @@ var SEND_VERSION = false;
   var segView = document.getElementById('segView');
   var segThumb = segView.querySelector('.thumb');
   var view = 'default';
+  var viewAnimT = null;
+  function beginViewAnim() {
+    document.body.classList.add('view-anim');
+    clearTimeout(viewAnimT);
+    viewAnimT = setTimeout(function () { document.body.classList.remove('view-anim'); }, 460);
+  }
   function positionThumb() {
     var on = segView.querySelector('button.on');
     if (!on) return;
@@ -2519,6 +2594,8 @@ var SEND_VERSION = false;
     }
   }
   function setView(v) {
+    if (v === view) return;
+    beginViewAnim();
     view = v;
     var b = document.body;
     if (v === 'overview') { buildOverview(); overview.classList.add('open'); }
@@ -2548,6 +2625,7 @@ var SEND_VERSION = false;
   function toggleRaw() { setRaw(!document.body.classList.contains('raw')); }
   document.addEventListener('fullscreenchange', function () {
     if (!document.fullscreenElement && view === 'present') setView('default');
+    else { beginViewAnim(); fitSlide(); }
   });
   var notesAnimT = null;
   function toggleNotes() {
@@ -2722,11 +2800,10 @@ var SEND_VERSION = false;
   document.getElementById('zonePrev').addEventListener('click', prev);
   document.getElementById('zoneNext').addEventListener('click', next);
 
-  var saveTimer = null;
   EDS.forEach(function (ed) {
     ed.el.addEventListener('input', function () {
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(function () { saveNote(); scheduleSeed(); }, 400);
+      saveNote();       // 每次输入立即落到浏览器，避免 Notes 在 3 秒窗口内丢失
+      scheduleSeed();  // 停止输入 3 秒后再合并写回源文件
     });
   });
 

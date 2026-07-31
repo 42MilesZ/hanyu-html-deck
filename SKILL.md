@@ -66,7 +66,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 - 两种状态按 `DECK.key` 分别写入 localStorage，不互相覆盖。
 - localStorage 一律走模板内的安全包装，不裸调用：禁用存储或配额写满时要降级，不能白屏。
 - 讲稿与备注各自维护版本历史（`.h.` / `.hc.` 前缀），不共用一条时间线。
-- 写回自动进行，不设保存按钮；状态只由讲稿栏右下角的同步灯表达。
+- 讲稿与备注的输入立即保存到浏览器，停止输入 3 秒后自动写回源文件，不设保存按钮；两栏共用表头的 `Saved` / `Saving…` / `Offline` / `Reconnect` 状态。
 - 手机端默认打开讲稿；备注通过 `Script / Notes` 切换显示。
 - 手机端只使用同一局域网。首选同一 Wi-Fi；没有可用网络时，使用手机热点并让电脑连接。
 - 不接入公网中继、公共 MQTT 或托管提词页。

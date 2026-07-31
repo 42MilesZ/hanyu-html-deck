@@ -146,12 +146,12 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 
 ## Source write-back
 
-- While the local service is running, script and note edits are written back to `index.html` automatically, about 1.5 seconds after you stop typing. There is no save button.
-- With the service stopped, the deck does not write back: edits live in the browser (they survive a reload), and the status light says why. Start the service and change any character to flush the pending edits.
+- Script and note edits are saved in the browser immediately. While the local service is running, they write back to `index.html` automatically 3 seconds after you stop typing. There is no save button.
+- With the service stopped, the deck does not write back: edits live in the browser (they survive a reload), and the save status says why. Start the service and change any character to flush the pending edits.
 - Why a credential: any web page in your browser can present itself as a local file (`Origin: null`) and post to a service on your machine, so "came from this machine" is not a sufficient check. On startup the service stamps a one-time credential into `index.html` and clears it on exit; write-back, exports, and phone prompting all require it, and other pages cannot obtain it.
-- So the page has to be opened after the service starts. If it was already open, the status light tells you to reload. The launcher waits for the service to answer before opening the deck.
-- A status light sits at the bottom right of the script column: green means everything is on disk, amber means some edits still live only in the browser. Hover it for a panel listing which pages are pending; click an entry to jump there.
-- Next to the light is history: the script and the notes each keep their own version timeline, and you can restore any snapshot or the original text.
+- So the page has to be opened after the service starts. If it was already open, the save status tells you to reload. The launcher waits for the service to answer before opening the deck.
+- One shared save status sits in the panel header: `Saved` means both script and notes are on disk; `Saving…` means edits are safe in the browser and waiting to write back; a disconnected session shows `Offline` or `Reconnect`. Hover it to list the pending pages and content types.
+- Script and notes each have their own history button and version timeline, with any snapshot or the original text available to restore.
 - Double-click canvas text to edit it; blur writes the updated canvas back.
 - Write-back accepts only local requests carrying the credential. Before replacing the file the service checks the page count and structure, validates the markup against a tag/attribute allowlist using an HTML tokenizer, and swaps the file atomically.
 

@@ -162,18 +162,42 @@ class TemplateTests(unittest.TestCase):
 
         self.assertNotIn('data-act="drawer"', toolbar)
         self.assertIn('id="rateBtn"', notes_head)
+        self.assertIn('id="saveState"', notes_head)
+        self.assertIn('id="syncLed"', notes_head)
+        self.assertIn('id="syncText"', notes_head)
         self.assertNotIn('class="rt tip-up"', notes_head)
-        for moved in ('id="btnHist"', 'id="btnDrawer"', 'id="syncLed"'):
+        for moved in ('id="btnHist"', 'id="btnDrawer"'):
             self.assertNotIn(moved, notes_head)
             self.assertIn(moved, script_col)
+        self.assertNotIn('id="syncLed"', script_col)
         self.assertIn('id="btnHistComm"', comm_col)
         self.assertNotIn("btnSeed", self.html)
 
     def test_write_back_is_automatic_with_status_led(self):
         self.assertIn("function seedNow()", self.html)
         self.assertIn("function scheduleSeed()", self.html)
+        self.assertIn("var WRITEBACK_DELAY = 3000;", self.html)
+        self.assertIn("setTimeout(seedNow, WRITEBACK_DELAY)", self.html)
+        self.assertIn("syncText.textContent", self.html)
+        self.assertIn("Saved in this browser", self.html)
+        self.assertIn("var writeFlights = {};", self.html)
+        self.assertIn("!writeFlights[key]", self.html)
+        self.assertIn("fragOfPage(c.i, c.ed) === frag", self.html)
+        self.assertNotIn("saveTimer = setTimeout", self.html)
         self.assertIn("syncLed", self.html)
         self.assertNotIn("saveAsDefault", self.html)
+
+    def test_view_and_panel_changes_have_motion(self):
+        self.assertIn("body.notes-anim #stage", self.html)
+        self.assertIn("new ResizeObserver", self.html)
+        self.assertIn("#overview.open", self.html)
+        self.assertIn("function beginViewAnim()", self.html)
+        self.assertIn("prefers-reduced-motion: reduce", self.html)
+
+    def test_rate_button_uses_the_shared_muted_background(self):
+        rule = re.search(r"#rateBtn\s*\{([^}]*)\}", self.html)
+        self.assertIsNotNone(rule)
+        self.assertIn("background: var(--muted-bg)", rule.group(1))
 
     def test_history_is_separate_per_column(self):
         self.assertIn("hkey: DECK.key + '.h.'", self.html)
