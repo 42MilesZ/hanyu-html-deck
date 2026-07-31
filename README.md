@@ -12,6 +12,23 @@
 
 它不是一套幻灯片视觉模板，不提供主题皮肤、配色方案或成套版式。仓库里的 `assets/hanyu-html-deck/index.html` 是一个可运行的起点，其中的示例页只是页面骨架；真正的版面由 AI 按每份内容重新组织。如果需要的是现成好看的版式套件，这个项目不解决这个问题。
 
+## 界面预览
+
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="support/readme-assets/workspace.png" alt="完整演示台" width="420"><br><sub>完整演示台 · Complete workspace</sub></td>
+    <td width="50%" align="center"><img src="support/readme-assets/ai-generate.png" alt="AI 生成整场演示" width="420"><br><sub>AI 生成整场演示 · Full-deck generation</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="support/readme-assets/direct-edit.png" alt="在页面上直接修改" width="420"><br><sub>在页面上直接修改 · Direct canvas editing</sub></td>
+    <td width="50%" align="center"><img src="support/readme-assets/export-deliver.png" alt="导出与交付" width="420"><br><sub>导出与交付 · Export-ready delivery</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="support/readme-assets/closing.png" alt="演示封尾" width="420"><br><sub>演示封尾 · Closing slide</sub></td>
+    <td width="50%" align="center"><img src="support/readme-assets/phone-prompter.png" alt="手机提词与遥控" width="180"><br><sub>手机提词与遥控 · Phone prompt &amp; control</sub></td>
+  </tr>
+</table>
+
 ## 适合什么情况
 
 - 使用 Codex、Claude Code 等 AI 编程工具制作 HTML 演示文稿。

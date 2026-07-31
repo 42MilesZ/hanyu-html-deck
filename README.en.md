@@ -12,6 +12,23 @@ Hanyu HTML Deck gives you presentation mechanics and an authoring workflow: navi
 
 It is not a slide design template. There are no themes, color schemes, or ready-made layout sets. `assets/hanyu-html-deck/index.html` is a runnable starting point, and its sample pages are page skeletons — the actual layout is built for each deck from its own content. If what you want is a theme or layout pack, this project does not solve that.
 
+## Interface preview
+
+<table>
+  <tr>
+    <td width="50%" align="center"><img src="support/readme-assets/workspace.png" alt="Complete presentation workspace" width="420"><br><sub>Complete workspace · 完整演示台</sub></td>
+    <td width="50%" align="center"><img src="support/readme-assets/ai-generate.png" alt="AI full-deck generation" width="420"><br><sub>Full-deck generation · AI 生成整场演示</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="support/readme-assets/direct-edit.png" alt="Direct canvas editing" width="420"><br><sub>Direct canvas editing · 在页面上直接修改</sub></td>
+    <td width="50%" align="center"><img src="support/readme-assets/export-deliver.png" alt="Export and delivery" width="420"><br><sub>Export-ready delivery · 导出与交付</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><img src="support/readme-assets/closing.png" alt="Closing slide" width="420"><br><sub>Closing slide · 演示封尾</sub></td>
+    <td width="50%" align="center"><img src="support/readme-assets/phone-prompter.png" alt="Phone teleprompter and remote" width="180"><br><sub>Phone prompt &amp; control · 手机提词与遥控</sub></td>
+  </tr>
+</table>
+
 ## Intended use
 
 - Building HTML presentations with AI coding tools such as Codex or Claude Code.
