@@ -343,6 +343,28 @@
     transition: background .3s, box-shadow .3s;
   }
   .led.ok { background: #5fa564; box-shadow: 0 0 4px 1px rgba(95,165,100,.32); }
+  /* 同步灯的悬停浮层:一行字装不下"哪几页没写回",故单独一层(fixed,不受面板裁剪) */
+  #ledPop {
+    position: fixed; left: 0; top: 0; z-index: 210; width: 268px;
+    background: var(--chrome); border: 1px solid var(--chair); padding: 12px 14px;
+    opacity: 0; visibility: hidden; transform: translateY(4px);
+    transition: opacity .14s ease, transform .14s ease, visibility 0s linear .14s;
+  }
+  #ledPop.on {
+    opacity: 1; visibility: visible; transform: translateY(0);
+    transition: opacity .14s ease, transform .14s ease;
+  }
+  #ledPop .lp-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #f0eee8; letter-spacing: .04em;
+  }
+  #ledPop .lp-note { margin-top: 8px; font-size: 11px; line-height: 1.7; color: #8a8880; }
+  #ledPop .lp-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+  #ledPop .lp-item {
+    font: inherit; font-size: 11px; color: #b5b3ac; letter-spacing: .04em;
+    background: #262b33; border: 0; border-radius: 2px; padding: 3px 7px; cursor: pointer;
+  }
+  #ledPop .lp-item:hover { background: var(--paper); color: var(--ink); }
   /* 发送版:去掉一切依赖本地服务的入口与备注 */
   body.send #toolbar button[data-act="prompter"],
   body.send #exMenu button[data-ex="imgs"],
@@ -709,7 +731,7 @@
     <div class="col script">
       <div class="ed" id="edScript" contenteditable="true"></div>
       <div class="col-tools">
-        <span class="led-box"><i id="syncLed" class="led" data-tip-now="正在检查同步状态"></i></span>
+        <span class="led-box"><i id="syncLed" class="led" aria-label="写回状态"></i></span>
         <button id="btnHist" class="icon-btn tip-up hist-btn" data-ed="0" data-tip="讲稿的历史版本" aria-label="讲稿历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
         <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="打开备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
       </div>
@@ -1509,6 +1531,10 @@ var SEND_VERSION = false;
     return ed.canon(localStorage.getItem(ed.key + (i + 1)) || '');
   }
   var syncLed = document.getElementById('syncLed');
+  var ledPop = document.createElement('div');
+  ledPop.id = 'ledPop';
+  document.body.appendChild(ledPop);
+  var ledState = { ok: true, why: '', pending: [], down: false };
   function dirtyPages() {
     var out = [];
     slides.forEach(function (s, i) {
@@ -1518,14 +1544,72 @@ var SEND_VERSION = false;
     });
     return out;
   }
-  function setLed(ok, why) {
+  // 浮层内容随状态生成:一行字装不下"哪几页没写回",列成可点的条目直接跳过去
+  function buildLedPop() {
+    ledPop.innerHTML = '';
+    var head = document.createElement('div');
+    head.className = 'lp-head';
+    var dot = document.createElement('i');
+    dot.className = 'led' + (ledState.ok ? ' ok' : '');
+    head.appendChild(dot);
+    var title = document.createElement('span');
+    title.textContent = ledState.ok ? '讲稿与备注都已写回文件' : ledState.pending.length + ' 处改动还没写回文件';
+    head.appendChild(title);
+    ledPop.appendChild(head);
+    var note = document.createElement('p');
+    note.className = 'lp-note';
+    note.textContent = ledState.down
+      ? '本地服务没在运行，改动只存在这个浏览器里。双击「启动本地演示台.command」后会自动补写。'
+      : (ledState.ok ? '停止输入约一秒半后自动写回 index.html，不需要点保存。' : '正在等待写回：停止输入约一秒半后自动落盘。');
+    ledPop.appendChild(note);
+    if (ledState.pending.length) {
+      var list = document.createElement('div');
+      list.className = 'lp-list';
+      ledState.pending.slice(0, 8).forEach(function (c) {
+        var b = document.createElement('button');
+        b.className = 'lp-item';
+        b.textContent = 'P' + (c.i + 1) + ' ' + c.ed.label;
+        b.addEventListener('click', function () { ledPopHide(true); go(c.i); });
+        list.appendChild(b);
+      });
+      if (ledState.pending.length > 8) {
+        var more = document.createElement('span');
+        more.className = 'lp-item';
+        more.style.cursor = 'default';
+        more.textContent = '还有 ' + (ledState.pending.length - 8) + ' 处';
+        list.appendChild(more);
+      }
+      ledPop.appendChild(list);
+    }
+  }
+  var ledPopT = null;
+  function ledPopShow() {
+    clearTimeout(ledPopT);
+    buildLedPop();
+    var r = syncLed.getBoundingClientRect();
+    var box = ledPop.getBoundingClientRect();
+    ledPop.style.left = Math.min(Math.max(r.left + r.width / 2 - box.width / 2, 8), window.innerWidth - box.width - 8) + 'px';
+    ledPop.style.top = Math.max(r.top - box.height - 10, 8) + 'px';
+    ledPop.classList.add('on');
+  }
+  function ledPopHide(now) {
+    clearTimeout(ledPopT);
+    if (now) { ledPop.classList.remove('on'); return; }
+    ledPopT = setTimeout(function () { ledPop.classList.remove('on'); }, 180);
+  }
+  syncLed.parentNode.addEventListener('mouseenter', ledPopShow);
+  syncLed.parentNode.addEventListener('mouseleave', function () { ledPopHide(); });
+  ledPop.addEventListener('mouseenter', function () { clearTimeout(ledPopT); });
+  ledPop.addEventListener('mouseleave', function () { ledPopHide(); });
+  function setLed(ok, why, down) {
     syncLed.classList.toggle('ok', !!ok);
-    syncLed.dataset.tipNow = why;
+    ledState = { ok: !!ok, why: why, pending: dirtyPages(), down: !!down };
+    if (ledPop.classList.contains('on')) ledPopShow();
   }
   function refreshLed() {
     var n = dirtyPages().length;
-    if (!n) setLed(true, '讲稿与备注都已写回 index.html');
-    else setLed(false, n + ' 处改动还没写回文件，只存在这个浏览器里');
+    if (!n) setLed(true, '讲稿与备注都已写回 index.html', false);
+    else setLed(false, n + ' 处改动还没写回文件', ledState.down);
   }
   var seedTimer = null, seedChain = Promise.resolve(), seedBusy = false;
   function scheduleSeed() {
@@ -1561,7 +1645,7 @@ var SEND_VERSION = false;
     });
     seedChain = seedChain.then(function () {
       seedBusy = false;
-      if (down) setLed(false, '本地服务没在运行，改动只存在这个浏览器里');
+      if (down) setLed(false, '本地服务没在运行，改动只存在这个浏览器里', true);
       else refreshLed();
     });
   }
