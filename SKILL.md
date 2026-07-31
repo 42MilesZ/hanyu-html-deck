@@ -86,7 +86,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 ## 完成前检查
 
-1. 在本 skill 目录（仓库内）开发时，运行 `python3 -m unittest discover -s tests -v`。
+1. 在本 skill 目录（仓库内）开发时，运行 `python3 -m unittest discover -s support/tests -v`。
 2. 在桌面视口检查默认、总览、演示、讲稿展开、备注抽屉，并确认控制台无报错。
 3. 在手机视口检查讲稿/备注切换、翻页、自由浏览和滚动位置。
 4. 启动本地服务，验证二维码、事件流、以及非回环请求与注入载荷都被拒绝。

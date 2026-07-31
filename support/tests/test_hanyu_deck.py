@@ -5,7 +5,7 @@ import re
 import tempfile
 import unittest
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 TEMPLATE = ROOT / "assets" / "hanyu-html-deck" / "index.html"
 SERVER = ROOT / "assets" / "hanyu-html-deck" / "scripts" / "prompter_server.py"
 PHONE = ROOT / "assets" / "hanyu-html-deck" / "scripts" / "prompter-phone.html"
@@ -416,7 +416,9 @@ class ServerTests(unittest.TestCase):
 
 class SkillEvalSchemaTests(unittest.TestCase):
     def test_eval_schema(self):
-        data = json.loads((ROOT / "evals" / "evals.json").read_text(encoding="utf-8"))
+        data = json.loads(
+            (ROOT / "support" / "evals" / "evals.json").read_text(encoding="utf-8")
+        )
         self.assertEqual(len(data["evals"]), 3)
         for item in data["evals"]:
             self.assertIn("prompt", item)

@@ -141,12 +141,13 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 
 ## Repository files
 
-`scripts/create_deck.py` copies only the template, fonts, local service, and user documentation into a new Deck. The source repository also keeps development files that are not included in generated projects:
+`scripts/create_deck.py` copies only the template, fonts, local service, and user documentation into a new Deck. Repository-maintenance files live under `support/` and are not included in generated projects:
 
-- `tests/` checks page-to-note alignment, separate UI state, local-network boundaries, and agreed product labels.
-- `evals/` checks whether an AI agent follows the Skill when creating a Deck.
+- `support/tests/` checks page-to-note alignment, separate UI state, local-network boundaries, and agreed product labels.
+- `support/evals/` checks whether an AI agent follows the Skill when creating a Deck.
+- `support/THIRD_PARTY_NOTICES.md` records the bundled font and QR-generator licenses; generated Decks receive a copy at their root.
 - `.github/workflows/ci.yml` runs the tests after each push.
 
 ## License
 
-Original code, templates, and the skill use the [MIT License](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled font and QR-generator licenses.
+Original code, templates, and the skill use the [MIT License](LICENSE). See the [third-party notices](support/THIRD_PARTY_NOTICES.md) for bundled font and QR-generator licenses.

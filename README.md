@@ -152,12 +152,13 @@ python3 -m playwright install chromium
 
 ## 仓库里有哪些文件
 
-`scripts/create_deck.py` 会把普通用户真正需要的模板、字体、本地服务和说明复制到新项目中。源码仓库还保留以下开发文件，它们不会进入生成出的 Deck：
+`scripts/create_deck.py` 会把普通用户真正需要的模板、字体、本地服务和说明复制到新项目中。源码仓库将维护文件收拢在 `support/`，它们不会进入生成出的 Deck：
 
-- `tests/`：检查页面与讲稿一一对应、状态分开保存、局域网边界和产品文案，避免后续修改破坏已有功能。
-- `evals/`：检查 AI 是否能按 Skill 的约束生成合格的 Deck。
+- `support/tests/`：检查页面与讲稿一一对应、状态分开保存、局域网边界和产品文案，避免后续修改破坏已有功能。
+- `support/evals/`：检查 AI 是否能按 Skill 的约束生成合格的 Deck。
+- `support/THIRD_PARTY_NOTICES.md`：记录内置字体与 QR 生成器的第三方许可；生成 Deck 时会复制到其根目录。
 - `.github/workflows/ci.yml`：每次提交后自动运行测试。
 
 ## 开源许可
 
-项目原创代码、模板和 skill 使用 [MIT License](LICENSE)。字体和 QR 生成器的许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+项目原创代码、模板和 skill 使用 [MIT License](LICENSE)。字体和 QR 生成器的许可见 [第三方声明](support/THIRD_PARTY_NOTICES.md)。

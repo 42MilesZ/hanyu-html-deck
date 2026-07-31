@@ -33,7 +33,10 @@ def create(target: pathlib.Path):
     shutil.copy2(ROOT / "assets" / "deck-readme.md", target / "README.md")
     # 生成目录会被整体转发,必须自带许可与第三方声明
     shutil.copy2(ROOT / "LICENSE", target / "LICENSE")
-    shutil.copy2(ROOT / "THIRD_PARTY_NOTICES.md", target / "THIRD_PARTY_NOTICES.md")
+    shutil.copy2(
+        ROOT / "support" / "THIRD_PARTY_NOTICES.md",
+        target / "THIRD_PARTY_NOTICES.md",
+    )
     print("已创建本地演示台演示稿：%s" % target)
     print("打开 index.html 可离线使用；双击“启动本地演示台.command”启用高级功能。")
 
@@ -49,4 +52,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
