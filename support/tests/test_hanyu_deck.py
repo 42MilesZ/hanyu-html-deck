@@ -104,6 +104,18 @@ class TemplateTests(unittest.TestCase):
         self.assertNotIn('<div class="v-signal"></div>', self.html)
         self.assertNotIn(".v-cover .v-signal", self.html)
 
+    def test_cover_product_name_is_bold(self):
+        self.assertIn('<span class="cover-product">HTML&nbsp;Deck</span>', self.html)
+        rule = self.html.split(".v-cover .cover-product {", 1)[1].split("}", 1)[0]
+        self.assertRegex(rule, r"font-weight:\s*600\b")
+
+    def test_cover_features_do_not_rise_above_title(self):
+        title = self.html.split(".v-cover .cover-thesis {", 1)[1].split("}", 1)[0]
+        features = self.html.split(".v-cover .cover-features {", 1)[1].split("}", 1)[0]
+        title_top = int(re.search(r"top:\s*(\d+)px", title).group(1))
+        features_top = int(re.search(r"top:\s*(\d+)px", features).group(1))
+        self.assertGreaterEqual(features_top, title_top)
+
     def test_english_slide_content_uses_light_weight(self):
         selectors = (
             ".v-kicker",

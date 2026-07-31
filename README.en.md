@@ -74,7 +74,7 @@ Example:
 ### Language convention
 
 - Non-content deck text defaults to English: toolbar controls, speed units such as `min` and `chars/min`, hover explanations, export controls, and status messages.
-- Slide content follows the primary audience language. Important titles, conclusions, data, and key selling points are bilingual, with short scannable English set consistently at weight `200`.
+- Slide content follows the primary audience language. Important titles, conclusions, data, and key selling points are bilingual, with short scannable English set at weight `200`; an English brand or product name used as the primary visual may use `600`.
 - Every page script is bilingual. Keep the Chinese and corresponding English in separate paragraphs and deliver them in sequence; the duration estimate counts both languages.
 
 ## Script and notes
