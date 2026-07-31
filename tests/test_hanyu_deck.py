@@ -179,13 +179,21 @@ class ServerTests(unittest.TestCase):
             '<p contenteditable="true">x</p>',
             "<p>x</p><!-- c -->",
             "<p><script>alert(1)</script></p>",
+            # 属性值里塞 > 夹带事件属性:正则式校验会漏,浏览器当真属性执行
+            '<p class="class>" onclick=alert(1)>hi</p>',
+            # 未闭合标签:分词器看不到就等于白名单失效,落盘后会把区块定位算坏
+            '<p>ok</p><div class="x"',
+            # 区块边界标记落进属性值,会让写回时的区间计算错位
+            '<p class="a</div>">x</p>',
         ):
             ok, _ = mod.check_markup(payload, mod.NOTE_TAGS, mod.NOTE_ATTRS)
             self.assertFalse(ok, payload)
-        ok, why = mod.check_markup(
-            '<p class="o-main">正常<b>加粗</b><br>换行</p>', mod.NOTE_TAGS, mod.NOTE_ATTRS
-        )
-        self.assertTrue(ok, why)
+        for payload in (
+            '<p class="o-main">正常<b>加粗</b><br>换行</p>',
+            "<p>讲到 a &lt; b 这种写法</p>",
+        ):
+            ok, why = mod.check_markup(payload, mod.NOTE_TAGS, mod.NOTE_ATTRS)
+            self.assertTrue(ok, payload + " → " + why)
 
     def test_canvas_markup_whitelist(self):
         mod = self.module
@@ -201,9 +209,21 @@ class ServerTests(unittest.TestCase):
             '<a href="javascript:alert(1)">x</a>',
             "<object data=x></object>",
             '<img src="data:text/html,<script>1</script>">',
+            '<img src="a.png" alt="class>" onerror=alert(1)>',
+            '<div style="x>" onmouseover=alert(1)>x</div>',
+            '<a href="javascript&#58;alert(1)">x</a>',
+            "<a href='java\tscript:alert(1)'>x</a>",
         ):
             ok, _ = mod.check_markup(payload, mod.CANVAS_TAGS, mod.CANVAS_ATTRS)
             self.assertFalse(ok, payload)
+
+    def test_access_control_defaults_to_deny(self):
+        mod = self.module
+        source = SERVER.read_text(encoding="utf-8")
+        allow_body = source.split("def allow(self, path):", 1)[1].split("def guard", 1)[0]
+        self.assertIn('return False, "未知的请求路径"', allow_body)
+        self.assertNotIn('return True, ""\n\n    def', allow_body)
+        self.assertTrue(mod.MAX_SSE_CLIENTS <= 16)
 
     def test_local_boundaries_are_declared(self):
         mod = self.module

@@ -6,6 +6,7 @@
 """
 
 import hashlib
+import html as html_mod
 import io
 import json
 import os
@@ -19,6 +20,7 @@ import tempfile
 import threading
 import time
 import urllib.parse
+from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -225,30 +227,89 @@ CANVAS_ATTRS = {
     "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry",
     "text-anchor", "dominant-baseline", "font-size", "font-weight",
 }
-TAG_RE = re.compile(r"<\s*(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>")
-ATTR_RE = re.compile(r"([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*(?:=\s*(\"[^\"]*\"|'[^']*'|[^\s\"'>]+))?")
-BAD_URL_RE = re.compile(r"^\s*(javascript:|data:text/html|vbscript:)", re.I)
+# 像标签的起始:用来核对分词器是否把每一个都真正解析成了 token(未闭合标签会被它悄悄吃掉)
+TAGLIKE_RE = re.compile(r"<[!/?a-zA-Z]")
+BAD_URL_RE = re.compile(r"^(javascript:|data:text/html|vbscript:)", re.I)
+# 区块定位靠这些边界标记,不允许出现在属性值里,否则写回时会把区间算错
+BOUNDARY_RE = re.compile(r"</?(div|aside|section)\b", re.I)
+
+
+class MarkupCheck(HTMLParser):
+    """用标准库分词器逐 token 校验白名单。
+
+    不能用正则:属性区 `[^>]*` 会在引号内的 `>` 处提前收尾,
+    余下的 `onclick=...` 落在两个尖括号之间,正则看不见、浏览器却当真属性执行。
+    """
+
+    def __init__(self, tags, attrs):
+        super().__init__(convert_charrefs=False)
+        self.tags = tags
+        self.attrs = attrs
+        self.err = None
+        self.tokens = 0
+
+    def fail(self, message):
+        if not self.err:
+            self.err = message
+
+    def handle_starttag(self, tag, attrs):
+        self.tokens += 1
+        if tag not in self.tags:
+            self.fail("不允许的标签 <%s>" % tag)
+            return
+        for key, value in attrs:
+            key = key.lower()
+            if key.startswith("data-") or key.startswith("aria-"):
+                continue
+            if key not in self.attrs:
+                self.fail("不允许的属性 %s" % key)
+                return
+            text = html_mod.unescape(value or "")
+            if BOUNDARY_RE.search(text):
+                self.fail("属性值里不允许出现 div / aside / section 标记")
+                return
+            if key in ("href", "src", "srcset"):
+                # 先解码再去掉空白与控制字符:javascript&#58; 与 java\tscript: 都要拦住
+                if BAD_URL_RE.match(re.sub(r"[\s\x00-\x1f]", "", text)):
+                    self.fail("不允许的链接协议")
+                    return
+
+    handle_startendtag = handle_starttag
+
+    def handle_endtag(self, tag):
+        self.tokens += 1
+        if tag not in self.tags:
+            self.fail("不允许的标签 </%s>" % tag)
+
+    def handle_comment(self, _data):
+        self.tokens += 1
+        self.fail("内容含注释")
+
+    def handle_decl(self, _decl):
+        self.tokens += 1
+        self.fail("内容含文档声明")
+
+    def unknown_decl(self, _data):
+        self.tokens += 1
+        self.fail("内容含未知声明")
+
+    def handle_pi(self, _data):
+        self.tokens += 1
+        self.fail("内容含处理指令")
 
 
 def check_markup(fragment, tags, attrs):
     """白名单校验:标签与属性都必须在清单里,未列出的一律拒绝(含 on* 事件属性)。"""
-    if "<!--" in fragment:
-        return False, "内容含注释"
-    for match in TAG_RE.finditer(fragment):
-        name = match.group(2).lower()
-        if name not in tags:
-            return False, "不允许的标签 <%s>" % name
-        if match.group(1):            # 闭合标签没有属性
-            continue
-        for attr in ATTR_RE.finditer(match.group(3)):
-            key = attr.group(1).lower()
-            if key.startswith("data-") or key.startswith("aria-"):
-                continue
-            if key not in attrs:
-                return False, "不允许的属性 %s" % key
-            value = (attr.group(2) or "").strip("\"'")
-            if key in ("href", "src", "srcset") and BAD_URL_RE.match(value):
-                return False, "不允许的链接协议"
+    checker = MarkupCheck(tags, attrs)
+    try:
+        checker.feed(fragment)
+        checker.close()
+    except Exception:
+        return False, "内容无法解析"
+    if checker.err:
+        return False, checker.err
+    if checker.tokens != len(TAGLIKE_RE.findall(fragment)):
+        return False, "有未闭合的标签"
     return True, ""
 
 
@@ -364,10 +425,12 @@ def run_export(kind):
 
 LOCAL_ONLY = ("/canvas", "/seed", "/export", "/notes", "/flip", "/info", "/qr.svg")
 PHONE_PATHS = ("/", "/p", "/notes.json", "/events", "/goto", "/phone-heartbeat")
+MAX_SSE_CLIENTS = 8
 
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
+    timeout = 15          # 只建连不发数据的客户端不该把线程永久占住(鉴权之前就发生)
 
     def log_message(self, *_args):
         pass
@@ -409,17 +472,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def token_ok(self):
         query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-        return secrets.compare_digest(query.get("t", [""])[0], TOKEN)
+        given = query.get("t", [""])[0]
+        # compare_digest 对非 ASCII 会抛 TypeError,先编码再比,免得异常把连接静默切断
+        return secrets.compare_digest(given.encode("utf-8", "ignore"), TOKEN.encode())
 
     def allow(self, path):
-        """返回 (是否放行, 拒绝原因)。写侧只认回环,手机侧认回环或令牌。"""
+        """返回 (是否放行, 拒绝原因)。默认拒绝:只放行显式登记的路径与前缀。"""
         if not self.host_ok():
             return False, "请求的主机名不是本机地址"
-        if path in LOCAL_ONLY or path.startswith("/thumbs/") or path.startswith("/steps/"):
-            if path.startswith("/thumbs/") or path.startswith("/steps/"):
-                if self.from_loopback() or self.token_ok():
-                    return True, ""
-                return False, "需要有效的手机访问令牌"
+        if path.startswith("/thumbs/") or path.startswith("/steps/"):
+            if self.from_loopback() or self.token_ok():
+                return True, ""
+            return False, "需要有效的手机访问令牌"
+        if path in LOCAL_ONLY:
             if not self.from_loopback():
                 return False, "这个操作只允许本机"
             if not self.origin_ok():
@@ -429,7 +494,7 @@ class Handler(BaseHTTPRequestHandler):
             if self.from_loopback() or self.token_ok():
                 return True, ""
             return False, "需要有效的手机访问令牌，请重新扫码"
-        return True, ""
+        return False, "未知的请求路径"
 
     def guard(self, path):
         ok, why = self.allow(path)
@@ -486,8 +551,9 @@ class Handler(BaseHTTPRequestHandler):
             image.save(output)
             self.send_bytes(output.getvalue(), "image/svg+xml")
         elif path == "/notes.json":
-            with lock:
-                self.send_json({"nv": state["nv"], "notes": notes})
+            with lock:                      # 锁内只取快照:发送在锁外,慢客户端卡不住其他请求
+                payload = {"nv": state["nv"], "notes": notes}
+            self.send_json(payload)
         elif re.match(r"^/thumbs/\d+\.jpg$", path):
             number = int(re.search(r"(\d+)", path).group(1))
             target = thumb_path(number)
@@ -504,6 +570,9 @@ class Handler(BaseHTTPRequestHandler):
             with open(target, "rb") as handle:
                 self.send_bytes(handle.read(), "image/jpeg")
         elif path == "/events":
+            if len(sse_clients) >= MAX_SSE_CLIENTS:
+                self.send_json({"err": "同时连接的设备过多"}, 503)
+                return
             client = queue.Queue(50)
             sse_clients.append(client)
             try:
@@ -530,9 +599,24 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_json({"err": "not found"}, 404)
 
+    def drain_body(self):
+        """把请求体读掉丢弃:keep-alive 下不读干净,残留字节会被当成下一个请求。"""
+        try:
+            size = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            size = 0
+        while size > 0:
+            chunk = self.rfile.read(min(size, 65536))
+            if not chunk:
+                break
+            size -= len(chunk)
+
     def do_POST(self):
         path = urllib.parse.urlparse(self.path).path
-        if not self.guard(path):
+        ok, why = self.allow(path)
+        if not ok:
+            self.drain_body()
+            self.send_json({"err": why}, 403)
             return
         try:
             body = self.body_json()
@@ -543,7 +627,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             self.handle_post(path, body)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, AttributeError, KeyError):
             self.send_json({"err": "参数不对"}, 400)
 
     def handle_post(self, path, body):
@@ -572,6 +656,23 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ok": 1})
         elif path == "/notes":
             global notes
+            # 这里的内容会下发给手机端并以 innerHTML 渲染,必须与 /seed 同一套白名单,
+            # 否则等于开了第二条不设防的入口
+            for page in (body.get("pages") or []):
+                if not isinstance(page, dict):
+                    self.send_json({"err": "页数据格式不对"}, 400)
+                    return
+                for field in ("html", "comm"):
+                    value = page.get(field)
+                    if value in (None, ""):
+                        continue
+                    if not isinstance(value, str):
+                        self.send_json({"err": "页内容必须是文本"}, 400)
+                        return
+                    safe, why = check_markup(value, NOTE_TAGS, NOTE_ATTRS)
+                    if not safe:
+                        self.send_json({"err": why}, 400)
+                        return
             raw = json.dumps(body, ensure_ascii=False)
             version = hashlib.md5(raw.encode()).hexdigest()[:8]
             with lock:
