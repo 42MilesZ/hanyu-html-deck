@@ -90,7 +90,9 @@ class TemplateTests(unittest.TestCase):
 
     def test_rate_is_a_five_step_multiplier_menu(self):
         self.assertIn("var RATE_BASE = 210;", self.html)
-        self.assertIn("var RATE_MULTS = [0.8, 0.9, 1.0, 1.1, 1.2];", self.html)
+        mults = re.search(r"var RATE_MULTS = \[([^\]]+)\];", self.html)
+        self.assertIsNotNone(mults)
+        self.assertEqual(mults.group(1), "0.6, 0.8, 1.0, 1.3, 1.6")
         self.assertIn("RATE_MIN / rate * 100", self.html)
         self.assertNotIn("180 / rate", self.html)
 

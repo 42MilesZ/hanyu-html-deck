@@ -46,7 +46,7 @@
     color: #d8d6d0; font-size: 13px;
     transition: opacity .25s;
   }
-  /* 图标钮统一规格:纯图标、无文字标签；解释浮层延迟约 1 秒出现。 */
+  /* 图标钮统一规格:纯图标、无文字标签；解释浮层悬停 0.2 秒后出现。 */
   #toolbar button {
     font: inherit; color: #b5b3ac; background: rgba(14,14,14,.58);
     border: none; border-radius: 3px; padding: 6px; cursor: pointer;
@@ -220,7 +220,8 @@
   body.notes-mini:not(.present) #stage, body.notes-mini:not(.present) .navzone { bottom: 50px; }
   body.notes-anim #notesPanel { transition: height .32s cubic-bezier(.22,.61,.21,1); }
   body.notes-anim #stage, body.notes-anim .navzone { transition: bottom .32s cubic-bezier(.22,.61,.21,1); }
-  /* 面板表头:左=页码(唯一加粗强调)+标题+本页时长,中=全场时间轴,右=语速三档+存默认+历史 */
+  /* 面板表头:左=页码与标题(同一淡底块),中=全场时间轴,右=语速下拉。
+     历史与备注开关在各自栏的右下角工具条里,不在表头 */
   #notesHead {
     flex: none; display: flex; align-items: center;
     padding: 9px 22px 0; font-size: 13px; color: #d8d6d0;
@@ -264,7 +265,7 @@
     font-size: 11px; font-weight: 300; letter-spacing: .08em; color: #98968f;
     padding: 5px 2px 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  /* 轴长随语速伸缩:慢 180=基准顶满,宽度=180/rate(中 ~86%,快 75%),内部全百分比定位整体跟随 */
+  /* 轴长随语速伸缩:最慢档(×0.6)顶满,宽度=RATE_MIN/rate,内部全百分比定位整体跟随 */
   #tlIn { position: relative; height: 100%; width: 100%; transition: width .55s cubic-bezier(.22,.61,.21,1); }
   #tl .trk { position: absolute; left: 0; right: 0; bottom: 16px; height: 1px; background: rgba(240,238,232,.13); }
   #tl .tick { position: absolute; bottom: 14px; width: 1px; height: 5px; background: rgba(240,238,232,.2); transition: left .55s cubic-bezier(.22,.61,.21,1); }
