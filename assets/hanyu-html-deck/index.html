@@ -157,10 +157,10 @@
     width: 1920px; height: 1080px;
     background: var(--paper); color: var(--ink); position: relative; overflow: hidden;
     transform-origin: center center;
-    border: 2px solid rgba(255,255,255,.2);
-    box-shadow: 0 6px 40px rgba(0,0,0,.45);
+    border: 1px solid rgba(255,255,255,.2);
+    box-shadow: 10px 10px 0 rgba(0,0,0,.32);
   }
-  body.present .canvas { border-color: transparent; box-shadow: 0 6px 48px rgba(0,0,0,.6); }
+  body.present .canvas { border-color: transparent; box-shadow: 12px 12px 0 rgba(0,0,0,.45); }
   .canvas.dark { background: #000; }
   .canvas.full-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
   .canvas b, .canvas strong { font-weight: 600; }
@@ -710,10 +710,9 @@
   .v-signal {
     position: absolute;
     z-index: 2;
-    width: 5px;
+    width: 2px;
     background: var(--v-signal);
     transform-origin: top;
-    box-shadow: 0 0 34px rgba(0,0,0,.16);
   }
 
   /* 封面：四个卖点就是目录，也是画面的节拍器。 */
@@ -800,10 +799,10 @@
     top: 530px;
     width: 680px;
     padding: 28px 34px;
-    border-left: 5px solid var(--v-signal);
+    border-left: 2px solid var(--v-signal);
     background: #fff;
     font-size: 29px;
-    box-shadow: 0 16px 44px rgba(0,0,0,.10);
+    box-shadow: 14px 14px 0 var(--v-shadow);
   }
   .v-prompt::after {
     content: "";
@@ -811,7 +810,7 @@
     left: 100%;
     top: 50%;
     width: 228px;
-    height: 2px;
+    height: 1px;
     background: var(--v-signal);
     transform-origin: left;
   }
@@ -821,17 +820,18 @@
     width: 620px;
     height: 348px;
     padding: 34px;
-    border: 2px solid var(--v-ink);
+    border: 1px solid var(--v-ink);
     background: rgba(255,255,255,.96);
-    box-shadow: 18px 22px 0 rgba(0,0,0,.10);
-    transition: transform .35s cubic-bezier(.22,.61,.21,1);
+    box-shadow: 14px 14px 0 var(--v-shadow);
+    transition: transform .68s cubic-bezier(.22,.61,.21,1);
+    will-change: transform;
   }
-  .v-sheet:nth-child(1) { left: 0; top: 0; transform: rotate(-5deg); }
-  .v-sheet:nth-child(2) { left: 72px; top: 150px; transform: rotate(2deg); }
-  .v-sheet:nth-child(3) { left: 18px; top: 304px; transform: rotate(-1deg); }
-  .v-stack:hover .v-sheet:nth-child(1) { transform: translate(-22px,-18px) rotate(-7deg); }
-  .v-stack:hover .v-sheet:nth-child(2) { transform: translate(25px,-2px) rotate(4deg); }
-  .v-stack:hover .v-sheet:nth-child(3) { transform: translate(-12px,20px) rotate(-2deg); }
+  .v-sheet:nth-child(1) { left: 0; top: 0; transform: rotate(-5deg); transition-delay: .16s; }
+  .v-sheet:nth-child(2) { left: 72px; top: 150px; transform: rotate(2deg); transition-delay: .08s; }
+  .v-sheet:nth-child(3) { left: 18px; top: 304px; transform: rotate(-1deg); transition-delay: 0s; }
+  .v-stack:hover .v-sheet:nth-child(1) { transform: translate(-22px,-18px) rotate(-7deg); transition-delay: 0s; }
+  .v-stack:hover .v-sheet:nth-child(2) { transform: translate(25px,-2px) rotate(4deg); transition-delay: .08s; }
+  .v-stack:hover .v-sheet:nth-child(3) { transform: translate(-12px,20px) rotate(-2deg); transition-delay: .16s; }
   .v-sheet .sheet-type {
     font: 600 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
     letter-spacing: .14em;
@@ -856,8 +856,8 @@
     right: 94px;
     top: 360px;
     height: 470px;
-    border-top: 2px solid var(--v-ink);
-    border-bottom: 2px solid var(--v-ink);
+    border-top: 1px solid var(--v-ink);
+    border-bottom: 1px solid var(--v-ink);
     display: flex;
     align-items: center;
     overflow: hidden;
@@ -878,17 +878,17 @@
     left: 0;
     right: 0;
     top: 57%;
-    height: 5px;
+    height: 2px;
     background: var(--v-signal);
     transform-origin: left;
   }
   .v-editor .edit-after { color: var(--v-ink); opacity: 0; transform: translateY(40px); font-weight: 600; }
   .v-editor .edit-caret {
-    position: absolute;
-    left: 930px;
-    top: 143px;
-    width: 7px;
-    height: 142px;
+    display: inline-block;
+    width: 3px;
+    height: .92em;
+    margin-left: 10px;
+    vertical-align: -.06em;
     background: var(--v-signal);
   }
   .v-editor .edit-status {
@@ -902,7 +902,7 @@
   .slide.on .v-editor .edit-before { animation: vOldOut .35s ease 1.15s forwards; }
   .slide.on .v-editor .edit-before::after { animation: vLineOut .45s ease .62s both; }
   .slide.on .v-editor .edit-after { animation: vNewIn .48s cubic-bezier(.22,.61,.21,1) 1.25s forwards; }
-  .slide.on .v-editor .edit-caret { animation: vCaret 1s steps(1) .25s infinite, vCaretMove .65s cubic-bezier(.22,.61,.21,1) .82s forwards; }
+  .slide.on .v-editor .edit-caret { animation: vCaret 1s steps(1) 1.35s infinite; }
   .slide.on .v-editor .edit-status { opacity: 0; animation: fwFadeIn .35s ease 1.65s forwards; }
 
   /* 手机：一条同步信号从电脑画面穿进手机，再由手机把翻页动作送回去。 */
@@ -916,14 +916,14 @@
   .v-phone .v-title { color: #fff; max-width: 900px; }
   .v-phone .v-title em { color: #fff; }
   .v-phone .v-caption { color: rgba(255,255,255,.52); }
-  .v-device-stage { position: absolute; right: 80px; top: 156px; width: 850px; height: 760px; }
+  .v-device-stage { position: absolute; right: 180px; top: 156px; width: 850px; height: 760px; }
   .v-screen {
     position: absolute;
     left: 0;
     top: 114px;
     width: 690px;
     height: 430px;
-    border: 3px solid rgba(255,255,255,.72);
+    border: 1px solid rgba(255,255,255,.72);
     padding: 42px;
     background: #000;
   }
@@ -936,11 +936,11 @@
     top: 0;
     width: 300px;
     height: 650px;
-    border: 4px solid #f2f1ed;
+    border: 2px solid #f2f1ed;
     background: #f2f1ed;
     color: var(--v-ink);
     padding: 54px 30px 28px;
-    box-shadow: -24px 26px 0 rgba(255,255,255,.20);
+    box-shadow: 14px 14px 0 rgba(255,255,255,.20);
     transition: transform .35s cubic-bezier(.22,.61,.21,1);
   }
   .v-phone-body:hover { transform: translateY(-18px) rotate(1deg); }
@@ -950,7 +950,7 @@
     top: 20px;
     left: 50%;
     width: 70px;
-    height: 5px;
+    height: 3px;
     transform: translateX(-50%);
     background: #000;
   }
@@ -964,26 +964,26 @@
     bottom: 28px;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    border-top: 2px solid var(--v-ink);
+    border-top: 1px solid var(--v-ink);
   }
   .v-phone-body .phone-controls span { padding-top: 19px; font-size: 28px; text-align: center; }
-  .v-phone-body .phone-controls span + span { border-left: 2px solid var(--v-ink); }
+  .v-phone-body .phone-controls span + span { border-left: 1px solid var(--v-ink); }
   .v-sync-line {
     position: absolute;
     left: 480px;
     top: 330px;
     width: 184px;
-    height: 4px;
+    height: 1px;
     background: #fff;
     transform-origin: left;
   }
   .v-sync-line::after {
     content: "";
     position: absolute;
-    right: -7px;
-    top: -5px;
-    width: 14px;
-    height: 14px;
+    right: -4px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
     background: #fff;
     transform: rotate(45deg);
   }
@@ -1002,9 +1002,9 @@
     width: 420px;
     height: 238px;
     transform: translate(-50%,-50%);
-    border: 3px solid var(--v-ink);
+    border: 1px solid var(--v-ink);
     background: #fff;
-    box-shadow: 18px 20px 0 var(--v-shadow);
+    box-shadow: 14px 14px 0 var(--v-shadow);
   }
   .v-master-page::before {
     content: "";
@@ -1026,11 +1026,11 @@
   }
   .v-output {
     position: absolute;
-    z-index: 2;
+    z-index: 3;
     width: 250px;
     height: 150px;
-    border: 2px solid var(--v-ink);
-    background: rgba(255,255,255,.82);
+    border: 1px solid var(--v-ink);
+    background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1044,16 +1044,14 @@
   .v-output.o-html { left: 324px; bottom: 50px; }
   .v-output-line {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 2px;
-    height: 290px;
+    z-index: 1;
+    height: 1px;
     background: var(--v-signal);
-    transform-origin: top;
+    transform-origin: left center;
   }
-  .v-output-line.l1 { transform: rotate(56deg); }
-  .v-output-line.l2 { transform: rotate(-54deg); }
-  .v-output-line.l3 { transform: rotate(0deg); }
+  .v-output-line.l1 { left: 161px; top: 230px; width: 106px; transform: rotate(41deg); }
+  .v-output-line.l2 { left: 660px; top: 299px; width: 106px; transform: rotate(-39deg); }
+  .v-output-line.l3 { left: 450px; top: 499px; width: 1px; height: 61px; transform: none; transform-origin: top; }
   .slide.on .v-export .v-master-page { opacity: 0; animation: vMasterIn .55s ease .15s forwards; }
   .slide.on .v-export .v-output-line { animation: vRevealLine .55s ease .56s both; }
   .slide.on .v-export .v-output { opacity: 0; animation: vPop .45s cubic-bezier(.22,.61,.21,1) forwards; }
@@ -1061,14 +1059,14 @@
   .slide.on .v-export .o-pdf { animation-delay: .94s; }
   .slide.on .v-export .o-html { animation-delay: 1.06s; }
 
-  /* 封尾：蓝色游标收拢为舞台中央的一道竖线。 */
+  /* 封尾：信号游标收拢为舞台中央的一道竖线。 */
   .v-end { background: #000; color: #fff; }
   .v-end::before { display: none; }
   .v-end .end-mark {
     position: absolute;
     left: 50%;
     top: 134px;
-    width: 4px;
+    width: 2px;
     height: 166px;
     background: rgba(255,255,255,.72);
     transform-origin: top;
@@ -1112,11 +1110,10 @@
   @keyframes vSignalDown { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   @keyframes vRevealLine { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
   @keyframes vLineOut { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-  @keyframes vAssemble { from { opacity: 0; transform: translateX(160px) rotate(0); } to { opacity: 1; } }
+  @keyframes vAssemble { from { opacity: 0; translate: 160px 0; } to { opacity: 1; translate: 0 0; } }
   @keyframes vOldOut { to { opacity: 0; transform: translateY(-30px); } }
   @keyframes vNewIn { to { opacity: 1; transform: none; } }
   @keyframes vCaret { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
-  @keyframes vCaretMove { to { left: 1090px; } }
   @keyframes vDeviceIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
   @keyframes vPhoneIn { from { opacity: 0; transform: translate(70px,35px) rotate(4deg); } to { opacity: 1; transform: none; } }
   @keyframes vMasterIn { from { opacity: 0; transform: translate(-50%,-50%) scale(.88); } to { opacity: 1; } }
@@ -1131,13 +1128,11 @@
   .ovItem .v-generate .v-sheet:nth-child(3), body.exporting .v-generate .v-sheet:nth-child(3), body.raw .v-generate .v-sheet:nth-child(3) { transform: rotate(-1deg); }
   .ovItem .v-editor .edit-before, body.exporting .v-editor .edit-before, body.raw .v-editor .edit-before { opacity: 0 !important; }
   .ovItem .v-editor .edit-after, body.exporting .v-editor .edit-after, body.raw .v-editor .edit-after { transform: none; }
-  .ovItem .v-editor .edit-caret, body.exporting .v-editor .edit-caret, body.raw .v-editor .edit-caret { left: 1090px; }
   @media (prefers-reduced-motion: reduce) {
     .slide.on .vdeck *, .slide.leaving { animation: none !important; transition: none !important; }
     .slide.on .vdeck * { opacity: 1 !important; }
     .slide.on .v-editor .edit-before { opacity: 0 !important; }
     .slide.on .v-editor .edit-after { transform: none; }
-    .slide.on .v-editor .edit-caret { left: 1090px; }
     .v-cover .cover-feature:hover, .v-phone-body:hover, .v-output:hover { transform: none; }
     .v-stack:hover .v-sheet:nth-child(1) { transform: rotate(-5deg); }
     .v-stack:hover .v-sheet:nth-child(2) { transform: rotate(2deg); }
@@ -1319,8 +1314,7 @@
     <div class="v-title">改，就在<em>页面上</em></div>
     <div class="v-editor">
       <div class="edit-before">回到代码里改</div>
-      <div class="edit-after">所见即所改</div>
-      <div class="edit-caret"></div>
+      <div class="edit-after">所见即所改<i class="edit-caret"></i></div>
       <div class="edit-status">● 本地演示台已同步</div>
     </div>
     <div class="v-caption">打开本地演示台，页面、讲稿、备注会自动同步回文件。</div>
@@ -1350,7 +1344,7 @@
   </div>
   <aside>
     <div class="ns"><p>打开手机，就能同步看到当前页讲稿。需要时，还可以切换备注。</p><p>手机前后翻页，电脑会同步响应。一部手机，就是提词器和遥控器。</p></div>
-    <div class="nc"><p>蓝色同步线连接电脑与手机；录制时可悬停手机，让设备轻微抬起。</p></div>
+    <div class="nc"><p>同步线连接电脑与手机；录制时可悬停手机，让设备轻微抬起。</p></div>
   </aside>
 </section>
 
