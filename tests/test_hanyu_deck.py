@@ -100,6 +100,26 @@ class TemplateTests(unittest.TestCase):
         ):
             self.assertIn(translation, self.html)
 
+    def test_english_slide_content_uses_light_weight(self):
+        selectors = (
+            ".v-kicker",
+            ".v-title::after",
+            ".v-caption small",
+            ".v-cover .cover-thesis::after",
+            ".v-cover .cover-feature span small",
+            ".v-sheet .sheet-type",
+            ".v-phone-body .phone-page",
+            ".v-output",
+            ".v-end .end-line::after",
+            ".v-end .end-name",
+        )
+        for selector in selectors:
+            rules = re.findall(re.escape(selector) + r"\s*\{([^}]*)\}", self.html)
+            self.assertTrue(
+                any(re.search(r"font(?::-weight)?:\s*200\b", rule) for rule in rules),
+                selector,
+            )
+
     def test_reusable_content_patterns_use_two_weights(self):
         patterns = self.html.split("示例页样式", 1)[1].split("产品短片版式", 1)[0]
         self.assertNotRegex(patterns, r"font(?:-weight)?:\s*300")
