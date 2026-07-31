@@ -30,12 +30,22 @@ class TemplateTests(unittest.TestCase):
         for label in (
             "导出讲稿",
             "复制改动的备注",
-            "原尺寸（1:1）",
+            "导出每页图片",
+            "导出 PDF",
+            "导出单独发送版",
+            "切换为 1:1 像素",
             "写下本页的修改意见、补充说明或个人备注……",
         ):
             self.assertIn(label, self.html)
         self.assertNotIn(">改动的批注<", self.html)
         self.assertNotIn(">全部批注<", self.html)
+
+    def test_export_menu_items_all_explained(self):
+        menu = self.html.split('<div id="exMenu">', 1)[1].split("</div>", 1)[0]
+        items = [line for line in menu.splitlines() if "<button" in line]
+        self.assertEqual(len(items), 6)
+        for item in items:
+            self.assertIn("data-tip=", item)
 
     def test_state_is_separate_and_deck_scoped(self):
         self.assertIn("DECK.key + '.ui.panelExpanded'", self.html)

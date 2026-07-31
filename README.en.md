@@ -56,7 +56,12 @@ The export menu includes:
 
 - `导出讲稿`: downloads all speaker scripts as Markdown.
 - `复制改动的备注`: copies only user-modified notes, grouped by page.
-- `原尺寸（1:1）`: disables canvas scaling so DOM or Figma capture tools see true 1920 × 1080 coordinates.
+- `导出每页图片`: renders one PNG per page; needs the local service and Playwright.
+- `导出 PDF`: captures every page, then assembles an image-based PDF.
+- `导出单独发送版`: one self-contained HTML file with fonts and images inlined, notes and write-back code stripped.
+- `切换为 1:1 像素`: disables canvas scaling so DOM or Figma capture tools see true 1920 × 1080 coordinates.
+
+Hovering a menu item for about a second shows a one-line explanation.
 
 ## Phone teleprompter
 

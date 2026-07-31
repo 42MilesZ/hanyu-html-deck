@@ -55,25 +55,21 @@
   }
   #toolbar button svg { display: block; width: 15px; height: 15px; }
   #toolbar button:hover { background: var(--paper); color: var(--ink); }
-  [data-tip] { position: relative; }
-  [data-tip]::after {
-    content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%;
-    transform: translate(-50%, -3px); z-index: 140; pointer-events: none;
+  /* 解释浮层:单独一层挂在 body 上,位置由 JS 按目标元素算。
+     不用 ::after——批注面板 overflow:hidden 会把探出面板的提示裁掉。
+     .tip-up 仅作标记:该元素优先向上弹出。 */
+  #tip {
+    position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none;
     padding: 7px 9px; background: #303030; color: #f0eee8;
     border: 1px solid #444; border-radius: 3px; white-space: nowrap;
     font-size: 11px; font-weight: 300; letter-spacing: .04em;
-    opacity: 0; visibility: hidden;
-    transition: opacity .12s ease .9s, transform .12s ease .9s, visibility 0s linear 1.02s;
+    opacity: 0; visibility: hidden; transform: translateY(-3px);
+    transition: opacity .12s ease, transform .12s ease, visibility 0s linear .12s;
   }
-  [data-tip]:hover::after {
-    opacity: 1; visibility: visible; transform: translate(-50%, 0);
-    transition-delay: .9s, .9s, .9s;
+  #tip.on {
+    opacity: 1; visibility: visible; transform: translateY(0);
+    transition: opacity .12s ease, transform .12s ease;
   }
-  [data-tip].tip-up::after {
-    top: auto; bottom: calc(100% + 8px);
-    transform: translate(-50%, 3px);
-  }
-  [data-tip].tip-up:hover::after { transform: translate(-50%, 0); }
 
   /* 批注区拉起/收起把手:贴在批注面板顶边中央的半圆钮(面板 overflow:hidden 会裁子元素,故用 fixed) */
   #notesToggle {
@@ -225,14 +221,14 @@
     flex: none; display: flex; align-items: center;
     padding: 9px 22px 0; font-size: 13px; color: #d8d6d0;
   }
-  #pageNum { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; min-width: 56px; }
-  #pnCur { position: relative; display: inline-block; overflow: hidden; height: 20px; line-height: 20px; font-size: 15px; font-weight: 600; color: #f0eee8; letter-spacing: .04em; }
+  #pageNum { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; min-width: 64px; }
+  #pnCur { position: relative; display: inline-block; overflow: hidden; height: 25px; line-height: 25px; font-size: 19px; font-weight: 600; color: #f0eee8; letter-spacing: .04em; }
   #pnCur .nv { display: inline-block; transition: transform .42s cubic-bezier(.22,.61,.21,1), opacity .42s; }
   #pnSep { font-size: 12px; font-weight: 300; color: rgba(255,255,255,.32); margin-left: 7px; letter-spacing: .1em; }
   /* 固定槽位:标题长短不再推移时间轴起点,超长省略 */
   #pageTitle {
-    font-weight: 300; color: #98968f; letter-spacing: .08em; margin-left: 14px;
-    flex: none; width: 144px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-weight: 600; color: #b8b5ae; letter-spacing: .08em; margin-left: 14px;
+    flex: none; width: 168px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   /* 全场时间轴:细线=全稿,页边界 1px 刻度;亮线=已讲完,3px 高亮段=当前页(时长标注挂段中点下方),
      白色游标=讲到本页的时间点(累计时间在其上方)。轴线落在 34px 盒子的垂直中点,与表头文字同一中线 */
@@ -279,7 +275,7 @@
   #nsRate .rt svg, #notesHead .icon-btn svg { width: 18px; height: 18px; display: block; }
   #nsRate .rt:hover, #notesHead .icon-btn:hover { background: var(--paper); color: var(--ink); }
   #nsRate .rt.act, #notesHead .icon-btn.on { color: #f0eee8; }
-  #notesHead .vsep { width: 1px; height: 12px; background: var(--chair); margin-right: 16px; }
+  #notesHead .vsep { width: 1px; height: 17px; background: #4d4d4d; margin-right: 16px; }
   body.present #notesPanel, body.notes-hidden #notesPanel { display: none; }
   #notesPanel .col {
     min-width: 0; min-height: 0; padding: 12px 22px 0;
@@ -302,7 +298,7 @@
   #notesPanel .ed b, #notesPanel .ed strong, #notesPanel .ed b *, #notesPanel .ed strong * { color: #f0eee8 !important; }
   #notesPanel .ed ul { padding-left: 18px; }
   #notesPanel .ed li { margin-bottom: 4px; }
-  #notesPanel .ed.dirty { background: #23211a; }
+  #notesPanel .ed.dirty { background: #1c222a; }
   #nsCols { position: relative; flex: 1; min-height: 0; display: flex; overflow: hidden; }
   #notesPanel .col.script {
     flex: 1; padding-right: 28px;
@@ -596,14 +592,14 @@
   </div>
   <button data-act="prompter" data-tip="手机提词器" aria-label="手机提词器"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
   <span id="exWrap">
-    <button data-act="export" data-tip="导出" aria-label="导出菜单"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 15V3m9 12v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10l5 5l5-5"/></g></svg><i class="caret"></i></button>
+    <button data-act="export" data-tip="导出" aria-label="导出菜单"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3v12m9 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 8l5-5l5 5"/></g></svg><i class="caret"></i></button>
     <div id="exMenu">
-      <button data-ex="script">导出讲稿</button>
-      <button data-ex="diff-notes">复制改动的备注</button>
-      <button data-ex="imgs">每页图片</button>
-      <button data-ex="pdf">图片版 PDF</button>
-      <button data-ex="send">发送版</button>
-      <button class="toggle" data-act="raw">原尺寸（1:1）</button>
+      <button data-ex="script" data-tip="把全部页面的讲稿下载成一个 Markdown 文件">导出讲稿</button>
+      <button data-ex="diff-notes" data-tip="只复制你改过的备注，按页分组，便于粘贴给 AI">复制改动的备注</button>
+      <button data-ex="imgs" data-tip="逐页截图成 PNG，需要本地服务与 Playwright">导出每页图片</button>
+      <button data-ex="pdf" data-tip="先逐页截图再合成 PDF，版面与动效终态一致">导出 PDF</button>
+      <button data-ex="send" data-tip="单文件 HTML：内联字体图片，剥掉备注与写回代码">导出单独发送版</button>
+      <button class="toggle" data-act="raw" data-tip="关掉画布缩放，按真实 1920 × 1080 显示，供 Figma 等抓取工具读取">切换为 1:1 像素</button>
     </div>
   </span>
 </div>
@@ -1827,6 +1823,47 @@ var DECK = {
     pd.classList.remove('open');
     clearInterval(pdTimer);
   }
+
+  // ===== 解释浮层:悬停约 0.9 秒后出现。单层 fixed 元素,不受面板 overflow:hidden 裁剪 =====
+  var tipEl = document.createElement('div');
+  tipEl.id = 'tip';
+  document.body.appendChild(tipEl);
+  var tipTarget = null, tipTimer = null;
+  function tipHide() {
+    clearTimeout(tipTimer);
+    tipEl.classList.remove('on');
+    tipTarget = null;
+  }
+  function tipShow(el) {
+    tipEl.textContent = el.dataset.tip;
+    var r = el.getBoundingClientRect();
+    var t = tipEl.getBoundingClientRect();   // visibility:hidden 仍有尺寸,可先量再摆
+    var left, top;
+    if (el.closest('#exMenu')) {             // 菜单项:提示放左侧,不压住下一项
+      left = r.left - t.width - 10;
+      top = r.top + r.height / 2 - t.height / 2;
+    } else {
+      left = r.left + r.width / 2 - t.width / 2;
+      top = el.classList.contains('tip-up') ? r.top - t.height - 8 : r.bottom + 8;
+    }
+    tipEl.style.left = Math.min(Math.max(left, 8), window.innerWidth - t.width - 8) + 'px';
+    tipEl.style.top = Math.min(Math.max(top, 8), window.innerHeight - t.height - 8) + 'px';
+    tipEl.classList.add('on');
+  }
+  document.addEventListener('mouseover', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (el === tipTarget) return;
+    tipHide();
+    if (!el) return;
+    tipTarget = el;
+    tipTimer = setTimeout(function () { if (tipTarget === el) tipShow(el); }, 900);
+  });
+  document.addEventListener('mouseout', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (el && el === tipTarget) tipHide();
+  });
+  document.addEventListener('click', tipHide, true);
+  window.addEventListener('scroll', tipHide, true);
 
   // ===== 事件 =====
   document.getElementById('toolbar').addEventListener('click', function (e) {
