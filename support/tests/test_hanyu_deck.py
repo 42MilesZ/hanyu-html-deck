@@ -100,6 +100,10 @@ class TemplateTests(unittest.TestCase):
         ):
             self.assertIn(translation, self.html)
 
+    def test_cover_has_no_vertical_divider(self):
+        self.assertNotIn('<div class="v-signal"></div>', self.html)
+        self.assertNotIn(".v-cover .v-signal", self.html)
+
     def test_english_slide_content_uses_light_weight(self):
         selectors = (
             ".v-kicker",

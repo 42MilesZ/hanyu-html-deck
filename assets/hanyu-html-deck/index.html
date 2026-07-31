@@ -726,14 +726,6 @@
     color: rgba(0,0,0,.56);
     letter-spacing: .12em;
   }
-  .v-signal {
-    position: absolute;
-    z-index: 2;
-    width: 2px;
-    background: var(--v-signal);
-    transform-origin: top;
-  }
-
   /* 封面：四个卖点就是目录，也是画面的节拍器。 */
   .v-cover { background: #000; color: #fff; }
   .v-cover::before {
@@ -760,7 +752,6 @@
     line-height: 1.02;
     letter-spacing: -.07em;
   }
-  .v-cover .cover-thesis em { color: #fff; font-style: normal; font-weight: 600; }
   .v-cover .cover-thesis::after {
     content: "AI-made decks, ready to present.";
     display: block;
@@ -809,7 +800,6 @@
     transform: translateX(-18px);
   }
   .v-cover .cover-feature:hover i { transform: rotate(135deg) scale(1.5); }
-  .v-cover .v-signal { left: 1120px; top: 0; height: 1080px; background: #fff; }
   .v-cover .cover-foot {
     position: absolute;
     left: 94px;
@@ -824,8 +814,6 @@
   .slide.on .v-cover .cover-feature:nth-child(2) { animation-delay: .40s; }
   .slide.on .v-cover .cover-feature:nth-child(3) { animation-delay: .52s; }
   .slide.on .v-cover .cover-feature:nth-child(4) { animation-delay: .64s; }
-  .slide.on .v-cover .v-signal { animation: vSignalDown .9s cubic-bezier(.22,.61,.21,1) both; }
-
   /* 生成：三张内容层从提示词轨道中依次装配。 */
   .v-generate .v-title { max-width: 920px; }
   .v-prompt {
@@ -1313,15 +1301,14 @@
   <div class="canvas nofoot vdeck v-cover">
     <div class="v-kicker">HANYU HTML DECK</div>
     <div class="cover-mark">AI → STAGE</div>
-    <div class="cover-thesis">让 AI 做的 PPT，<br><em>直接拿来讲</em></div>
-    <div class="v-signal"></div>
+    <div class="cover-thesis">hanyu<br>HTML&nbsp;Deck</div>
     <div class="cover-features">
       <div class="cover-feature"><i></i><span>AI 生成整场演示<small>Generate the full deck</small></span></div>
       <div class="cover-feature"><i></i><span>在页面上直接改<small>Edit on canvas</small></span></div>
       <div class="cover-feature"><i></i><span>手机提词与遥控<small>Prompt and control</small></span></div>
       <div class="cover-feature"><i></i><span>讲完立即交付<small>Export and deliver</small></span></div>
     </div>
-    <div class="cover-foot">本地演示台 · 从第一版到正式上台</div>
+    <div class="cover-foot">本地演示台&nbsp;</div>
   </div>
   <aside>
     <div class="ns"><p>这是本地演示台。它让 AI 做的 PPT 不只停在第一版，而是直接走完生成、修改、提词和交付。</p><p>This is Hanyu HTML Deck. It takes an AI-made presentation from the first draft through editing, prompting, and final delivery.</p><p>接下来只看四个最亮眼的功能。</p><p>Here are the four features that matter most.</p></div>
@@ -1396,7 +1383,7 @@
   <div class="canvas nofoot vdeck v-export">
     <div class="v-kicker">DELIVER</div>
     <div class="v-corner">04 / 04</div>
-    <div class="v-title">讲完，<em>立即交付</em></div>
+    <div class="v-title">做完，<em class="">立即交付</em></div>
     <div class="v-export-stage">
       <div class="v-output-line l1"></div>
       <div class="v-output-line l2"></div>
@@ -1418,7 +1405,7 @@
 <section class="slide" data-title="从第一版到正式上台">
   <div class="canvas nofoot vdeck v-end">
     <div class="end-mark"></div>
-    <div class="end-line">让 AI 做的 PPT，<br>直接走到台前。</div>
+    <div class="end-line">让 AI 做的 PPT<br>更顺手</div>
     <div class="end-name">本地演示台 · HANYU HTML DECK</div>
   </div>
   <aside>
