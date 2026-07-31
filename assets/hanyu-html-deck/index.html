@@ -642,15 +642,15 @@
 
   /* ============================================================
      产品短片版式：投影画布 + 演示游标
-     一条钴蓝信号线贯穿生成、修改、提词和交付，页面只保留一句结论与一个视觉主体。
+     一条高对比信号线贯穿生成、修改、提词和交付，页面只保留一句结论与一个视觉主体。
      ============================================================ */
   .vdeck {
-    --v-paper: #f4f7fb;
-    --v-ink: #111318;
-    --v-muted: #707782;
-    --v-blue: #2457ff;
-    --v-blue-soft: #dbe4ff;
-    --v-grid: rgba(17, 19, 24, .10);
+    --v-paper: #f2f1ed;
+    --v-ink: #111111;
+    --v-muted: #77736c;
+    --v-signal: #4f4c46;
+    --v-shadow: #dedbd2;
+    --v-grid: rgba(17, 17, 17, .10);
     overflow: hidden;
     background: var(--v-paper);
     color: var(--v-ink);
@@ -674,7 +674,7 @@
     font: 600 19px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
     letter-spacing: .16em;
     text-transform: uppercase;
-    color: var(--v-blue);
+    color: var(--v-signal);
   }
   .v-title {
     position: absolute;
@@ -687,7 +687,7 @@
     font-weight: 700;
     letter-spacing: -.055em;
   }
-  .v-title em { color: var(--v-blue); font-style: normal; }
+  .v-title em { color: var(--v-signal); font-style: normal; }
   .v-caption {
     position: absolute;
     z-index: 3;
@@ -710,26 +710,26 @@
     position: absolute;
     z-index: 2;
     width: 5px;
-    background: var(--v-blue);
+    background: var(--v-signal);
     transform-origin: top;
-    box-shadow: 0 0 34px rgba(36, 87, 255, .22);
+    box-shadow: 0 0 34px rgba(17, 17, 17, .14);
   }
 
   /* 封面：四个卖点就是目录，也是画面的节拍器。 */
-  .v-cover { background: #101218; color: #f7f9ff; }
+  .v-cover { background: #111111; color: #f2f1ed; }
   .v-cover::before {
     background-image:
       linear-gradient(90deg, transparent 99.85%, rgba(255,255,255,.10) 100%),
       linear-gradient(transparent 99.8%, rgba(255,255,255,.08) 100%);
   }
-  .v-cover .v-kicker { color: #8da7ff; }
+  .v-cover .v-kicker { color: #b8b5ae; }
   .v-cover .cover-mark {
     position: absolute;
     left: 92px;
     top: 166px;
     font: 500 24px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
     letter-spacing: .18em;
-    color: rgba(247,249,255,.46);
+    color: rgba(242,241,237,.46);
   }
   .v-cover .cover-thesis {
     position: absolute;
@@ -741,7 +741,7 @@
     line-height: 1.02;
     letter-spacing: -.07em;
   }
-  .v-cover .cover-thesis em { color: #5d7fff; font-style: normal; }
+  .v-cover .cover-thesis em { color: #e8e6df; font-style: normal; }
   .v-cover .cover-features {
     position: absolute;
     right: 86px;
@@ -757,29 +757,29 @@
     border-top: 1px solid rgba(255,255,255,.18);
     font-size: 31px;
     font-weight: 500;
-    color: rgba(247,249,255,.72);
+    color: rgba(242,241,237,.72);
     transition: color .25s, transform .35s cubic-bezier(.22,.61,.21,1), border-color .25s;
   }
   .v-cover .cover-feature:last-child { border-bottom: 1px solid rgba(255,255,255,.18); }
   .v-cover .cover-feature i {
     width: 8px;
     height: 8px;
-    background: #5d7fff;
+    background: #b8b5ae;
     transform: rotate(45deg);
     transition: transform .35s;
   }
   .v-cover .cover-feature:hover {
     color: #fff;
-    border-color: #5d7fff;
+    border-color: #e8e6df;
     transform: translateX(-18px);
   }
   .v-cover .cover-feature:hover i { transform: rotate(135deg) scale(1.5); }
-  .v-cover .v-signal { left: 1120px; top: 0; height: 1080px; background: #5d7fff; }
+  .v-cover .v-signal { left: 1120px; top: 0; height: 1080px; background: #e8e6df; }
   .v-cover .cover-foot {
     position: absolute;
     left: 94px;
     bottom: 72px;
-    color: rgba(247,249,255,.48);
+    color: rgba(242,241,237,.48);
     font-size: 24px;
   }
   .slide.on .v-cover .cover-thesis { animation: vThesisIn .75s cubic-bezier(.22,.61,.21,1) both; }
@@ -798,7 +798,7 @@
     top: 530px;
     width: 680px;
     padding: 28px 34px;
-    border-left: 5px solid var(--v-blue);
+    border-left: 5px solid var(--v-signal);
     background: #fff;
     font-size: 29px;
     box-shadow: 0 16px 44px rgba(21,31,60,.08);
@@ -810,7 +810,7 @@
     top: 50%;
     width: 228px;
     height: 2px;
-    background: var(--v-blue);
+    background: var(--v-signal);
     transform-origin: left;
   }
   .v-stack { position: absolute; right: 90px; top: 185px; width: 760px; height: 690px; }
@@ -833,11 +833,11 @@
   .v-sheet .sheet-type {
     font: 600 18px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
     letter-spacing: .14em;
-    color: var(--v-blue);
+    color: var(--v-signal);
   }
   .v-sheet .sheet-main { margin-top: 56px; font-size: 53px; font-weight: 650; letter-spacing: -.04em; }
   .v-sheet .sheet-lines { margin-top: 34px; display: grid; gap: 12px; }
-  .v-sheet .sheet-lines i { display: block; height: 8px; background: #cfd5df; }
+  .v-sheet .sheet-lines i { display: block; height: 8px; background: #c9c7c1; }
   .v-sheet .sheet-lines i:nth-child(2) { width: 72%; }
   .slide.on .v-generate .v-prompt { opacity: 0; animation: vRowIn .55s ease .18s forwards; }
   .slide.on .v-generate .v-prompt::after { animation: vLineOut .55s ease .55s both; }
@@ -877,7 +877,7 @@
     right: 0;
     top: 57%;
     height: 5px;
-    background: var(--v-blue);
+    background: var(--v-signal);
     transform-origin: left;
   }
   .v-editor .edit-after { color: var(--v-ink); opacity: 0; transform: translateY(40px); }
@@ -887,14 +887,14 @@
     top: 143px;
     width: 7px;
     height: 142px;
-    background: var(--v-blue);
+    background: var(--v-signal);
   }
   .v-editor .edit-status {
     position: absolute;
     right: 46px;
     bottom: 32px;
     font: 600 20px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-    color: var(--v-blue);
+    color: var(--v-signal);
     letter-spacing: .08em;
   }
   .slide.on .v-editor .edit-before { animation: vOldOut .35s ease 1.15s forwards; }
@@ -904,16 +904,16 @@
   .slide.on .v-editor .edit-status { opacity: 0; animation: fwFadeIn .35s ease 1.65s forwards; }
 
   /* 手机：一条同步信号从电脑画面穿进手机，再由手机把翻页动作送回去。 */
-  .v-phone { background: #111318; color: #f7f9ff; }
+  .v-phone { background: #111111; color: #f2f1ed; }
   .v-phone::before {
     background-image:
       linear-gradient(90deg, transparent 99.85%, rgba(255,255,255,.10) 100%),
       linear-gradient(transparent 99.8%, rgba(255,255,255,.08) 100%);
   }
-  .v-phone .v-kicker { color: #8da7ff; }
+  .v-phone .v-kicker { color: #b8b5ae; }
   .v-phone .v-title { color: #fff; max-width: 900px; }
-  .v-phone .v-title em { color: #6f8cff; }
-  .v-phone .v-caption { color: rgba(247,249,255,.48); }
+  .v-phone .v-title em { color: #e8e6df; }
+  .v-phone .v-caption { color: rgba(242,241,237,.48); }
   .v-device-stage { position: absolute; right: 80px; top: 156px; width: 850px; height: 760px; }
   .v-screen {
     position: absolute;
@@ -921,12 +921,12 @@
     top: 114px;
     width: 690px;
     height: 430px;
-    border: 3px solid rgba(247,249,255,.72);
+    border: 3px solid rgba(242,241,237,.72);
     padding: 42px;
-    background: #171a21;
+    background: #1b1b1b;
   }
   .v-screen .screen-title { font-size: 48px; font-weight: 650; letter-spacing: -.04em; }
-  .v-screen .screen-bar { width: 62%; height: 10px; margin-top: 46px; background: #596170; }
+  .v-screen .screen-bar { width: 62%; height: 10px; margin-top: 46px; background: #696762; }
   .v-screen .screen-bar + .screen-bar { width: 42%; margin-top: 16px; }
   .v-phone-body {
     position: absolute;
@@ -934,11 +934,11 @@
     top: 0;
     width: 300px;
     height: 650px;
-    border: 4px solid #f7f9ff;
-    background: #f3f6ff;
+    border: 4px solid #f2f1ed;
+    background: #f2f1ed;
     color: var(--v-ink);
     padding: 54px 30px 28px;
-    box-shadow: -24px 26px 0 rgba(36,87,255,.32);
+    box-shadow: -24px 26px 0 #343432;
     transition: transform .35s cubic-bezier(.22,.61,.21,1);
   }
   .v-phone-body:hover { transform: translateY(-18px) rotate(1deg); }
@@ -952,9 +952,9 @@
     transform: translateX(-50%);
     background: #111318;
   }
-  .v-phone-body .phone-page { font: 600 17px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--v-blue); }
+  .v-phone-body .phone-page { font: 600 17px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--v-signal); }
   .v-phone-body .phone-copy { margin-top: 48px; font-size: 28px; line-height: 1.75; font-weight: 550; }
-  .v-phone-body .phone-copy b { color: var(--v-blue); }
+  .v-phone-body .phone-copy b { color: var(--v-signal); }
   .v-phone-body .phone-controls {
     position: absolute;
     left: 28px;
@@ -972,7 +972,7 @@
     top: 330px;
     width: 184px;
     height: 4px;
-    background: #6f8cff;
+    background: #b8b5ae;
     transform-origin: left;
   }
   .v-sync-line::after {
@@ -982,7 +982,7 @@
     top: -5px;
     width: 14px;
     height: 14px;
-    background: #6f8cff;
+    background: #b8b5ae;
     transform: rotate(45deg);
   }
   .slide.on .v-phone .v-screen { opacity: 0; animation: vDeviceIn .58s ease .20s forwards; }
@@ -1002,7 +1002,7 @@
     transform: translate(-50%,-50%);
     border: 3px solid var(--v-ink);
     background: #fff;
-    box-shadow: 18px 20px 0 var(--v-blue-soft);
+    box-shadow: 18px 20px 0 var(--v-shadow);
   }
   .v-master-page::before {
     content: "";
@@ -1012,14 +1012,14 @@
     width: 220px;
     height: 21px;
     background: var(--v-ink);
-    box-shadow: 0 47px 0 #c8ced8, 0 77px 0 #c8ced8;
+    box-shadow: 0 47px 0 #c9c7c1, 0 77px 0 #c9c7c1;
   }
   .v-master-page::after {
     content: "▶";
     position: absolute;
     right: 32px;
     bottom: 27px;
-    color: var(--v-blue);
+    color: var(--v-signal);
     font-size: 34px;
   }
   .v-output {
@@ -1036,7 +1036,7 @@
     letter-spacing: .08em;
     transition: background .25s, color .25s, transform .3s;
   }
-  .v-output:hover { background: var(--v-blue); color: #fff; transform: scale(1.05); }
+  .v-output:hover { background: var(--v-ink); color: #fff; transform: scale(1.05); }
   .v-output.o-png { left: 36px; top: 80px; }
   .v-output.o-pdf { right: 32px; top: 86px; }
   .v-output.o-html { left: 324px; bottom: 50px; }
@@ -1046,7 +1046,7 @@
     top: 50%;
     width: 2px;
     height: 290px;
-    background: var(--v-blue);
+    background: var(--v-signal);
     transform-origin: top;
   }
   .v-output-line.l1 { transform: rotate(56deg); }
@@ -1060,7 +1060,7 @@
   .slide.on .v-export .o-html { animation-delay: 1.06s; }
 
   /* 封尾：蓝色游标收拢为舞台中央的一道竖线。 */
-  .v-end { background: #2457ff; color: #fff; }
+  .v-end { background: #111111; color: #fff; }
   .v-end::before { display: none; }
   .v-end .end-mark {
     position: absolute;
