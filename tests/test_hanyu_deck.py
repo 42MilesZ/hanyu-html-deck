@@ -244,10 +244,13 @@ class ServerTests(unittest.TestCase):
         local_branch = allow_body.split("if path in LOCAL_ONLY:", 1)[1].split("if path in PHONE_PATHS", 1)[0]
         self.assertIn("token_ok()", local_branch)
 
-    def test_token_anchor_is_empty_and_not_read_from_url(self):
-        """凭据靠服务写进文件:macOS 的 open 会丢掉 file:// URL 的 query,不能从地址取。"""
+    def test_token_anchor_exists_and_not_read_from_url(self):
+        """凭据靠服务写进文件:macOS 的 open 会丢掉 file:// URL 的 query,不能从地址取。
+
+        不断言锚点为空——服务运行期间工作副本里本就带着本次运行的凭据。
+        """
         html = TEMPLATE.read_text(encoding="utf-8")
-        self.assertIn("var TOKEN = ''; /* HANYU_TOKEN */", html)
+        self.assertRegex(html, r"var TOKEN = '[^']*'; /\* HANYU_TOKEN \*/")
         self.assertNotIn("location.search.match", html)
 
     def test_stamp_token_writes_and_clears(self):
