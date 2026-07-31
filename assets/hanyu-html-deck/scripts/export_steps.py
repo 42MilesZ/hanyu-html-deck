@@ -1,13 +1,14 @@
-"""分步页关键帧导出:凡带 data-steps 的页,把每个 step(0..N)各截一帧存 scripts/prompter_steps/页-步.jpg,
-供手机提词页的当前页预览随步进换帧。改了分步页版面后重跑本脚本(整页缩略图另由 export_pages.py 管)。
+"""分步页关键帧导出:凡带 data-steps 的页,把每个 step(0..N)各截一帧存 scripts/.prompter-steps/页-步.jpg,
+供手机提词页的当前页预览随步进换帧(目录名要与 prompter_server.py 的 STEPS_DIR 一致,否则手机端拿到 404)。
+改了分步页版面后重跑本脚本(整页缩略图另由 export_pages.py 管)。
 依赖:python3 + playwright(chromium)。headless 实例 navigator.webdriver=true,deck 的提词上报自动关闭,不打扰演示。"""
 from playwright.sync_api import sync_playwright
 import pathlib, subprocess
 
 BASE = pathlib.Path(__file__).resolve().parent.parent
 URL = (BASE / "index.html").as_uri()
-OUT = BASE / "scripts" / "prompter_steps"
-OUT.mkdir(exist_ok=True)
+OUT = BASE / "scripts" / ".prompter-steps"
+OUT.mkdir(parents=True, exist_ok=True)
 
 FF_CSS = "*{animation-delay:0s !important;animation-duration:1ms !important;transition-duration:1ms !important;transition-delay:0s !important;}"
 

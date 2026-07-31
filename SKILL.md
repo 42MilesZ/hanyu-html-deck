@@ -1,17 +1,17 @@
 ---
-name: hanyu-deck
+name: hanyu-html-deck
 description: Use when creating or revising a local-first HTML presentation with speaker notes, an optional notes drawer, export tools, source write-back, or a phone teleprompter.
 ---
 
-# Hanyu Deck
+# Hanyu HTML Deck（本地演示台）
 
-使用本 skill 创建或修改 HTML 演示文稿时，以 `assets/hanyu-deck/template.html` 为底座，不从空白页面重新搭引擎。
+使用本 skill 创建或修改 HTML 演示文稿时，以本 skill 目录内的 `assets/hanyu-html-deck/template.html` 为底座，不从空白页面重新搭引擎。下文的相对路径都以本 skill 目录（即仓库根）为起点；skill 装在别处时，先定位到该目录再执行命令。
 
 模板提供的是演示引擎与页面骨架，不是要照搬的视觉方案。示例页只作结构参考，版面按当次内容重新组织。
 
 ## 开始前
 
-1. 如果目标目录还没有 Hanyu Deck，运行：
+1. 如果目标目录还没有演示稿，在本 skill 目录下运行：
 
    ```bash
    python3 scripts/create_deck.py /目标目录
@@ -26,16 +26,30 @@ description: Use when creating or revising a local-first HTML presentation with 
 - 页面保持直角、细线和大留白，不使用装饰性卡片、圆角胶囊或彩色标签。
 - 一页只表达一个决定性关系。图像优先于文字，正文写成完整段落。
 - 入场说明讲解顺序，步进只点亮当前内容，跨页动效保持对象的位置或比例关系。
-- 总览和导出必须显示动画的静态终态。
-- 工具图标统一使用 Lucide 线性 SVG；悬停约一秒后显示深灰色解释。
+- 总览和导出必须显示动画的静态终态：入场动画只挂在 `.slide.on` 下，并为 `.ovItem` 与 `body.exporting` 补终态覆盖。
+- 入场淡入不要和步进点亮争同一个 `opacity`：淡入挂容器，点亮留给行本身。
+- 工具图标统一使用 Lucide 线性 SVG，描边 1.5；悬停约一秒后显示深灰色解释。
 
 ## 页面制作
 
-- 画布固定为 1920 × 1080，所有页面使用 `.slide > .canvas + aside` 结构。
+- 所有页面使用 `.slide > .canvas + aside` 结构，`.canvas` 紧跟 `<aside>`（写回按这个约定定位，别打破）。
 - 页面正文服务于演讲，不把讲稿压到画布上。
 - 讲稿写在 `.ns` 中，用自然段纯文本；每个意思单独成段，不强制项目列表。
 - 备注写在 `.nc` 中。它既可保存修改意见，也可保存补充说明或个人提醒。
-- 优先复用模板中的页面骨架：正文、分类聚焦、左右对照、能力矩阵、数据排序、章节转折。只有真实内容无法表达时才新增页面类型。
+- 优先复用模板中的页面骨架，只有真实内容无法表达时才新增页面类型：
+
+  | 类名 | 用途 | 关键结构 |
+  |---|---|---|
+  | `pcover` | 封面 | `.co-part` 英文肩题 + `.zh` 主标题 + `.cv-cap` 角注 |
+  | `pbody` | 正文 | `.bd-title` + `.bd-text`；可选 `.bd-cmd` 命令块、`.bd-steps` 编号步骤、`.bd-tree` 目录、`.bd-fig` 占位 |
+  | `psteps` | 分步点亮 | `data-steps` + `.st-rows > .st-row`（`.no` / `.w` / `.ex`） |
+  | `pmatrix` | 能力矩阵 | `.mx-head` + `.mx-row`，每行两个 `.mk`（`c1` / `c2`，不支持加 `off`），按 `data-step` 逐列点亮 |
+  | `paccordion` | 分类聚焦 | 四个 `.ac-col`，悬停展开；画布需加 `nav-narrow` 让开翻页热区 |
+  | `psplit` | 左右对照 | 两个 `.sp-half`（`.sp-label` / `.sp-word` / `.sp-copy`） |
+  | `pbars` | 数据排序 | `.bar-list > .bar-row`（`.bar-name` / `.bar-track > .bar-fill` / `.bar-value`），条长写在 `.bar-fill` 的行内 `--value` |
+  | `pword` | 章节转折 | 单个 `.word` |
+  | `pend` | 结语 | `.line` 金句，引擎自动拆字渐显 |
+
 - 图片应成为页面主体；缺少真实图片时保留克制的中性占位，不用装饰图标填空。
 - 动画用于讲解顺序、比较变化或跨页连续性。无认知作用的动画不要添加。
 
@@ -43,6 +57,9 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 - 讲稿面板默认收起到表头；备注抽屉默认关闭。
 - 两种状态按 `DECK.key` 分别写入 localStorage，不互相覆盖。
+- localStorage 一律走模板内的安全包装，不裸调用：禁用存储或配额写满时要降级，不能白屏。
+- 讲稿与备注各自维护版本历史（`.h.` / `.hc.` 前缀），不共用一条时间线。
+- 写回自动进行，不设保存按钮；状态只由讲稿栏右下角的同步灯表达。
 - 手机端默认打开讲稿；备注通过 `讲稿 / 备注` 切换显示。
 - 手机端只使用同一局域网。首选同一 Wi-Fi；没有可用网络时，使用手机热点并让电脑连接。
 - 不接入公网中继、公共 MQTT 或托管提词页。
@@ -51,16 +68,18 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 本地服务负责手机提词、遥控、源文件写回、图片/PDF/发送版导出。修改这部分时保留以下边界：
 
-- `/canvas` 只允许本机调用。
-- `/canvas`、`/seed`、`/export` 必须校验请求来源。
-- 写回必须先核对页数与结构，再用临时文件原子替换。
+- 写侧与桌面控制端点（`/seed`、`/canvas`、`/export`、`/notes`、`/flip`、`/info`、`/qr.svg`）只接受回环请求。
+- 手机侧端点（`/p`、`/notes.json`、`/events`、`/thumbs`、`/steps`、`/goto`、`/phone-heartbeat`）接受回环或携带启动时生成的访问令牌，令牌只经二维码交给手机。
+- 所有请求校验 `Host` 是否指向本机（堵 DNS rebinding），并只回显白名单内的 `Origin`。
+- 写回内容用标签与属性白名单校验，不用危险标签黑名单。
+- 写回必须先核对页数与结构，按 div 开闭配平定位区块，再用临时文件原子替换。
 - 手机讲稿只在局域网传输，不上传到第三方服务。
 - 自动化截图默认不向手机上报翻页；显式加 `?pr=1` 才启用联动。
 
 ## 完成前检查
 
-1. 运行 `python3 -m unittest discover -s tests -v`。
-2. 在桌面视口检查默认、总览、演示、讲稿展开、备注抽屉。
+1. 在本 skill 目录（仓库内）开发时，运行 `python3 -m unittest discover -s tests -v`。
+2. 在桌面视口检查默认、总览、演示、讲稿展开、备注抽屉，并确认控制台无报错。
 3. 在手机视口检查讲稿/备注切换、翻页、自由浏览和滚动位置。
-4. 启动本地服务，验证 `/info`、二维码、SSE、写回拒绝规则。
-5. 导出发送版，确认 `.nc` 备注与画布写回代码都已剥除。
+4. 启动本地服务，验证二维码、事件流、以及非回环请求与注入载荷都被拒绝。
+5. 导出发送版，确认 `.nc` 备注、画布写回代码都已剥除，且不再向本地服务发请求。

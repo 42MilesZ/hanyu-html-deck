@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hanyu Deck</title>
+<title>本地演示台 · Hanyu HTML Deck</title>
 <!-- ============================================================
-     Hanyu Deck — 面向 AI 生成 HTML 演示文稿的本地优先框架。
-     复制整个 hanyu-deck/ 目录到项目文件夹，将本文件改名为 index.html，
+     本地演示台 / Hanyu HTML Deck — 面向 AI 生成 HTML 演示文稿的本地优先框架。
+     复制整个 hanyu-html-deck/ 目录到项目文件夹，将本文件改名为 index.html，
      修改文件尾 DECK 配置，再替换示例页。
      ============================================================ -->
 <style>
-  /* 本地字体(同目录 fonts/,全量字符):全平台渲染一致；发送版由 build_send.py 内联。 */
-  @font-face { font-family: "Noto Sans SC"; font-weight: 300; src: url("fonts/NotoSansSC-300.woff2") format("woff2"); }
-  @font-face { font-family: "Noto Sans SC"; font-weight: 600; src: url("fonts/NotoSansSC-600.woff2") format("woff2"); }
+  /* 本地字体(同目录 fonts/,全量字符):全平台渲染一致；发送版由 build_send.py 内联。
+     可变字重用一条声明覆盖 100–900：写成两条会让发送版把同一份字体内联两遍。 */
+  @font-face { font-family: "Noto Sans SC"; font-weight: 100 900; src: url("fonts/NotoSansSC.woff2") format("woff2"); }
   :root { --paper: #f2f1ed; --hair: #d2d0c8; --ink: #111; --chrome: #121212; --chair: #2c2c2c; --nh: 296px; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -722,19 +722,19 @@
 <!-- ============ 页面模板(示例页,逐页替换;每页 = .canvas 版面 + aside 讲稿) ============ -->
 <template id="slides">
 
-<!-- Hanyu Deck：封面 -->
-<section class="slide" data-title="Hanyu Deck">
+<!-- 封面 -->
+<section class="slide" data-title="本地演示台">
   <div class="canvas dark nofoot pcover">
     <div class="ph-img"></div>
     <div class="scrim"></div>
     <div class="cover-title">
       <div class="co-part">LOCAL-FIRST HTML PRESENTATION</div>
-      <div class="zh">Hanyu Deck</div>
+      <div class="zh">本地演示台</div>
     </div>
     <div class="cv-cap">演示引擎与制作流程，不是幻灯片视觉模板</div>
   </div>
   <aside>
-    <div class="ns"><p>Hanyu Deck 是一个本地优先的 HTML 演示框架，主要给使用 Codex、Claude Code 等 AI 编程工具制作演示稿的人使用。</p><p>页面、讲稿和备注放在同一个 HTML 文件里，双击文件就能演示，不需要账号、安装或网络。</p></div>
+    <div class="ns"><p>本地演示台（hanyu-html-deck）是一个本地优先的 HTML 演示框架，主要给使用 Codex、Claude Code 等 AI 编程工具制作演示稿的人使用。</p><p>页面、讲稿和备注放在同一个 HTML 文件里，双击文件就能演示，不需要账号、安装或网络。</p></div>
     <div class="nc"><p>制作新项目时替换主视觉、标题和这句定位，保留版式结构即可。</p></div>
   </aside>
 </section>
@@ -746,7 +746,7 @@
     <div class="sp-half"><div class="sp-label">是</div><div class="sp-word">演示引擎</div><div class="sp-copy">翻页、分步动画、讲稿、备注、手机提词、写回与导出，全部内建。</div></div>
   </div>
   <aside>
-    <div class="ns"><p>这一点最容易被误解：Hanyu Deck 给的不是一套好看的版式，而是一套演示能力。</p><p>模板里的示例页只是页面骨架的起点，真正的版面由 AI 按当次内容重新组织。换句话说，它管的是播放、讲稿、提词、写回和导出这些事，不管你的演示长什么样。</p></div>
+    <div class="ns"><p>这一点最容易被误解：它给的不是一套好看的版式，而是一套演示能力。</p><p>模板里的示例页只是页面骨架的起点，真正的版面由 AI 按当次内容重新组织。换句话说，它管的是播放、讲稿、提词、写回和导出这些事，不管你的演示长什么样。</p></div>
     <div class="nc"><p>对外介绍时先讲这一页，再讲功能，可以少掉一轮误会。</p></div>
   </aside>
 </section>
@@ -811,19 +811,19 @@
       <p><span class="no">01</span><span>打开 my-deck/index.html</span></p>
       <p><span class="no">02</span><span>改文件尾部的 DECK.name 与 DECK.key</span></p>
       <p><span class="no">03</span><span>用模板里的页面骨架替换示例内容</span></p>
-      <p><span class="no">04</span><span>需要高级功能时，双击「启动 Hanyu Deck.command」</span></p>
+      <p><span class="no">04</span><span>需要高级功能时，双击「启动本地演示台.command」</span></p>
     </div>
     <div class="bd-tree">
       <div>my-deck/</div>
       <div class="lv">index.html</div>
       <div class="lv">fonts/</div>
       <div class="lv">scripts/</div>
-      <div class="lv">启动 Hanyu Deck.command</div>
+      <div class="lv">启动本地演示台.command</div>
       <div class="lv">README.md</div>
     </div>
   </div>
   <aside>
-    <div class="ns"><p>这条命令把模板、字体、本地服务和说明复制成一个独立目录，之后这个目录可以整体搬走。</p><p>如果已经安装了 Hanyu Deck Skill，也可以直接让 AI 使用这个 Skill，从模板生成第一版，跳过手动改配置。</p></div>
+    <div class="ns"><p>这条命令把模板、字体、本地服务和说明复制成一个独立目录，之后这个目录可以整体搬走。</p><p>如果已经安装了本地演示台 Skill（hanyu-html-deck），也可以直接让 AI 使用这个 Skill，从模板生成第一版，跳过手动改配置。</p></div>
     <div class="nc"><p>目录树按实际生成结果写，改动生成脚本后记得同步这一页。</p></div>
   </aside>
 </section>
@@ -858,10 +858,10 @@
   <div class="canvas dark nofoot pend">
     <div class="ph-img"></div>
     <div class="scrim"></div>
-    <div class="line">调用 Hanyu Deck Skill，<br>从模板生成第一版。</div>
+    <div class="line">调用本地演示台 Skill，<br>从模板生成第一版。</div>
   </div>
   <aside>
-    <div class="ns"><p>让 AI 编程工具使用 Hanyu Deck Skill，从模板生成第一版。用户负责内容取舍、页面结构和现场表达。</p><p>项目原创代码、模板和 Skill 使用 MIT 许可，字体与二维码生成器的许可见仓库里的第三方声明。</p></div>
+    <div class="ns"><p>让 AI 编程工具使用本地演示台 Skill（hanyu-html-deck），从模板生成第一版。用户负责内容取舍、页面结构和现场表达。</p><p>项目原创代码、模板和 Skill 使用 MIT 许可，字体与二维码生成器的许可见仓库里的第三方声明。</p></div>
     <div class="nc"><p>发布前可在这里放项目地址或使用说明。</p></div>
   </aside>
 </section>
@@ -870,8 +870,8 @@
 <script>
 // ===== 项目配置:新 deck 只改这里 =====
 var DECK = {
-  name: 'Hanyu Deck', // 页脚线左侧的项目名
-  key: 'hanyu-deck-v3', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
+  name: '本地演示台', // 页脚线左侧的项目名
+  key: 'hanyu-html-deck', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
   port: 8123          // 本地提词服务端口
 };
 // 发送版标记:build_send.py 导出时置 true。发送版不联本地服务,
@@ -1594,7 +1594,7 @@ var SEND_VERSION = false;
           if (d.ok) toast('P' + pageNo + ' 画布改动已写回源文件');
           else toast('没写回:' + (d.err || '未知原因'), true);
         }, function () {
-          toast('本地服务没在运行，改动只在当前窗口（刷新会丢）。双击「启动 Hanyu Deck.command」后再改任意一个字即可补存。', true);
+          toast('本地服务没在运行，改动只在当前窗口（刷新会丢）。双击「启动本地演示台.command」后再改任意一个字即可补存。', true);
         });
       });
       return postChain;
@@ -1850,7 +1850,7 @@ var SEND_VERSION = false;
       }[kind]);
       else alert('导出没能启动:' + (d.err || '未知原因'));
     }).catch(function () {
-      alert('本地服务没在运行。双击「启动 Hanyu Deck.command」后再试。');
+      alert('本地服务没在运行。双击「启动本地演示台.command」后再试。');
     });
   }
   document.addEventListener('click', function (e) {
@@ -1968,7 +1968,7 @@ var SEND_VERSION = false;
     }).catch(function () {
       pdQr.innerHTML = '<span>本地服务未启动</span>';
       pdUrl.textContent = '';
-      pdStatus.textContent = '请双击“启动 Hanyu Deck.command”，再重新打开手机提词器。';
+      pdStatus.textContent = '请双击“启动本地演示台.command”，再重新打开手机提词器。';
       pdStatus.classList.remove('ok');
     });
   }

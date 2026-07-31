@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从仓库内的 Hanyu Deck 资产创建一个独立演示稿目录。"""
+"""从仓库内的模板资产创建一个独立演示稿目录。"""
 
 import argparse
 import pathlib
@@ -7,7 +7,7 @@ import shutil
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SOURCE = ROOT / "assets" / "hanyu-deck"
+SOURCE = ROOT / "assets" / "hanyu-html-deck"
 JUNK = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
 
 
@@ -23,12 +23,15 @@ def create(target: pathlib.Path):
         else:
             shutil.copy2(item, target / item.name)
     shutil.copy2(ROOT / "assets" / "deck-readme.md", target / "README.md")
-    print("已创建 Hanyu Deck：%s" % target)
-    print("打开 index.html 可离线使用；双击“启动 Hanyu Deck.command”启用高级功能。")
+    # 生成目录会被整体转发,必须自带许可与第三方声明
+    shutil.copy2(ROOT / "LICENSE", target / "LICENSE")
+    shutil.copy2(ROOT / "THIRD_PARTY_NOTICES.md", target / "THIRD_PARTY_NOTICES.md")
+    print("已创建本地演示台演示稿：%s" % target)
+    print("打开 index.html 可离线使用；双击“启动本地演示台.command”启用高级功能。")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="创建 Hanyu Deck 演示稿")
+    parser = argparse.ArgumentParser(description="创建本地演示台演示稿")
     parser.add_argument("target", type=pathlib.Path)
     args = parser.parse_args()
     if not SOURCE.exists():

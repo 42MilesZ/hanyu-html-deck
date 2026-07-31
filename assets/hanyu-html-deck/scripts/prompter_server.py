@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hanyu Deck 本地服务。
+"""本地演示台服务。
 
 只在当前局域网内提供手机提词、遥控、源文件写回与导出调度。
 不连接公共中继，不上传讲稿，不依赖外部网络。
@@ -354,10 +354,10 @@ def run_export(kind):
             if result.returncode:
                 detail = (result.stderr or result.stdout or "")[-400:]
                 raise RuntimeError("%s：%s" % (script, detail.strip()))
-        notify("Hanyu Deck", "导出已完成")
+        notify("本地演示台", "导出已完成")
     except Exception as error:
         print("[导出失败]", error)
-        notify("Hanyu Deck 导出失败", str(error)[:120])
+        notify("本地演示台导出失败", str(error)[:120])
     finally:
         export_busy = False
 
@@ -662,7 +662,7 @@ def main():
         except Exception:
             pass
     urls = phone_urls()
-    print("Hanyu Deck 本地服务已启动：http://127.0.0.1:%d" % PORT)
+    print("本地演示台服务已启动：http://127.0.0.1:%d" % PORT)
     if urls:
         print("手机与电脑在同一网络时，打开（链接含本次运行的访问令牌）：")
         for url in urls:
@@ -674,7 +674,7 @@ def main():
         Server(("0.0.0.0", PORT), Handler).serve_forever()
     except OSError as error:
         print("端口 %d 起不来：%s" % (PORT, error))
-        print("可能已有一个 Hanyu Deck 服务在跑；或设置 HANYU_DECK_PORT 换一个端口。")
+        print("可能已有一个本地演示台服务在跑；或设置 HANYU_DECK_PORT 换一个端口。")
         sys.exit(1)
     except KeyboardInterrupt:
         print("\n服务已停止。")

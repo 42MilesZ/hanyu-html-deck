@@ -1,12 +1,13 @@
 import importlib.util
 import json
 import pathlib
+import re
 import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "assets" / "hanyu-deck" / "template.html"
-SERVER = ROOT / "assets" / "hanyu-deck" / "scripts" / "prompter_server.py"
+TEMPLATE = ROOT / "assets" / "hanyu-html-deck" / "template.html"
+SERVER = ROOT / "assets" / "hanyu-html-deck" / "scripts" / "prompter_server.py"
 
 
 class TemplateTests(unittest.TestCase):
@@ -100,12 +101,19 @@ class TemplateTests(unittest.TestCase):
         phone = (
             ROOT
             / "assets"
-            / "hanyu-deck"
+            / "hanyu-html-deck"
             / "scripts"
             / "prompter-phone.html"
         ).read_text(encoding="utf-8").lower()
         self.assertNotIn("mqtt", phone)
         self.assertNotIn("wss://", phone)
+
+    def test_every_referenced_id_exists(self):
+        """JS 取的 id 必须真实存在：少一个就整页白屏，而字符串断言查不出来。"""
+        declared = set(re.findall(r'\bid="([A-Za-z0-9_-]+)"', self.html))
+        used = set(re.findall(r"getElementById\('([A-Za-z0-9_-]+)'\)", self.html))
+        self.assertTrue(used)
+        self.assertEqual(used - declared, set())
 
 
 class GeneratorTests(unittest.TestCase):
@@ -118,10 +126,22 @@ class GeneratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             target = pathlib.Path(temp) / "demo"
             module.create(target)
-            self.assertTrue((target / "index.html").exists())
-            self.assertTrue((target / "启动 Hanyu Deck.command").exists())
+            for name in (
+                "index.html",
+                "启动本地演示台.command",
+                "README.md",
+                "LICENSE",
+                "THIRD_PARTY_NOTICES.md",
+            ):
+                self.assertTrue((target / name).exists(), name)
             self.assertTrue((target / "scripts" / "prompter_server.py").exists())
-            self.assertTrue((target / "README.md").exists())
+            self.assertTrue((target / "fonts" / "NotoSansSC.woff2").exists())
+            junk = [
+                str(p.relative_to(target))
+                for p in target.rglob("*")
+                if p.name == "__pycache__" or p.suffix == ".pyc"
+            ]
+            self.assertEqual(junk, [])
 
 
 class ServerTests(unittest.TestCase):

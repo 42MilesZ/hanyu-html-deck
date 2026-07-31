@@ -1,16 +1,16 @@
-# Hanyu Deck
+# Hanyu HTML Deck
 
 [中文](README.md) · [English](README.en.md)
 
-A local-first framework for AI-generated HTML presentations.
+A local-first framework for AI-generated HTML presentations. The Chinese name is 本地演示台 — "the local presentation stand".
 
-Hanyu Deck ships as both a reusable presentation template and a focused skill. The core HTML needs no install, account, or network connection. A local service adds phone prompting, remote control, source write-back, and exports.
+Hanyu HTML Deck ships as both a reusable presentation template and a focused skill. The core HTML needs no install, account, or network connection. A local service adds phone prompting, remote control, source write-back, and exports.
 
-## What it is, and what it is not
+## What it is and what it isn't
 
-Hanyu Deck gives you presentation machinery and a workflow: navigation, step animations, speaker script, notes, phone prompting, source write-back, and exports.
+Hanyu HTML Deck gives you presentation mechanics and an authoring workflow: navigation, step animations, speaker script, notes, phone prompting, source write-back, and exports.
 
-It is not a slide design template. There are no themes, colour schemes, or ready-made layout sets. `template.html` is a running starting point, and its sample pages are page skeletons — the actual layout is built for each deck from its own content. If what you want is a good-looking layout pack, this project does not solve that.
+It is not a slide design template. There are no themes, color schemes, or ready-made layout sets. `template.html` is a runnable starting point, and its sample pages are page skeletons — the actual layout is built for each deck from its own content. If what you want is a theme or layout pack, this project does not solve that.
 
 ## Intended use
 
@@ -23,32 +23,43 @@ It is not a slide design template. There are no themes, colour schemes, or ready
 
 | Feature | HTML only | Local service |
 |---|:---:|:---:|
-| Slide navigation, overview, presentation mode | ✓ | |
-| Step animations and hover interactions | ✓ | |
-| Edit script and notes in localStorage | ✓ | |
-| Remember panel and drawer state | ✓ | |
-| Export script and copy changed notes | ✓ | |
+| Slide navigation, overview, presentation mode | ✓ | ✓ |
+| Step animations and hover interactions | ✓ | ✓ |
+| Edit script and notes in the browser | ✓ | ✓ |
+| Remember panel and drawer state | ✓ | ✓ |
+| Export script and copy changed notes | ✓ | ✓ |
 | Phone teleprompter and remote | | ✓ |
 | Write script, notes, and canvas text back to source | | ✓ |
-| Export page images, image PDF, and single-file HTML | | ✓ |
+| Export page images, PDF, and a standalone send copy | | ✓ |
 
 The local service stays on the current LAN. It does not use a public relay or upload speaker content. Cross-network control is intentionally out of scope.
 
 ## Quick start
 
 ```bash
+git clone <repository url>
+cd hanyu-html-deck
 python3 scripts/create_deck.py ~/Documents/my-deck
 ```
 
-Open `my-deck/index.html`, update `DECK.name` and `DECK.key` near the end of the file, then replace the sample content. Double-click `启动 Hanyu Deck.command` when you need advanced features.
+Open `my-deck/index.html`, update `DECK.name` and `DECK.key` near the end of the file, then replace the sample content. Double-click `启动本地演示台.command` when you need advanced features.
 
-The core HTML works in modern browsers on macOS, Windows, and Linux. Version 0.1 supports the local service, launcher, and export workflow on macOS first.
+The core HTML works in modern browsers on macOS, Windows, and Linux. In version 0.1 the local service, launcher, and export workflow are verified on macOS only: image, PDF, and send-copy exports rely on the macOS `sips` command. On Windows and Linux, run `python3 scripts/prompter_server.py` to use phone prompting and write-back; the exports are unavailable.
+
+## Installing the skill
+
+The skill lets an AI coding tool build decks against this project's conventions.
+
+- As an installed skill: place the repository (keeping `assets/` and `scripts/`) in the directory your tool reads skills from, for example `~/.claude/skills/hanyu-html-deck/`. The relative paths inside `SKILL.md` depend on that layout.
+- Without installing: point the AI at `SKILL.md` in the repository and name your target directory.
+
+When invoking it, state the content, the occasion, and the page count, and ask explicitly for the Hanyu HTML Deck skill.
 
 ## Script and notes
 
 The bottom script panel starts collapsed to a single header row. Press `N` to expand it. Speaker scripts are plain paragraphs with no required outline structure.
 
-The sidebar icon on the right side of the bottom header opens the notes drawer. It sits next to Save as Default and History. Notes can hold revision requests, supporting information, or personal reminders. Closing the drawer only changes the view; it does not delete content.
+Once expanded, a sidebar icon at the bottom right of the script column opens the notes drawer. Notes can hold revision requests, supporting information, or personal reminders. Closing the drawer only changes the view; it does not delete content.
 
 Panel and drawer state are stored separately in localStorage and scoped by `DECK.key`.
 
