@@ -6,7 +6,7 @@ A local-first framework for AI-generated HTML presentations. The Chinese name is
 
 Hanyu HTML Deck ships as both a reusable presentation template and a focused skill. The core HTML needs no install, account, or network connection. A local service adds phone prompting, remote control, source write-back, and exports.
 
-## What it is and what it isn't
+## What it is
 
 Hanyu HTML Deck gives you presentation mechanics and an authoring workflow: navigation, step animations, speaker script, notes, phone prompting, source write-back, and exports.
 
@@ -35,6 +35,14 @@ It is not a slide design template. There are no themes, color schemes, or ready-
 The local service stays on the current LAN. It does not use a public relay or upload speaker content. Cross-network control is intentionally out of scope.
 
 ## Quick start
+
+Copy this command into your AI coding tool:
+
+```text
+Read https://github.com/42MilesZ/hanyu-html-deck and use its Hanyu HTML Deck Skill to turn [content or file] into a [page count]-page HTML presentation for [audience / occasion], saved to [target directory]. Make important information and every page script bilingual in Chinese and English.
+```
+
+Or create one manually:
 
 ```bash
 git clone https://github.com/42MilesZ/hanyu-html-deck.git
