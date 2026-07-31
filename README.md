@@ -47,7 +47,7 @@ python3 scripts/create_deck.py ~/Documents/my-deck
 
 底部区域默认只显示一行表头。按 `N` 或点击中间把手可展开讲稿。讲稿使用自然段纯文本，不要求目的、主次或项目列表。
 
-点击右上角“备注”图标，右侧抽屉会推入。备注可用于修改意见、补充说明或个人提醒。关闭抽屉只切换视图，内容不会删除。
+点击底部表头右侧的侧栏图标，备注抽屉会从右侧推入。它位于“存为默认”和历史图标旁边。备注可用于修改意见、补充说明或个人提醒。关闭抽屉只切换视图，内容不会删除。
 
 讲稿面板是否展开、备注抽屉是否打开会分别写入 localStorage，并按 `DECK.key` 隔离。
 
@@ -103,7 +103,14 @@ python3 -m playwright install chromium
 - `R`：原尺寸
 - `Esc`：退出当前模式
 
+## 仓库里有哪些文件
+
+`scripts/create_deck.py` 会把普通用户真正需要的模板、字体、本地服务和说明复制到新项目中。源码仓库还保留以下开发文件，它们不会进入生成出的 Deck：
+
+- `tests/`：检查页面与讲稿一一对应、状态分开保存、局域网边界和产品文案，避免后续修改破坏已有功能。
+- `evals/`：检查 AI 是否能按 Skill 的约束生成合格的 Deck。
+- `.github/workflows/ci.yml`：每次提交后自动运行测试。
+
 ## 开源许可
 
 项目原创代码、模板和 skill 使用 [MIT License](LICENSE)。字体和 QR 生成器的许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-

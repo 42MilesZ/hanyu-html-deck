@@ -43,6 +43,19 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("localStorage.setItem(PANEL_KEY", self.html)
         self.assertIn("localStorage.setItem(DRAWER_KEY", self.html)
 
+    def test_bottom_header_controls(self):
+        toolbar = self.html.split('<div id="toolbar">', 1)[1].split(
+            '<div id="stage">', 1
+        )[0]
+        notes_head = self.html.split('<div id="notesHead">', 1)[1].split(
+            '<div id="nsCols">', 1
+        )[0]
+        self.assertNotIn('data-act="drawer"', toolbar)
+        self.assertIn('id="btnDrawer"', notes_head)
+        self.assertLess(notes_head.index('id="btnSeed"'), notes_head.index('id="btnHist"'))
+        self.assertLess(notes_head.index('id="btnHist"'), notes_head.index('id="btnDrawer"'))
+        self.assertEqual(notes_head.count('class="rt tip-up"'), 3)
+
     def test_no_public_transport(self):
         lowered = self.html.lower()
         self.assertNotIn("mqtt", lowered)
@@ -109,4 +122,3 @@ class SkillEvalSchemaTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

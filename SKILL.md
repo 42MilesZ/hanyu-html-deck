@@ -9,14 +9,23 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 ## 开始前
 
-1. 先读 `references/design-system.md`。
-2. 如果目标目录还没有 Hanyu Deck，运行：
+1. 如果目标目录还没有 Hanyu Deck，运行：
 
    ```bash
    python3 scripts/create_deck.py /目标目录
    ```
 
-3. 阅读目标目录里的 `README.md`，确认纯 HTML 功能与本地服务功能的边界。
+2. 阅读目标目录里的 `README.md`，确认纯 HTML 功能与本地服务功能的边界。
+
+## 设计基线
+
+- 画布固定为 1920 × 1080，使用 Noto Sans SC。
+- 浅页使用 `#F2F1ED`，暗页使用纯黑或接近纯黑；工具层使用 `#121212`。
+- 页面保持直角、细线和大留白，不使用装饰性卡片、圆角胶囊或彩色标签。
+- 一页只表达一个决定性关系。图像优先于文字，正文写成完整段落。
+- 入场说明讲解顺序，步进只点亮当前内容，跨页动效保持对象的位置或比例关系。
+- 总览和导出必须显示动画的静态终态。
+- 工具图标统一使用 Lucide 线性 SVG；悬停约一秒后显示深灰色解释。
 
 ## 页面制作
 
@@ -53,4 +62,3 @@ description: Use when creating or revising a local-first HTML presentation with 
 3. 在手机视口检查讲稿/备注切换、翻页、自由浏览和滚动位置。
 4. 启动本地服务，验证 `/info`、二维码、SSE、写回拒绝规则。
 5. 导出发送版，确认 `.nc` 备注与画布写回代码都已剥除。
-

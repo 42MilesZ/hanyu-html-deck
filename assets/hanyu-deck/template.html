@@ -69,6 +69,11 @@
     opacity: 1; visibility: visible; transform: translate(-50%, 0);
     transition-delay: .9s, .9s, .9s;
   }
+  [data-tip].tip-up::after {
+    top: auto; bottom: calc(100% + 8px);
+    transform: translate(-50%, 3px);
+  }
+  [data-tip].tip-up:hover::after { transform: translate(-50%, 0); }
 
   /* 批注区拉起/收起把手:贴在批注面板顶边中央的半圆钮(面板 overflow:hidden 会裁子元素,故用 fixed) */
   #notesToggle {
@@ -246,10 +251,16 @@
   #tlNow { position: absolute; bottom: 23px; transform: translateX(-50%); font-size: 11px; color: rgba(240,238,232,.8); letter-spacing: .06em; font-variant-numeric: tabular-nums; transition: left .55s cubic-bezier(.22,.61,.21,1); }
   #tlSec { position: absolute; bottom: 1px; transform: translateX(-50%); font-size: 11px; color: rgba(240,238,232,.55); letter-spacing: .06em; font-variant-numeric: tabular-nums; transition: left .55s cubic-bezier(.22,.61,.21,1); }
   #tlTot { position: absolute; right: 0; bottom: 23px; font-size: 11px; color: rgba(240,238,232,.32); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
-  /* 语速三档:选中 600 白,其余细字重压暗 */
-  #nsRate { display: flex; align-items: center; gap: 12px; margin-right: 16px; }
-  #nsRate .rt { font-size: 11px; font-weight: 300; letter-spacing: .12em; color: #5f5d57; cursor: pointer; }
-  #nsRate .rt.act { font-weight: 600; color: #b6b4ac; }
+  /* 语速三档:兔子 / 速度表 / 蜗牛，选中态提高亮度。 */
+  #nsRate { display: flex; align-items: center; gap: 8px; margin-right: 16px; }
+  #nsRate .rt, #notesHead .icon-btn {
+    width: 32px; height: 32px; padding: 7px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #8a8880; background: none; border: 0; border-radius: 2px; cursor: pointer;
+  }
+  #nsRate .rt svg, #notesHead .icon-btn svg { width: 18px; height: 18px; display: block; }
+  #nsRate .rt:hover, #notesHead .icon-btn:hover { background: var(--paper); color: var(--ink); }
+  #nsRate .rt.act, #notesHead .icon-btn.on { color: #f0eee8; }
   #notesHead .vsep { width: 1px; height: 12px; background: var(--chair); margin-right: 16px; }
   body.present #notesPanel, body.notes-hidden #notesPanel { display: none; }
   #notesPanel .col {
@@ -306,12 +317,12 @@
     content: "写下本页的修改意见、补充说明或个人备注……";
     color: #68665f; pointer-events: none;
   }
-  #btnSeed, #btnHist, #btnBk {
+  #btnSeed, #btnBk {
     font: inherit; font-size: 11px; font-weight: 300; letter-spacing: .08em; color: #77756e;
     background: none; border: none; border-radius: 0;
     padding: 3px 8px; cursor: pointer;
   }
-  #btnSeed:hover, #btnHist:hover { background: var(--paper); color: var(--ink); }
+  #btnSeed:hover { background: var(--paper); color: var(--ink); }
   #histWrap { position: relative; display: flex; }
   #histMenu {
     /* fixed 向上弹:迷你态表头贴屏底,向下弹出界;fixed 也不受面板 overflow:hidden 裁剪 */
@@ -434,9 +445,10 @@
   .paccordion .ac-name { margin-top: 12px; font-size: 38px; font-weight: 300; }
   .paccordion .ac-desc { margin-top: 14px; max-width: 500px; font-size: 24px; line-height: 1.65; color: rgba(255,255,255,.68); opacity: 0; transition: opacity .35s .14s; }
   .paccordion .ac-col:hover .ac-desc { opacity: 1; }
-  body.exporting .paccordion .ac-col:nth-child(2),
+  body.exporting .paccordion .ac-col { flex: 1; }
+  body.exporting .paccordion .ac-copy { white-space: normal; }
+  body.exporting .paccordion .ac-desc { opacity: 1; }
   .ovItem .paccordion .ac-col:nth-child(2) { flex: 3.2; }
-  body.exporting .paccordion .ac-col:nth-child(2) .ac-desc,
   .ovItem .paccordion .ac-col:nth-child(2) .ac-desc { opacity: 1; }
 
   /* --- 参考骨架:左右对照。适合前后、问题与方案、两个观点的直接比较。 --- */
@@ -526,7 +538,6 @@
     <button data-view="default" class="on" data-tip="默认（Esc）" aria-label="默认视图"><svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" rx="2"/></svg></button>
     <button data-view="present" data-tip="演示（P / F）" aria-label="演示"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 3h20m-1 0v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3m4 18l5-5l5 5"/></svg></button>
   </div>
-  <button data-act="drawer" data-tip="备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
   <button data-act="prompter" data-tip="手机提词器" aria-label="手机提词器"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
   <span id="exWrap">
     <button data-act="export" data-tip="导出" aria-label="导出菜单"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 15V3m9 12v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10l5 5l5-5"/></g></svg><i class="caret"></i></button>
@@ -567,17 +578,18 @@
         <div class="lbl"></div>
       </div>
     </div>
-    <div id="nsRate" title="语速:快 240 / 中 210 / 慢 180 字每分钟">
-      <span class="rt" data-r="240">快</span>
-      <span class="rt" data-r="210">中</span>
-      <span class="rt" data-r="180">慢</span>
+    <div id="nsRate" aria-label="讲稿语速">
+      <button class="rt tip-up" data-r="240" data-tip="快 · 240 字/分钟" aria-label="快速"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M13 16a3 3 0 0 1 2.24 5M18 12h.01"/><path d="M18 21h-8a4 4 0 0 1-4-4a7 7 0 0 1 7-7h.2L9.6 6.4a1 1 0 1 1 2.8-2.8L15.8 7h.2c3.3 0 6 2.7 6 6v1a2 2 0 0 1-2 2h-1a3 3 0 0 0-3 3"/><path d="M20 8.54V4a2 2 0 1 0-4 0v3m-8.388 5.524a3 3 0 1 0-1.6 4.3"/></g></svg></button>
+      <button class="rt tip-up" data-r="210" data-tip="中 · 210 字/分钟" aria-label="中速"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m12 14l4-4M3.34 19a10 10 0 1 1 17.32 0"/></svg></button>
+      <button class="rt tip-up" data-r="180" data-tip="慢 · 180 字/分钟" aria-label="慢速"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M2 13a6 6 0 1 0 12 0a4 4 0 1 0-8 0a2 2 0 0 0 4 0"/><circle cx="10" cy="13" r="8"/><path d="M2 21h12c4.4 0 8-3.6 8-8V7a2 2 0 1 0-4 0v6m0-10l1.1 2.2M22 3l-1.1 2.2"/></g></svg></button>
     </div>
     <span class="vsep"></span>
     <button id="btnSeed" title="把所有改动页写回本文件,变成默认稿(要提词服务在跑)">存为默认</button>
     <span id="histWrap">
-      <button id="btnHist" title="本页讲稿的历史版本,点任意一条恢复;恢复前当前稿也会记入历史">查看历史</button>
+      <button id="btnHist" class="icon-btn tip-up" data-tip="查看历史" aria-label="查看历史"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9a9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></g></svg></button>
       <div id="histMenu"></div>
     </span>
+    <button id="btnDrawer" class="icon-btn tip-up" data-act="drawer" data-tip="打开备注" aria-label="打开备注"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></g></svg></button>
   </div>
   <div id="nsCols">
     <div class="col script">
@@ -608,119 +620,117 @@
 <!-- ============ 页面模板(示例页,逐页替换;每页 = .canvas 版面 + aside 讲稿) ============ -->
 <template id="slides">
 
-<!-- 示例：封面 -->
-<section class="slide" data-title="封面">
+<!-- Hanyu Deck：封面 -->
+<section class="slide" data-title="Hanyu Deck">
   <div class="canvas dark nofoot pcover">
     <div class="ph-img"></div>
     <div class="scrim"></div>
     <div class="cover-title">
-      <div class="co-part">副标题 · 主体单位</div>
-      <div class="zh">演示稿主标题</div>
+      <div class="co-part">LOCAL-FIRST HTML PRESENTATION</div>
+      <div class="zh">Hanyu Deck</div>
     </div>
-    <div class="cv-cap">左下角图注（作者 · 作品 · 年代 · 收藏地）</div>
+    <div class="cv-cap">为 AI 编程工具准备的演示框架</div>
   </div>
   <aside>
-    <div class="ns"><p>开场先亮明对象与核心判断，让观众知道接下来要解决什么问题。</p><p>这里使用自然段纯文本。每个意思单独成段，不要求项目列表或固定结构。</p></div>
-    <div class="nc"><p>记录这一页的修改意见、补充说明或个人备注。</p></div>
+    <div class="ns"><p>Hanyu Deck 是一个本地优先的 HTML 演示框架，主要给使用 Codex、Claude Code 等 AI 编程工具制作演示稿的人使用。</p><p>页面、讲稿和备注放在同一个 HTML 文件里，打开文件就能演示。</p></div>
+    <div class="nc"><p>制作新项目时替换主视觉、标题和定位，保留版式结构即可。</p></div>
   </aside>
 </section>
 
-<!-- 示例：正文页（浅底代码页，页脚线自动注入） -->
-<section class="slide" data-title="正文示例">
+<!-- 产品定位 -->
+<section class="slide" data-title="核心演示不依赖本地服务">
   <div class="canvas pbody">
-    <div class="bd-title">页面标题</div>
+    <div class="bd-title">核心演示不依赖本地服务</div>
     <div class="bd-text">
-      <p>正文写成段落：完整句子连成面，不拆成一排排小标签。标题单独成行并留白，层级靠形态与空间建立。</p>
-      <p>图是主体，文字是配角。右侧占位块换成大图，文字只保留理解这张图所必需的内容。</p>
+      <p>一个 HTML 文件包含画布、动画、讲稿和备注。无需账号、无需安装额外依赖，也不需要网络。</p>
+      <p>本地服务关闭后，电脑上的翻页、动画和演示仍可继续。</p>
     </div>
-    <div class="bd-fig"><span>图片占位</span></div>
+    <div class="bd-fig"><span>HTML<br>1920 × 1080</span></div>
   </div>
   <aside>
-    <div class="ns"><p>解释页面判断与图片之间的关系。正文只讲一个决定性判断，再补一条必要的证据或观察。</p><p>次要信息简短带过，避免把讲稿写成页面元素清单。</p></div>
-    <div class="nc"><p>可以记录图片替换、裁切要求或待确认的说法。</p></div>
+    <div class="ns"><p>正式演示最重要的是稳定。Hanyu Deck 把核心能力放进 HTML，本地服务关闭后，电脑上的演示仍然可以继续。</p><p>把文件交给别人时，对方不用安装依赖或启动本地服务。</p></div>
+    <div class="nc"><p>这里可以换成实际 Deck 的界面截图。</p></div>
   </aside>
 </section>
 
-<!-- 示例：分步页（data-steps=3：右箭头逐步点亮） -->
-<section class="slide" data-title="分步示例">
+<!-- 制作流程 -->
+<section class="slide" data-title="制作只需生成、校对、交付">
   <div class="canvas psteps" data-steps="3" data-step="0">
-    <div class="st-title">分步机制</div>
+    <div class="st-title">从内容到演示，只保留三步</div>
     <div class="st-rows">
-      <div class="st-row"><span class="no">01</span><span class="w">第一步</span><span class="ex">当前内容点亮，其余压暗</span></div>
-      <div class="st-row"><span class="no">02</span><span class="w">第二步</span><span class="ex">右箭头、空格或右侧点击区继续步进</span></div>
-      <div class="st-row"><span class="no">03</span><span class="w">第三步</span><span class="ex">左箭头先逐步回退，再返回上一页</span></div>
+      <div class="st-row"><span class="no">01</span><span class="w">生成</span><span class="ex">让 AI 复用页面骨架，完成内容和版式</span></div>
+      <div class="st-row"><span class="no">02</span><span class="w">校对</span><span class="ex">浏览器本地保存；启动服务后可写回原文件</span></div>
+      <div class="st-row"><span class="no">03</span><span class="w">交付</span><span class="ex">导出图片、PDF 或移除私有备注的发送版</span></div>
     </div>
   </div>
   <aside>
-    <div class="ns"><p>信息按讲解顺序进场：讲到哪里，页面就点亮到哪里。每一步只增加当前理解需要的信息。</p><p>使用右箭头逐步推进。</p></div>
-    <div class="nc"><p>提示：不需要分步的页面不要为了动效强行拆步。</p></div>
+    <div class="ns"><p>Hanyu Deck 不要求用户自己搭演示引擎。AI 从现成骨架开始，用户在浏览器完成最后校对。未启动本地服务时，改动保存在当前浏览器；启动后可以写回原文件。</p><p>这一页本身也示范了分步点亮。</p></div>
+    <div class="nc"><p>需要强调某一步时，可以调整 data-step 的分步顺序。</p></div>
   </aside>
 </section>
 
-<!-- 参考骨架：悬停展开的图像列 -->
-<section class="slide" data-title="分类聚焦">
+<!-- 四项主要能力 -->
+<section class="slide" data-title="页面、讲稿与备注按页组织">
   <div class="canvas nofoot paccordion">
-    <div class="ac-title">分类聚焦</div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">01</div><div class="ac-name">观察</div><div class="ac-desc">悬停后展开解释。一次只让一个分类成为主角。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">02</div><div class="ac-name">判断</div><div class="ac-desc">适合方法、案例或连续图像的逐项讲解。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">03</div><div class="ac-name">选择</div><div class="ac-desc">真实项目中将渐变背景替换为满幅图像。</div></div></div>
-    <div class="ac-col"><div class="ac-copy"><div class="ac-no">04</div><div class="ac-name">行动</div><div class="ac-desc">窄列只保留名称，展开列再出现说明。</div></div></div>
+    <div class="ac-title">三类内容按页组织，手机同步显示</div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">01</div><div class="ac-name">页面</div><div class="ac-desc">封面、正文、步骤、聚焦、对照、数据、转折和结语。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">02</div><div class="ac-name">讲稿</div><div class="ac-desc">每页用自然段记录演讲内容，并自动估算时间。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">03</div><div class="ac-name">备注</div><div class="ac-desc">记录修改意见、补充说明或个人提醒；改动可复制给 AI。</div></div></div>
+    <div class="ac-col"><div class="ac-copy"><div class="ac-no">04</div><div class="ac-name">手机</div><div class="ac-desc">同步显示当前页的讲稿或备注，并可遥控翻页。</div></div></div>
   </div>
   <aside>
-    <div class="ns"><p>这一页用四个并列分类建立全景。讲到某一类时，将鼠标移上对应栏位，其他内容自动退后。</p><p>它适合案例分类、方法阶段与连续图像，不适合需要同时精确比较的数据。</p></div>
-    <div class="nc"><p>替换建议：每一栏使用同一比例、同一视觉密度的图片。</p></div>
+    <div class="ns"><p>页面负责给观众看，讲稿负责给演讲者看，备注记录修改意见、补充说明和个人提醒。手机端显示当前页的讲稿或备注。</p><p>把鼠标移到某一栏，可以单独展开说明。</p></div>
+    <div class="nc"><p>正式项目可为四栏替换同一风格的图片。</p></div>
   </aside>
 </section>
 
-<!-- 参考骨架：左右直接对照 -->
-<section class="slide" data-title="左右对照">
+<!-- 离线与本地服务 -->
+<section class="slide" data-title="本地服务只增加高级功能">
   <div class="canvas nofoot psplit">
-    <div class="sp-half"><div class="sp-label">调整前</div><div class="sp-word">分散</div><div class="sp-copy">信息都在，但观看顺序不明确。</div></div>
-    <div class="sp-half"><div class="sp-label">调整后</div><div class="sp-word">聚焦</div><div class="sp-copy">保留一个决定性关系，让差异一眼可见。</div></div>
+    <div class="sp-half"><div class="sp-label">直接打开 HTML</div><div class="sp-word">演示</div><div class="sp-copy">翻页、动画、讲稿、备注和浏览器本地保存。</div></div>
+    <div class="sp-half"><div class="sp-label">启动本地服务</div><div class="sp-word">增强</div><div class="sp-copy">手机提词、原文件写回、图片、PDF 和发送版导出。</div></div>
   </div>
   <aside>
-    <div class="ns"><p>对照页的重点不是把两堆信息平铺出来，而是让观众直接看见一个变化。左右两侧应使用完全相同的比较尺度。</p></div>
-    <div class="nc"><p>可用于改版前后、问题与方案、传统路径与新路径。</p></div>
+    <div class="ns"><p>用户可以只把 Hanyu Deck 当作一个离线演示文件。本地服务提供高级功能，但不会接管演示本身。</p></div>
+    <div class="nc"><p>README 中需要始终明确这两类功能的边界。</p></div>
   </aside>
 </section>
 
-<!-- 参考骨架：数据条形 -->
-<section class="slide" data-title="数据排序">
-  <div class="canvas pbars">
-    <div class="bar-title">数据先给排序，再给数字</div>
-    <div class="bar-list">
-      <div class="bar-row"><span class="bar-name">首要因素</span><span class="bar-track"><i class="bar-fill" style="--value:86%"></i></span><span class="bar-value">86%</span></div>
-      <div class="bar-row"><span class="bar-name">第二因素</span><span class="bar-track"><i class="bar-fill" style="--value:68%"></i></span><span class="bar-value">68%</span></div>
-      <div class="bar-row"><span class="bar-name">第三因素</span><span class="bar-track"><i class="bar-fill" style="--value:43%"></i></span><span class="bar-value">43%</span></div>
-      <div class="bar-row"><span class="bar-name">其他因素</span><span class="bar-track"><i class="bar-fill" style="--value:27%"></i></span><span class="bar-value">27%</span></div>
+<!-- Skill 调用方式 -->
+<section class="slide" data-title="安装或读取 Skill 后即可调用">
+  <div class="canvas pbody">
+    <div class="bd-title">安装后，一句话即可调用 Skill</div>
+    <div class="bd-text">
+      <p>“使用 Hanyu Deck Skill，把这份内容做成一份 8 页 HTML 演示稿。”</p>
+      <p>AI 会从现有模板开始，保留讲稿、备注、导出和手机提词能力。</p>
     </div>
-    <div class="bar-meta">示例口径：2026 Q2 · n=500 · 单位：% · 来源：替换为真实来源</div>
+    <div class="bd-fig"><span>hanyu-deck<br>SKILL.md</span></div>
   </div>
   <aside>
-    <div class="ns"><p>条形先把排序讲清楚，精确数字只承担核对作用。进入页面后按顺序生长，视线自然从第一项往下移动。</p></div>
-    <div class="nc"><p>修改数据时，同时更新 --value 与右侧数字。</p></div>
+    <div class="ns"><p>Skill 已安装时，用户给出内容、场合和页数，再明确要求使用 Hanyu Deck Skill。未安装时，也可以让 AI 读取仓库里的 SKILL.md。</p><p>生成后可以继续用自然语言要求 AI 改页面，也可以把“改动的备注”直接复制给 AI。</p></div>
+    <div class="nc"><p>这里可以换成一次真实的调用示例或终端截图。</p></div>
   </aside>
 </section>
 
-<!-- 参考骨架：章节概念词 -->
-<section class="slide" data-title="章节转折">
-  <div class="canvas nofoot pword"><div class="word">聚焦</div></div>
+<!-- 产品原则 -->
+<section class="slide" data-title="手机提词只在局域网传输">
+  <div class="canvas nofoot pword"><div class="word">同一网络</div></div>
   <aside>
-    <div class="ns"><p>章节转折页只保留一个词，让讲述停一下，再进入下一段。这里不承担解释功能。</p></div>
-    <div class="nc"><p>大词建议控制在二到四个汉字。</p></div>
+    <div class="ns"><p>手机和电脑优先连接同一个 Wi-Fi。没有可用网络时，可以开启手机热点并让电脑连接。讲稿和备注只在这个局域网内传输。</p></div>
+    <div class="nc"><p>这条原则决定了 v0.1 不处理手机和电脑跨网络连接。</p></div>
   </aside>
 </section>
 
-<!-- 示例：结语（金句拆字渐显由引擎自动处理 .pend .line） -->
-<section class="slide" data-title="结语">
+<!-- 结语 -->
+<section class="slide" data-title="让 AI 从模板开始制作">
   <div class="canvas dark nofoot pend">
     <div class="ph-img"></div>
     <div class="scrim"></div>
-    <div class="line">结语金句写在这里，<br>引擎自动逐字渐显。</div>
+    <div class="line">调用 Hanyu Deck Skill，<br>从模板生成第一版。</div>
   </div>
   <aside>
-    <div class="ns"><p>用一句话收束整场的最终判断，不再展开新内容。</p></div>
-    <div class="nc"><p>结束页也可以保留个人提醒，但手机端默认仍显示讲稿。</p></div>
+    <div class="ns"><p>让 AI 编程工具使用 Hanyu Deck Skill，从模板生成第一版。用户负责内容取舍、页面结构和现场表达。</p></div>
+    <div class="nc"><p>发布前可在这里放项目地址或使用说明。</p></div>
   </aside>
 </section>
 
@@ -729,7 +739,7 @@
 // ===== 项目配置:新 deck 只改这里 =====
 var DECK = {
   name: 'Hanyu Deck', // 页脚线左侧的项目名
-  key: 'hanyu-deck-v1', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
+  key: 'hanyu-deck-v2', // localStorage 键前缀。页序变动或讲稿并入种子时升版本号
   port: 8123          // 本地提词服务端口
 };
 (function () {
@@ -1630,8 +1640,13 @@ var DECK = {
     positionThumb();
     var rawBtn = document.querySelector('#toolbar button[data-act="raw"]');
     if (rawBtn) rawBtn.classList.toggle('on', document.body.classList.contains('raw'));
-    var drawerBtn = document.querySelector('#toolbar button[data-act="drawer"]');
-    if (drawerBtn) drawerBtn.classList.toggle('on', document.body.classList.contains('notes-drawer-open'));
+    var drawerBtn = document.querySelector('#notesHead button[data-act="drawer"]');
+    if (drawerBtn) {
+      var drawerOpen = document.body.classList.contains('notes-drawer-open');
+      drawerBtn.classList.toggle('on', drawerOpen);
+      drawerBtn.dataset.tip = drawerOpen ? '收起备注' : '打开备注';
+      drawerBtn.setAttribute('aria-label', drawerOpen ? '收起备注' : '打开备注');
+    }
   }
   function setView(v) {
     view = v;
@@ -1742,6 +1757,7 @@ var DECK = {
     else if (act === 'export') setExMenu(!exMenu.classList.contains('open'));
   });
   document.getElementById('notesToggle').addEventListener('click', toggleNotes);
+  document.getElementById('btnDrawer').addEventListener('click', toggleDrawer);
   document.getElementById('drawerClose').addEventListener('click', function () { setDrawer(false); });
   document.getElementById('pdClose').addEventListener('click', closePrompter);
   pd.addEventListener('click', function (e) { if (e.target === pd) closePrompter(); });

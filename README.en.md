@@ -42,7 +42,7 @@ The core HTML works in modern browsers on macOS, Windows, and Linux. Version 0.1
 
 The bottom script panel starts collapsed to a single header row. Press `N` to expand it. Speaker scripts are plain paragraphs with no required outline structure.
 
-The Notes button opens a right-side drawer. Notes can hold revision requests, supporting information, or personal reminders. Closing the drawer only changes the view; it does not delete content.
+The sidebar icon on the right side of the bottom header opens the notes drawer. It sits next to Save as Default and History. Notes can hold revision requests, supporting information, or personal reminders. Closing the drawer only changes the view; it does not delete content.
 
 Panel and drawer state are stored separately in localStorage and scoped by `DECK.key`.
 
@@ -81,7 +81,14 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 - Double-click canvas text to edit it; blur writes the updated canvas back.
 - Canvas writes are localhost-only. The service validates page count, structure, and unsafe markup before an atomic replacement.
 
+## Repository files
+
+`scripts/create_deck.py` copies only the template, fonts, local service, and user documentation into a new Deck. The source repository also keeps development files that are not included in generated projects:
+
+- `tests/` checks page-to-note alignment, separate UI state, local-network boundaries, and agreed product labels.
+- `evals/` checks whether an AI agent follows the Skill when creating a Deck.
+- `.github/workflows/ci.yml` runs the tests after each push.
+
 ## License
 
 Original code, templates, and the skill use the [MIT License](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled font and QR-generator licenses.
-
