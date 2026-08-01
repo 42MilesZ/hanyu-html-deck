@@ -1267,7 +1267,6 @@
     <button data-act="export" data-tip="Export" aria-label="Export menu"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M12 3v12m9 0v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 8l5-5l5 5"/></g></svg><i class="caret"></i></button>
     <div id="exMenu">
       <button data-ex="script" data-tip="Download all speaker notes as one Markdown file">Export script</button>
-      <button data-ex="diff-notes" data-tip="Copy only edited notes, grouped by page for AI revision">Copy changed notes</button>
       <button data-ex="imgs" data-tip="Capture every page as PNG; requires the local service and Playwright">Export page images</button>
       <button data-ex="pdf" data-tip="Capture each page and combine the final motion states into a PDF">Export PDF</button>
       <button data-ex="send" data-tip="Build one HTML file with assets inline and private notes removed">Export standalone HTML</button>
@@ -2483,23 +2482,7 @@ var SEND_VERSION = false;
     });
     return out.join('\n\n');
   }
-  function exportChangedNotes() {
-    saveNote();
-    var lines = ['# ' + DECK.name + ' | Changed notes', ''];
-    var count = 0;
-    slides.forEach(function (s, i) {
-      var raw = localStorage.getItem(EDS[1].key + (i + 1));
-      if (!raw) return;
-      var txt = textOf(raw, EDS[1]);
-      if (!txt) return;
-      count++;
-      lines.push('## P' + (i + 1) + ' ' + (s.dataset.title || ''), '', txt, '');
-    });
-    if (!count) { alert('No notes have been changed yet.'); return; }
-    copyOut(lines.join('\n'), 'Copied changed notes from ' + count + ' page(s).');
-  }
-
-  // ===== 导出菜单:批注走剪贴板;图片/PDF 让本地提词服务代跑导出脚本(后台跑,完成弹系统通知) =====
+  // ===== 导出菜单:图片/PDF 让本地提词服务代跑导出脚本(后台跑,完成弹系统通知) =====
   var exMenu = document.getElementById('exMenu');
   var exWrap = document.getElementById('exWrap');
   // 开合同时挂到 #exWrap:小三角靠它翻转
@@ -2509,8 +2492,7 @@ var SEND_VERSION = false;
   }
   function doExport(kind) {
     setExMenu(false);
-    if (kind === 'diff-notes') exportChangedNotes();
-    else if (kind === 'script') exportScript();
+    if (kind === 'script') exportScript();
     else exportServer(kind);
   }
   function exportScript() {
@@ -2527,18 +2509,6 @@ var SEND_VERSION = false;
     a.download = (DECK.name || 'deck') + '-speaker-script.md';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-  }
-  function copyOut(md, ok) {
-    function fb() {
-      var ta = document.createElement('textarea');
-      ta.value = md; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); alert(ok); }
-      catch (e) { prompt('Copy failed. Copy manually:', md); }
-      document.body.removeChild(ta);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText)
-      navigator.clipboard.writeText(md).then(function () { alert(ok); }, fb);
-    else fb();
   }
   function exportServer(kind) {
     fetch(api('/export'), {

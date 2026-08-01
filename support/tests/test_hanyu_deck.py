@@ -45,7 +45,6 @@ class TemplateTests(unittest.TestCase):
     def test_agreed_product_labels(self):
         for label in (
             "Export script",
-            "Copy changed notes",
             "Export page images",
             "Export PDF",
             "Export standalone HTML",
@@ -54,13 +53,17 @@ class TemplateTests(unittest.TestCase):
             "chars/min",
         ):
             self.assertIn(label, self.html)
+        self.assertNotIn("Copy changed notes", self.html)
+        self.assertNotIn('data-ex="diff-notes"', self.html)
+        self.assertNotIn("function exportChangedNotes()", self.html)
+        self.assertNotIn("function copyOut(", self.html)
         self.assertNotIn(">改动的批注<", self.html)
         self.assertNotIn(">全部批注<", self.html)
 
     def test_export_menu_items_all_explained(self):
         menu = self.html.split('<div id="exMenu">', 1)[1].split("</div>", 1)[0]
         items = [line for line in menu.splitlines() if "<button" in line]
-        self.assertEqual(len(items), 6)
+        self.assertEqual(len(items), 5)
         for item in items:
             self.assertIn("data-tip=", item)
 

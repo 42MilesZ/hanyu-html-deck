@@ -44,7 +44,7 @@ It is not a slide design template. There are no themes, color schemes, or ready-
 | Step animations and hover interactions | ✓ | ✓ |
 | Edit script and notes in the browser | ✓ | ✓ |
 | Remember panel and drawer state | ✓ | ✓ |
-| Export script and copy changed notes | ✓ | ✓ |
+| Export script | ✓ | ✓ |
 | Phone teleprompter and remote | | ✓ |
 | Write script, notes, and canvas text back to source | | ✓ |
 | Export page images, PDF, and a standalone send copy | | ✓ |
@@ -113,7 +113,6 @@ Panel and drawer state are stored separately in localStorage and scoped by `DECK
 The export menu includes:
 
 - `Export script`: downloads all speaker scripts as Markdown.
-- `Copy changed notes`: copies only user-modified notes, grouped by page.
 - `Export page images`: renders one PNG per page; needs the local service and Playwright.
 - `Export PDF`: captures every page, then assembles an image-based PDF.
 - `Export standalone HTML`: one self-contained HTML file with fonts and images inlined, notes and write-back code stripped.
