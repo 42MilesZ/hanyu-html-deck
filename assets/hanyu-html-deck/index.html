@@ -184,16 +184,6 @@
   .canvas.full-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
   .canvas b, .canvas strong { font-weight: 600; }
 
-  /* 页脚线(代码页统一,JS 注入;满幅图页与带 nofoot 类的画布不注入) */
-  .pfoot {
-    position: absolute; left: 100px; right: 100px; bottom: 34px;
-    border-top: 1px solid #c9c6bc; padding-top: 12px;
-    display: flex; justify-content: space-between; align-items: flex-start;
-    font-size: 24px; font-weight: 600; letter-spacing: .14em; color: #777;
-  }
-  .pfoot .pn { background: var(--ink); color: #fff; padding: 7px 10px 7px 16px; margin-top: -12px; }
-  .canvas.dark .pfoot { border-color: #333; color: #777; }
-  .canvas.dark .pfoot .pn { background: #fff; color: #000; }
 
   /* ===== 翻页点击区(画布带 nav-narrow 类的页收窄到 4%,给悬停交互让位) ===== */
   .navzone { position: absolute; top: 0; bottom: calc(var(--nh) + 4px); width: 12%; z-index: 20; cursor: pointer; }
@@ -530,6 +520,39 @@
   @keyframes fwUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes chIn { to { opacity: 1; filter: none; } }
   @keyframes barIn { from { width: 0; } }
+
+  #prompterDialog {
+    display: none; position: fixed; inset: 0; z-index: 160;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,.68); backdrop-filter: blur(8px);
+  }
+  #prompterDialog.open { display: flex; }
+  .pd-card {
+    position: relative; width: 430px; padding: 30px;
+    background: #171717; border: 1px solid #3a3a3a; color: #d8d6d0;
+  }
+  #pdClose {
+    position: absolute; right: 18px; top: 15px; border: 0; background: none;
+    color: #777; font: 300 24px/1 "Noto Sans SC", sans-serif; cursor: pointer;
+  }
+  #pdClose:hover { color: #f0eee8; }
+  .pd-kicker { color: #777; font-size: 11px; letter-spacing: .16em; margin-bottom: 8px; }
+  .pd-card h2 { color: #f0eee8; font-size: 24px; font-weight: 300; margin-bottom: 22px; }
+  #pdQr {
+    display: flex; align-items: center; justify-content: center;
+    width: 230px; height: 230px; margin: 0 auto 16px; background: #f2f1ed; color: #333;
+    font-size: 12px; text-align: center; padding: 16px;
+  }
+  #pdQr img { width: 100%; height: 100%; display: block; }
+  #pdUrl { color: #b5b3ac; font-size: 12px; text-align: center; word-break: break-all; }
+  .pd-help { margin-top: 22px; color: #88867f; font-size: 13px; line-height: 1.65; }
+  #pdStatus { margin-top: 12px; padding-top: 12px; border-top: 1px solid #303030; color: #777; font-size: 12px; }
+  #pdStatus.ok { color: #a9c6aa; }
+
+  .cv-editing { outline: 2px dashed rgba(178, 86, 58, .7); outline-offset: 5px; cursor: text; }
+  #cvToast { position: fixed; top: 58px; left: 50%; transform: translateX(-50%); background: #2b2a28; color: #f0eee8; font-size: 13px; padding: 8px 16px; border-radius: 6px; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 120; }
+  #cvToast.on { opacity: 1; }
+  #cvToast.bad { background: #7c2f1d; }
 
   /* ============================================================
      示例页样式（替换成自己的页面时可按页面类型删换）
@@ -1215,37 +1238,7 @@
   }
 
   /* ===== 画布就地编辑:双击画布文字直接改,失焦后经本地服务写回本文件源文 ===== */
-  .cv-editing { outline: 2px dashed rgba(178, 86, 58, .7); outline-offset: 5px; cursor: text; }
-  #cvToast { position: fixed; top: 58px; left: 50%; transform: translateX(-50%); background: #2b2a28; color: #f0eee8; font-size: 13px; padding: 8px 16px; border-radius: 6px; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 120; }
-  #cvToast.on { opacity: 1; }
-  #cvToast.bad { background: #7c2f1d; }
-  #prompterDialog {
-    display: none; position: fixed; inset: 0; z-index: 160;
-    align-items: center; justify-content: center;
-    background: rgba(0,0,0,.68); backdrop-filter: blur(8px);
-  }
-  #prompterDialog.open { display: flex; }
-  .pd-card {
-    position: relative; width: 430px; padding: 30px;
-    background: #171717; border: 1px solid #3a3a3a; color: #d8d6d0;
-  }
-  #pdClose {
-    position: absolute; right: 18px; top: 15px; border: 0; background: none;
-    color: #777; font: 300 24px/1 "Noto Sans SC", sans-serif; cursor: pointer;
-  }
-  #pdClose:hover { color: #f0eee8; }
-  .pd-kicker { color: #777; font-size: 11px; letter-spacing: .16em; margin-bottom: 8px; }
-  .pd-card h2 { color: #f0eee8; font-size: 24px; font-weight: 300; margin-bottom: 22px; }
-  #pdQr {
-    display: flex; align-items: center; justify-content: center;
-    width: 230px; height: 230px; margin: 0 auto 16px; background: #f2f1ed; color: #333;
-    font-size: 12px; text-align: center; padding: 16px;
-  }
-  #pdQr img { width: 100%; height: 100%; display: block; }
-  #pdUrl { color: #b5b3ac; font-size: 12px; text-align: center; word-break: break-all; }
-  .pd-help { margin-top: 22px; color: #88867f; font-size: 13px; line-height: 1.65; }
-  #pdStatus { margin-top: 12px; padding-top: 12px; border-top: 1px solid #303030; color: #777; font-size: 12px; }
-  #pdStatus.ok { color: #a9c6aa; }
+
   @media (prefers-reduced-motion: reduce) {
     body, #overview, #notesPanel, #notesToggle, #segView .thumb,
     body.notes-anim #stage, body.notes-anim .navzone,
@@ -1398,7 +1391,7 @@
     <div class="v-caption"><span>页面、讲稿、备注，自动同步回文件。</span><small>Every edit returns to the source</small></div>
   </div>
   <aside>
-    <div class="ns"><p>看到不合适的文字，直接在页面上改。讲稿和备注也能在同一个界面里调整。</p><p>When a line feels wrong, edit it on the page. The script and notes live in the same workspace.</p><p>启动本地演示台后，修改会自动回到源文件，改完就是下一版。</p><p>With the local service running, every change writes back to the source. The moment you finish editing, the next version is ready.</p></div>
+    <div class="ns"><p>看到不合适的文字，直接在页面上改。讲稿和备注也能在同一个界面里调整。</p><p>When a line feels wrong, edit it on the page. The script and notes live in the same workspace.</p><p>启动本地演示台后，修改会自动回到源文件，改完就是下一版。</p></div>
     <div class="nc"><p>页面自动演示“旧文案划掉—新文案出现—写回完成”，适合直接录屏。</p></div>
   </aside>
 </section>
@@ -1520,17 +1513,9 @@ var SEND_VERSION = false;
   var total = slides.length;
   var cur = 0;
 
-  // 把模板里的页面搬进舞台;代码页统一注入页脚线(满幅图页与带 nofoot 类的画布跳过)
+  // 把模板里的页面搬进舞台（不注入页脚线：页脚与页码按项目要求去掉）
   slides.forEach(function (s, i) {
     s.dataset.page = i + 1;
-    var c = s.querySelector('.canvas');
-    if (c && !c.classList.contains('full-img') && !c.classList.contains('nofoot')) {
-      var f = document.createElement('div');
-      f.className = 'pfoot';
-      f.innerHTML = '<span>' + DECK.name + '</span><span class="pn">' +
-        String(i + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0') + '</span>';
-      c.appendChild(f);
-    }
     stage.appendChild(s);
   });
   slides = Array.prototype.slice.call(stage.querySelectorAll('.slide'));
@@ -2267,7 +2252,6 @@ var SEND_VERSION = false;
         if (!el.className) el.removeAttribute('class');
       });
       // 页脚线由引擎进页时注入,不属于源文:写回前摘掉,否则每存一次就在源文里多积一条
-      Array.prototype.slice.call(clone.querySelectorAll('.pfoot')).forEach(function (f) { f.remove(); });
       // 金句逐字动画把文本拆成了 .ch 字符 span:写回前还原成纯文本,不把几百个 span 烙进源文件
       Array.prototype.slice.call(clone.querySelectorAll('span.ch')).forEach(function (s) {
         s.replaceWith(document.createTextNode(s.textContent));
