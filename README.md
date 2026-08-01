@@ -25,7 +25,7 @@
   </tr>
   <tr>
     <td width="50%" align="center"><img src="support/readme-assets/closing.png" alt="演示封尾" width="420"><br><sub>演示封尾 · Closing slide</sub></td>
-    <td width="50%" align="center"><img src="support/readme-assets/phone-prompter.png" alt="手机提词与遥控" width="180"><br><sub>手机提词与遥控 · Phone prompt &amp; control</sub></td>
+    <td width="50%" align="center"><img src="support/readme-assets/phone-prompter.png" alt="手机提词与遥控" width="420"><br><sub>手机提词与遥控 · Phone prompt &amp; control</sub></td>
   </tr>
 </table>
 

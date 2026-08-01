@@ -25,7 +25,7 @@ It is not a slide design template. There are no themes, color schemes, or ready-
   </tr>
   <tr>
     <td width="50%" align="center"><img src="support/readme-assets/closing.png" alt="Closing slide" width="420"><br><sub>Closing slide · 演示封尾</sub></td>
-    <td width="50%" align="center"><img src="support/readme-assets/phone-prompter.png" alt="Phone teleprompter and remote" width="180"><br><sub>Phone prompt &amp; control · 手机提词与遥控</sub></td>
+    <td width="50%" align="center"><img src="support/readme-assets/phone-prompter.png" alt="Phone teleprompter and remote" width="420"><br><sub>Phone prompt &amp; control · 手机提词与遥控</sub></td>
   </tr>
 </table>
 
