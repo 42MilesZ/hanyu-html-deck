@@ -2462,10 +2462,10 @@ var SEND_VERSION = false;
       ovGrid.appendChild(item);
     });
     requestAnimationFrame(function () {
-      var w = ovGrid.querySelector('.thumbWrap').getBoundingClientRect().width;
-      ovGrid.style.setProperty('--ovscale', w / 1920);
+      // 总览自身正从 .95 放大到 1；getBoundingClientRect 会把这层动画缩放算进去，
+      // 导致缩略图永久小 5%、从右侧和底部露出浅色底。clientWidth 只取布局宽度。
       ovGrid.querySelectorAll('.thumbWrap').forEach(function (tw) {
-        tw.style.setProperty('--ovscale', tw.getBoundingClientRect().width / 1920);
+        tw.style.setProperty('--ovscale', tw.clientWidth / 1920);
       });
     });
   }

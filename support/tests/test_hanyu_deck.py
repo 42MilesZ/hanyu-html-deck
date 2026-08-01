@@ -199,6 +199,13 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("requestAnimationFrame(function () { setView('default'); })", self.html)
         self.assertIn("prefers-reduced-motion: reduce", self.html)
 
+    def test_overview_thumbnail_scale_ignores_entrance_transform(self):
+        overview = self.html.split("function buildOverview()", 1)[1].split(
+            "// ===== 讲稿与备注导出 =====", 1
+        )[0]
+        self.assertIn("tw.clientWidth / 1920", overview)
+        self.assertNotRegex(overview, r"tw\.getBoundingClientRect\s*\(")
+
     def test_rate_button_uses_the_shared_muted_background(self):
         rule = re.search(r"#rateBtn\s*\{([^}]*)\}", self.html)
         self.assertIsNotNone(rule)
