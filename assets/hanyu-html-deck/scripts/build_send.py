@@ -11,6 +11,8 @@ import subprocess
 import sys
 import tempfile
 
+from deck_source import strip_archived_slides
+
 BASE = pathlib.Path(__file__).resolve().parent.parent
 TMP = pathlib.Path(tempfile.gettempdir()) / "deck-export" / "send-img"
 TMP.mkdir(parents=True, exist_ok=True)
@@ -42,6 +44,12 @@ def strip_blocks(document, selector):
         removed.append(document[inner : end - len("</div>")])
         document = document[: opening.start()] + document[end:]
 
+
+# 0) 归档页保留在工作源文件里，但不进入任何对外交付。
+try:
+    html, n_archived = strip_archived_slides(html)
+except ValueError as error:
+    fail("归档页结构异常：%s" % error)
 
 # 1) 剥备注/内部注记。.nc 是当前模板；.na 是旧模板兼容。
 html, n_nc, texts_nc = strip_blocks(html, "nc")
@@ -118,6 +126,6 @@ if left:
 out = BASE / "发送版.html"
 out.write_text(html, encoding="utf-8")
 print(
-    "备注剥除 %d 处｜画布编辑剥除 %d 处｜发送版标记已置｜图片字体内联 %d 个｜原始 %dMB｜成品 %dMB"
-    % (n_private, n_cvedit, len(refs), total // 1024 // 1024, out.stat().st_size // 1024 // 1024)
+    "归档页剥除 %d 页｜备注剥除 %d 处｜画布编辑剥除 %d 处｜发送版标记已置｜图片字体内联 %d 个｜原始 %dMB｜成品 %dMB"
+    % (n_archived, n_private, n_cvedit, len(refs), total // 1024 // 1024, out.stat().st_size // 1024 // 1024)
 )

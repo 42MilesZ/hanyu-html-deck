@@ -141,6 +141,7 @@
     var frame = shown === state.page && state.steps > 0
       ? '/steps/' + shown + '-' + state.step + '.jpg'
       : '/thumbs/' + shown + '.jpg';
+    $('thumb').style.visibility = '';
     $('thumb').src = api(frame);
     content.innerHTML = item
       ? (tab === 'script' ? item.html : item.comm) || '<p id="empty">This page has no ' + (tab === 'script' ? 'script' : 'notes') + '.</p>'
@@ -151,6 +152,8 @@
     requestAnimationFrame(restoreScroll);
     buildOverview();
   }
+  $('thumb').addEventListener('error', function () { this.style.visibility = 'hidden'; });
+  $('thumb').addEventListener('load', function () { this.style.visibility = ''; });
   function loadNotes() {
     fetch(api('/notes.json')).then(function (response) { return response.json(); }).then(function (next) {
       if (next.notes) {
@@ -181,6 +184,8 @@
       button.className = 'page' + (index + 1 === shown ? ' now' : '');
       var img = document.createElement('img');
       img.alt = '';
+      img.addEventListener('error', function () { this.style.visibility = 'hidden'; });
+      img.addEventListener('load', function () { this.style.visibility = ''; });
       img.src = api('/thumbs/' + (index + 1) + '.jpg');
       var label = document.createElement('span');
       label.textContent = 'P' + (index + 1) + '　' + (item.title || '');

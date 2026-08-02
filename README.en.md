@@ -41,6 +41,7 @@ It is not a slide design template. There are no themes, color schemes, or ready-
 | Feature | HTML only | Local service |
 |---|:---:|:---:|
 | Slide navigation, overview, presentation mode | ✓ | ✓ |
+| Archive, browse, and restore slides from overview | ✓ | ✓ |
 | Step animations and hover interactions | ✓ | ✓ |
 | Edit script and notes in the browser | ✓ | ✓ |
 | Remember panel and drawer state | ✓ | ✓ |
@@ -162,6 +163,12 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 - `N`: expand or collapse the script panel
 - `R`: 1:1 pixel view
 - `Esc`: leave the current mode
+
+## Slide archive
+
+In overview (`O`), every thumbnail has an archive action. Archived slides stay in the source file but are excluded from navigation, numbering, the timeline, phone prompting, and exports. The archive box in the upper-right lets you browse and restore them, and each action can be undone. At least one current slide is always kept.
+
+Offline changes are stored in the browser; with the local service running, the state is written safely back to `index.html`. A stale browser cache will not overwrite a newer source state from another session. Re-export page images or step frames after changing the archive sequence to refresh phone previews.
 
 ## Repository files
 

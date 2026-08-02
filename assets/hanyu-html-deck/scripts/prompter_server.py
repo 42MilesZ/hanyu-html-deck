@@ -23,6 +23,8 @@ import urllib.parse
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from deck_source import archived_slide_pages, set_archived_slides
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 INDEX_FILE = os.path.join(ROOT, "index.html")
@@ -32,6 +34,8 @@ STATE_FILE = os.path.join(HERE, ".prompter-state.json")
 PAGES_DIR = os.path.join(ROOT, "导出图片")
 THUMB_DIR = os.path.join(HERE, ".prompter-thumbs")
 STEPS_DIR = os.path.join(HERE, ".prompter-steps")
+THUMB_STATE_FILE = os.path.join(HERE, ".prompter-thumb-state.json")
+STEP_STATE_FILE = os.path.join(HERE, ".prompter-step-state.json")
 PORT = int(os.environ.get("HANYU_DECK_PORT") or 8123)
 # 访问凭据:保护写回与手机侧。浏览器里的任意网页都能伪装成本地文件(Origin: null),
 # 光靠"来自本机"判断挡不住它,故写回也要求凭据——网页拿不到它。
@@ -155,7 +159,26 @@ def page_sources():
     return result
 
 
+def export_state_matches(path):
+    """Do cached previews use the same archive sequence as the current source?"""
+    try:
+        with open(INDEX_FILE, encoding="utf-8") as handle:
+            current = archived_slide_pages(handle.read())
+    except (OSError, ValueError):
+        return False
+    if not os.path.exists(path):
+        return not current  # Legacy all-current exports had no manifest and are still aligned.
+    try:
+        with open(path, encoding="utf-8") as handle:
+            exported = json.load(handle).get("archived") or []
+        return [int(page) for page in exported] == current
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return False
+
+
 def thumb_path(number):
+    if not export_state_matches(THUMB_STATE_FILE):
+        return None
     source = page_sources().get(number)
     if not source:
         return None
@@ -202,9 +225,20 @@ def sync_notes_page(page, fragment, selector):
     field = "html" if selector == "ns" else "comm"
     with lock:
         pages = (notes or {}).get("pages") or []
-        if page > len(pages):
+        target = None
+        for index, item in enumerate(pages, 1):
+            if not isinstance(item, dict):
+                continue
+            try:
+                source = int(item.get("source") or item.get("n") or index)
+            except (TypeError, ValueError):
+                continue
+            if source == page:
+                target = item
+                break
+        if target is None:
             return
-        pages[page - 1][field] = fragment
+        target[field] = fragment
         raw = json.dumps(notes, ensure_ascii=False)
         state["nv"] = hashlib.md5(raw.encode()).hexdigest()[:8]
         state["seq"] += 1
@@ -418,6 +452,24 @@ def save_canvas(page, fragment, dom_total):
     return True, ""
 
 
+def save_archive(archived_pages, dom_total):
+    """Write the complete archive set atomically; pages themselves remain in the source."""
+    with seed_lock:
+        with open(INDEX_FILE, encoding="utf-8") as handle:
+            document = handle.read()
+        try:
+            updated = set_archived_slides(document, archived_pages, dom_total)
+        except (TypeError, ValueError) as error:
+            return False, str(error)
+        if updated == document:
+            return True, ""
+        tmp = INDEX_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(updated)
+        os.replace(tmp, INDEX_FILE)
+    return True, ""
+
+
 def notify(title, message):
     if sys.platform != "darwin":
         return
@@ -457,7 +509,7 @@ def run_export(kind):
         export_busy = False
 
 
-LOCAL_ONLY = ("/canvas", "/seed", "/export", "/notes", "/flip", "/info", "/qr.svg")
+LOCAL_ONLY = ("/archive", "/canvas", "/seed", "/export", "/notes", "/flip", "/info", "/qr.svg")
 PHONE_PATHS = ("/", "/p", "/notes.json", "/events", "/goto", "/phone-heartbeat")
 MAX_SSE_CLIENTS = 8
 
@@ -609,6 +661,9 @@ class Handler(BaseHTTPRequestHandler):
             with open(target, "rb") as handle:
                 self.send_bytes(handle.read(), "image/jpeg")
         elif re.match(r"^/steps/\d+-\d+\.jpg$", path):
+            if not export_state_matches(STEP_STATE_FILE):
+                self.send_json({"err": "step frames need export"}, 404)
+                return
             target = os.path.join(STEPS_DIR, os.path.basename(path))
             if not os.path.exists(target):
                 self.send_json({"err": "no step frame"}, 404)
@@ -766,6 +821,17 @@ class Handler(BaseHTTPRequestHandler):
                 return
             ok, error = save_canvas(int(body.get("page") or 0), fragment, dom_total)
             self.send_json({"ok": 1} if ok else {"err": error}, 200 if ok else 500)
+        elif path == "/archive":
+            archived = body.get("archived")
+            try:
+                dom_total = int(body.get("total") or 0)
+            except (TypeError, ValueError):
+                dom_total = 0
+            if not isinstance(archived, list) or dom_total < 1:
+                self.send_json({"err": "参数不对"}, 400)
+                return
+            ok, error = save_archive(archived, dom_total)
+            self.send_json({"ok": 1} if ok else {"err": error}, 200 if ok else 409)
         elif path == "/export":
             global export_busy
             kind = body.get("what") or "imgs"

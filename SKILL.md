@@ -32,6 +32,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 - 为整套内容选择一个由主题产生的视觉母题，让它跨页变形。入场负责组织讲解顺序，悬停负责补充反馈；动画充分但不散乱，静止时仍能读懂。
 - 步进只点亮当前内容，跨页动效保持对象的位置或比例关系。
 - 总览和导出必须显示动画的静态终态：入场动画只挂在 `.slide.on` 下，并为 `.ovItem` 与 `body.exporting` 补终态覆盖。
+- 总览缩略图右上角提供归档；归档页保留在源 DOM，以 `data-archived="1"` 标记，但必须从翻页、页码、时间轴、手机提词与导出排除。归档箱可恢复，且至少保留一张当前页。
 - 入场淡入不要和步进点亮争同一个 `opacity`：淡入挂容器，点亮留给行本身。
 - 工具图标统一使用 Lucide 线性 SVG，描边 1.5；悬停 0.2 秒后显示深灰色解释。
 
@@ -64,6 +65,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 - 讲稿面板默认收起到表头；备注抽屉默认关闭。
 - 两种状态按 `DECK.key` 分别写入 localStorage，不互相覆盖。
+- 归档页码使用 `<key>.archived`，对应源文件基线使用 `<key>.archived.source`；只有基线仍匹配当前源文件时才采用浏览器缓存，避免旧会话反向覆盖新状态。
 - localStorage 一律走模板内的安全包装，不裸调用：禁用存储或配额写满时要降级，不能白屏。
 - 讲稿与备注各自维护版本历史（`.h.` / `.hc.` 前缀），不共用一条时间线。
 - 讲稿与备注的输入立即保存到浏览器，停止输入 3 秒后自动写回源文件，不设保存按钮；两栏共用表头的 `Saved` / `Saving…` / `Offline` / `Reconnect` 状态。
@@ -75,7 +77,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 
 本地服务负责手机提词、遥控、源文件写回、图片/PDF/发送版导出。修改这部分时保留以下边界：
 
-- 写侧与桌面控制端点（`/seed`、`/canvas`、`/export`、`/notes`、`/flip`、`/info`、`/qr.svg`）要求回环请求且携带访问凭据——浏览器里的任意网页都能伪装成本地文件（`Origin: null`），只看「来自本机」挡不住它。
+- 写侧与桌面控制端点（`/archive`、`/seed`、`/canvas`、`/export`、`/notes`、`/flip`、`/info`、`/qr.svg`）要求回环请求且携带访问凭据——浏览器里的任意网页都能伪装成本地文件（`Origin: null`），只看「来自本机」挡不住它。
 - 凭据由服务启动时写进 `index.html` 的 `/* HANYU_TOKEN */` 锚点行、停止时清空。不要改成经打开地址传递：macOS 的 `open` 会丢掉 `file://` URL 上的 query 与 fragment，页面永远拿不到。
 - 手机侧端点（`/p`、`/notes.json`、`/events`、`/thumbs`、`/steps`、`/goto`、`/phone-heartbeat`）接受回环或携带凭据；凭据只经二维码交给手机，接口不回传含凭据的链接。
 - 所有请求校验 `Host` 是否指向本机（堵 DNS rebinding），并只回显白名单内的 `Origin`；未登记的路径默认拒绝。
@@ -90,4 +92,5 @@ description: Use when creating or revising a local-first HTML presentation with 
 2. 在桌面视口检查默认、总览、演示、讲稿展开、备注抽屉，并确认控制台无报错。
 3. 在手机视口检查讲稿/备注切换、翻页、自由浏览和滚动位置。
 4. 启动本地服务，验证二维码、事件流、以及非回环请求与注入载荷都被拒绝。
-5. 导出发送版，确认 `.nc` 备注、画布写回代码都已剥除，且不再向本地服务发请求。
+5. 归档一页后确认正常翻页、手机提词与各类导出都跳过它，恢复后顺序复原。
+6. 导出发送版，确认归档页、`.nc` 备注、画布写回代码都已剥除，且不再向本地服务发请求。

@@ -395,7 +395,10 @@
   body.send #exMenu button[data-ex="send"],
   body.send #saveState,
   body.send #btnDrawer,
-  body.send #notesPanel .col.comm { display: none; }
+  body.send #notesPanel .col.comm,
+  body.send #ovArchiveToggle,
+  body.send .ovArchiveAction,
+  body.send #archiveToast { display: none; }
   body.present #notesPanel {
     opacity: 0; transform: translateY(20px); visibility: hidden; pointer-events: none;
     transition: opacity .2s ease, transform .36s var(--ease-ui), visibility 0s linear .36s;
@@ -488,8 +491,25 @@
     opacity: 1; visibility: visible; pointer-events: auto; transform: scale(1);
     transition: opacity .38s ease-in-out, transform .5s var(--ease-view), visibility 0s;
   }
+  #ovBar {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1500px; min-height: 34px; margin: 0 auto 18px;
+    color: #8a8880; font-size: 12px; letter-spacing: .06em;
+  }
+  #ovTitle { font-weight: 300; }
+  #ovArchiveToggle {
+    display: none; align-items: center; gap: 7px; min-width: 34px; height: 34px;
+    padding: 0 9px; border: 1px solid #343434; background: #121212; color: #aaa8a1;
+    cursor: pointer; font: inherit; transition: color .18s ease, background .18s ease, transform .18s ease;
+  }
+  #ovArchiveToggle.has-items { display: inline-flex; }
+  #ovArchiveToggle:hover, #ovArchiveToggle:focus-visible, #ovArchiveToggle.on { background: #e8e6df; color: #111; }
+  #ovArchiveToggle svg, .ovArchiveAction svg { width: 17px; height: 17px; flex: none; }
+  #ovArchiveToggle.bump { animation: ovCountBump .26s ease; }
   #ovGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; max-width: 1500px; margin: 0 auto; }
   .ovItem { cursor: pointer; }
+  .ovItem.archived { cursor: default; }
+  .ovItem.archiving { pointer-events: none; animation: ovArchiveAway .22s ease forwards; }
   .ovItem .thumbWrap {
     width: 100%; aspect-ratio: 16/9; overflow: hidden;
     outline: 1px solid #333; background: var(--paper); position: relative;
@@ -501,6 +521,32 @@
   }
   .ovItem .cap { color: #8a8880; font-weight: 300; font-size: 12px; letter-spacing: .06em; margin-top: 7px; text-align: center; }
   .ovItem.now .cap { color: #f0eee8; font-weight: 600; }
+  .ovArchiveAction {
+    position: absolute; top: 7px; right: 7px; z-index: 3;
+    display: grid; place-items: center; width: 32px; height: 32px;
+    border: 1px solid rgba(255,255,255,.18); background: rgba(18,18,18,.64); color: #d0cec7;
+    opacity: .28; cursor: pointer; backdrop-filter: blur(8px);
+    transition: opacity .18s ease, color .18s ease, background .18s ease, transform .18s ease;
+  }
+  .ovItem:hover .ovArchiveAction { opacity: .82; }
+  .ovArchiveAction:hover, .ovArchiveAction:focus-visible { opacity: 1; color: #111; background: #e8e6df; transform: translateY(-1px); }
+  @media (hover: none) { .ovArchiveAction { opacity: .72; } }
+  #ovEmpty {
+    display: none; max-width: 1500px; margin: 72px auto 0; padding-top: 20px;
+    border-top: 1px solid #343434; color: #77756e; font-size: 13px; letter-spacing: .04em;
+  }
+  #ovEmpty.show { display: block; }
+  #archiveToast {
+    position: fixed; left: 50%; bottom: 28px; z-index: 170; transform: translate(-50%, 16px);
+    display: flex; align-items: center; gap: 16px; min-height: 38px; padding: 0 12px 0 14px;
+    border: 1px solid #343434; background: #121212; color: #c8c6bf;
+    font-size: 12px; letter-spacing: .03em; opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+  }
+  #archiveToast.show { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0); transition: opacity .2s ease, transform .2s ease, visibility 0s; }
+  #archiveToast button { border: 0; background: none; color: #f0eee8; font: inherit; font-weight: 600; cursor: pointer; padding: 5px 3px; }
+  @keyframes ovArchiveAway { to { opacity: 0; transform: scale(.82); } }
+  @keyframes ovCountBump { 50% { transform: scale(1.08); } }
 
   /* ============================================================
      全局入场/出场:每页画布淡入;旧页绝对定位叠在新页上 450ms 淡出。
@@ -1242,7 +1288,8 @@
   @media (prefers-reduced-motion: reduce) {
     body, #overview, #notesPanel, #notesToggle, #segView .thumb,
     body.notes-anim #stage, body.notes-anim .navzone,
-    body.view-anim #stage, body.view-anim #stage .slide.current { transition: none !important; }
+    body.view-anim #stage, body.view-anim #stage .slide.current,
+    .ovItem.archiving, #ovArchiveToggle.bump, #archiveToast { animation: none !important; transition: none !important; }
   }
 </style>
 </head>
@@ -1319,9 +1366,17 @@
   <div id="histMenu"></div>
 </div>
 
-<div id="overview"><div id="ovGrid"></div></div>
+<div id="overview">
+  <div id="ovBar">
+    <span id="ovTitle">Current pages</span>
+    <button id="ovArchiveToggle" data-tip="Archived pages" aria-label="Show archived pages" aria-pressed="false"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8m-10 4h4"></path></g></svg><span id="ovArchiveCount">0</span></button>
+  </div>
+  <div id="ovGrid"></div>
+  <div id="ovEmpty">No archived pages.</div>
+</div>
 <div id="progress"><div id="progressBar"></div></div>
 <div id="cvToast"></div>
+<div id="archiveToast" role="status" aria-live="polite"><span id="archiveToastText"></span><button id="archiveUndo" type="button">Undo</button></div>
 <div id="prompterDialog" role="dialog" aria-modal="true" aria-label="Phone prompter">
   <div class="pd-card">
     <button id="pdClose" aria-label="Close">×</button>
@@ -1520,10 +1575,67 @@ var SEND_VERSION = false;
   });
   slides = Array.prototype.slice.call(stage.querySelectorAll('.slide'));
 
+  // 归档页保留在源 DOM 中,只从当前演示序列排除。浏览器状态保证离线可用；
+  // 本地服务运行时再把同一列表原子写回 section 的 data-archived 属性,供导出脚本读取。
+  var ARCHIVE_KEY = DECK.key + '.archived';
+  var ARCHIVE_SOURCE_KEY = ARCHIVE_KEY + '.source';
+  var archiveNeedsWrite = false;
+  function archivedSourcePages() {
+    var out = [];
+    slides.forEach(function (s, i) { if (s.dataset.archived === '1') out.push(i + 1); });
+    return out;
+  }
+  function loadArchiveState() {
+    // 发送版已在构建阶段物理剥掉归档页，不读取工作浏览器遗留的归档覆盖。
+    var sourcePages = archivedSourcePages();
+    var stored = SEND_VERSION ? null : localStorage.getItem(ARCHIVE_KEY);
+    var storedSource = SEND_VERSION ? null : localStorage.getItem(ARCHIVE_SOURCE_KEY);
+    var pages = null;
+    var baseline = null;
+    if (!SEND_VERSION && stored !== null) {
+      try { pages = JSON.parse(stored); } catch (e) { pages = null; }
+    }
+    if (!SEND_VERSION && storedSource !== null) {
+      try { baseline = JSON.parse(storedSource); } catch (e) { baseline = null; }
+    }
+    // 只有本地状态基于当前这版源文件时才继续采用；源文件已被另一会话修改时以源文件为准，
+    // 防止仅仅打开一个带旧 localStorage 的浏览器就把更新后的归档状态反向覆盖。
+    var sourceJSON = JSON.stringify(sourcePages);
+    var useStored = Array.isArray(pages) && Array.isArray(baseline) && JSON.stringify(baseline) === sourceJSON;
+    if (!useStored) pages = sourcePages;
+    var set = {};
+    pages.forEach(function (n) { n = parseInt(n, 10); if (n >= 1 && n <= total) set[n] = 1; });
+    // 损坏的存储不能让整套 deck 变成空演示；至少保留源顺序第一张。
+    if (Object.keys(set).length >= total) delete set[1];
+    slides.forEach(function (s, i) {
+      if (set[i + 1]) s.dataset.archived = '1';
+      else delete s.dataset.archived;
+    });
+    if (!SEND_VERSION) {
+      var resolved = archivedSourcePages();
+      archiveNeedsWrite = useStored && JSON.stringify(resolved) !== sourceJSON;
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify(resolved));
+      localStorage.setItem(ARCHIVE_SOURCE_KEY, sourceJSON);
+    }
+  }
+  function isArchived(i) { return !!slides[i] && slides[i].dataset.archived === '1'; }
+  function activeIndices() {
+    var out = [];
+    slides.forEach(function (_s, i) { if (!isArchived(i)) out.push(i); });
+    return out;
+  }
+  function activePosition(i) { return activeIndices().indexOf(i); }
+  function activeTotal() { return activeIndices().length; }
+  function sourceAtActivePosition(pos) {
+    var active = activeIndices();
+    return active[Math.min(Math.max(pos, 0), active.length - 1)];
+  }
+  loadArchiveState();
+
   var pnCur = document.getElementById('pnCur');
   var pnSep = document.getElementById('pnSep');
   var pageTitle = document.getElementById('pageTitle');
-  pnSep.textContent = '/ ' + total;
+  pnSep.textContent = '/ ' + activeTotal();
 
   // 页码数字滚动切换:新数字沿翻页方向滑入、旧数字反向滑出(不闪变)
   function rollNum(box, text, dir) {
@@ -1549,6 +1661,13 @@ var SEND_VERSION = false;
   var edScript = document.getElementById('edScript');
   var overview = document.getElementById('overview');
   var ovGrid = document.getElementById('ovGrid');
+  var ovTitle = document.getElementById('ovTitle');
+  var ovArchiveToggle = document.getElementById('ovArchiveToggle');
+  var ovArchiveCount = document.getElementById('ovArchiveCount');
+  var ovEmpty = document.getElementById('ovEmpty');
+  var archiveToast = document.getElementById('archiveToast');
+  var archiveToastText = document.getElementById('archiveToastText');
+  var archiveUndo = document.getElementById('archiveUndo');
   var edComm = document.getElementById('edComm');
   var EDS = [
     { key: DECK.key + '.s.', hkey: DECK.key + '.h.', el: edScript, sel: '.ns', label: 'Script', canon: canonNs },
@@ -1907,17 +2026,21 @@ var SEND_VERSION = false;
     return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   }
   // 时间轴:游标停在「讲到本页开头」的累计时间点,翻页/改稿/换语速时缓动滑移
+  var tlActive = [];
   function updateTime() {
     var secs = [];
-    for (var i = 0; i < total; i++) {
+    tlActive = activeIndices();
+    tlActive.forEach(function (i) {
       var html = i === cur ? edScript.innerHTML :
         (localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0]));
       secs.push(estSec(html));
-    }
+    });
     var totalSec = secs.reduce(function (a, b) { return a + b; }, 0) || 1;
     var cum = 0, cums = [0];
     secs.forEach(function (s) { cum += s; cums.push(cum); });
-    if (!ticks.length) for (var j = 1; j < total; j++) {
+    ticks.forEach(function (t) { t.remove(); });
+    ticks = [];
+    for (var j = 1; j < tlActive.length; j++) {
       var t = document.createElement('div');
       t.className = 'tick';
       tlIn.appendChild(t);
@@ -1925,16 +2048,17 @@ var SEND_VERSION = false;
     }
     ticks.forEach(function (t, j) { t.style.left = (cums[j + 1] / totalSec * 100) + '%'; });
     tlIn.style.width = (RATE_MIN / rate * 100) + '%'; // 最慢档顶满,轴长正比于该语速下的总时长
-    var pos = cums[cur] / totalSec * 100;
+    var curPos = Math.max(activePosition(cur), 0);
+    var pos = cums[curPos] / totalSec * 100;
     tlFill.style.width = pos + '%';
     tlCur.style.left = pos + '%';
-    tlCur.style.width = (secs[cur] / totalSec * 100) + '%';
+    tlCur.style.width = (secs[curPos] / totalSec * 100) + '%';
     tlHead.style.left = pos + '%';
     tlNow.style.left = Math.min(Math.max(pos, 2.5), 88) + '%';
-    tlNow.textContent = fmtClock(cums[cur]);
+    tlNow.textContent = fmtClock(cums[curPos]);
     // 本页时长标注在当前页高亮段的中点下方(与游标上方的累计时间上下错层,不相撞)
-    tlSec.style.left = Math.min(Math.max(pos + secs[cur] / totalSec * 50, 2.5), 95) + '%';
-    tlSec.textContent = fmtClock(secs[cur]);
+    tlSec.style.left = Math.min(Math.max(pos + secs[curPos] / totalSec * 50, 2.5), 95) + '%';
+    tlSec.textContent = fmtClock(secs[curPos]);
     tlTot.textContent = fmtClock(totalSec);
     tlCums = cums; tlTotSec = totalSec;   // 悬停预览/拖动跳页用同一套页时长映射
   }
@@ -1948,22 +2072,23 @@ var SEND_VERSION = false;
   function tlPageAt(clientX) {
     var r = tlIn.getBoundingClientRect();
     var t = Math.min(Math.max((clientX - r.left) / r.width, 0), 0.999) * tlTotSec;
-    for (var i = 0; i < total; i++) if (t < tlCums[i + 1]) return i;
-    return total - 1;
+    for (var i = 0; i < tlActive.length; i++) if (t < tlCums[i + 1]) return i;
+    return Math.max(tlActive.length - 1, 0);
   }
   var tlHov = document.getElementById('tlHov');
   function tlPvShow(clientX) {
-    var i = tlPageAt(clientX);
-    if (i !== tlPvPage) {
-      tlPvPage = i;
-      tlPvLbl.textContent = 'P' + (i + 1) + ' · ' + (slides[i].dataset.title || '');
+    var pos = tlPageAt(clientX);
+    var i = tlActive[pos];
+    if (pos !== tlPvPage) {
+      tlPvPage = pos;
+      tlPvLbl.textContent = 'P' + (pos + 1) + ' · ' + (slides[i].dataset.title || '');
       tlPvImg.style.display = '';
-      tlPvImg.src = api('/thumbs/' + (i + 1) + '.jpg');   // 服务没开时 onerror 隐藏图,只留页码标题
-      tlHov.style.left = (tlCums[i] / tlTotSec * 100) + '%';
-      tlHov.style.width = ((tlCums[i + 1] - tlCums[i]) / tlTotSec * 100) + '%';
+      tlPvImg.src = api('/thumbs/' + (pos + 1) + '.jpg');   // 服务没开时 onerror 隐藏图,只留页码标题
+      tlHov.style.left = (tlCums[pos] / tlTotSec * 100) + '%';
+      tlHov.style.width = ((tlCums[pos + 1] - tlCums[pos]) / tlTotSec * 100) + '%';
     }
     // 已讲过区段用与亮线一致的高亮度,未讲过用柔和档,视觉状态不打架
-    tlHov.style.background = 'rgba(240,238,232,' + (i < cur ? '.75' : '.35') + ')';
+    tlHov.style.background = 'rgba(240,238,232,' + (pos < activePosition(cur) ? '.75' : '.35') + ')';
     tlHov.style.opacity = 1;
     var r = tl.getBoundingClientRect();
     tlPv.style.left = Math.min(Math.max(clientX, r.left + 100), r.left + r.width - 100) + 'px';
@@ -1978,7 +2103,7 @@ var SEND_VERSION = false;
   }
   tlPvImg.addEventListener('error', function () { tlPvImg.style.display = 'none'; });
   function tlJump(clientX) {
-    var i = tlPageAt(clientX);
+    var i = tlActive[tlPageAt(clientX)];
     if (i !== cur) go(i);
   }
   tl.addEventListener('pointermove', function (e) {
@@ -2367,8 +2492,10 @@ var SEND_VERSION = false;
   var autoTimer = null;
   var leaveTimer = null, leavingEl = null;
   function go(i, skipSave, skipMotion) {
-    if (i < 0 || i >= total) return;
-    var dirn = i >= cur ? 1 : -1;
+    if (i < 0 || i >= total || isArchived(i)) return;
+    var oldPos = activePosition(cur);
+    var newPos = activePosition(i);
+    var dirn = oldPos < 0 ? (i >= cur ? 1 : -1) : (newPos >= oldPos ? 1 : -1);
     if (!skipSave) { saveNote(); snapAll(cur); seedNow(); }
     clearTimeout(autoTimer);
     // 出场:旧页加 .leaving 绝对定位叠在新页上淡出 450ms(快速连翻时立刻清掉上一个 leaving)。
@@ -2390,7 +2517,9 @@ var SEND_VERSION = false;
     slides[cur].classList.add('current');
     slides[cur].classList.add('on');
     if (stepsOf(cur)) setStep(cur, initStepOf(cur));
-    rollNum(pnCur, String(cur + 1), dirn);
+    var pos = activePosition(cur);
+    rollNum(pnCur, String(pos + 1), dirn);
+    pnSep.textContent = '/ ' + activeTotal();
     pageTitle.textContent = slides[cur].dataset.title || '';
     // 标题超出固定槽位就缩字号(下限 10px),槽位宽度不动、时间轴起点才稳
     pageTitle.style.fontSize = '';
@@ -2399,9 +2528,9 @@ var SEND_VERSION = false;
     }
     // 画布带 nav-narrow 类的页:翻页热区收窄到 4%,给页内悬停交互让位
     document.body.classList.toggle('navnarrow', !!slides[cur].querySelector('.canvas.nav-narrow'));
-    progressBar.style.width = ((cur + 1) / total * 100) + '%';
+    progressBar.style.width = ((pos + 1) / activeTotal() * 100) + '%';
     loadNotes(cur);
-    location.hash = 'p' + (cur + 1);
+    location.hash = 'p' + (pos + 1);
     // 声明 data-autostep(毫秒)的页:进页后延迟自动步进一步,不需手动 →
     var ac = slides[cur].querySelector('.canvas[data-autostep]');
     if (ac) {
@@ -2414,37 +2543,188 @@ var SEND_VERSION = false;
   }
   function next() {
     if (stepOf(cur) < stepsOf(cur)) setStep(cur, stepOf(cur) + 1);
-    else go(cur + 1);
+    else {
+      var active = activeIndices(), pos = active.indexOf(cur);
+      if (pos >= 0 && pos + 1 < active.length) go(active[pos + 1]);
+    }
   }
   function prev() {
     // 只有声明了 data-steps 的页才回退步进;回退下限是 data-initstep(默认 0),静态硬编码 data-step 的页直接翻页
     if (stepsOf(cur) && stepOf(cur) > initStepOf(cur)) setStep(cur, stepOf(cur) - 1);
-    else go(cur - 1);
+    else {
+      var active = activeIndices(), pos = active.indexOf(cur);
+      if (pos > 0) go(active[pos - 1]);
+    }
   }
 
   // ===== 总览 =====
+  var overviewMode = 'active';
+  var archiveToastTimer = null;
+  var archiveUndoAction = null;
+  var archiveWrite = Promise.resolve();
+  var archiveFocusSource = null;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  function motionDelay(ms) { return reduceMotion && reduceMotion.matches ? 0 : ms; }
+  function archiveIcon(restore) {
+    return restore
+      ? '<svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h2M20 8v11a2 2 0 0 1-2 2h-2m-7-6l3-3l3 3m-3-3v9"></path></g></svg>'
+      : '<svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8m-10 4h4"></path></g></svg>';
+  }
+  function showArchiveToast(message, undo) {
+    clearTimeout(archiveToastTimer);
+    archiveToastText.textContent = message;
+    archiveUndoAction = undo || null;
+    archiveUndo.style.display = undo ? '' : 'none';
+    archiveToast.classList.add('show');
+    archiveToastTimer = setTimeout(function () {
+      archiveToast.classList.remove('show');
+      archiveUndoAction = null;
+    }, 4200);
+  }
+  archiveUndo.addEventListener('click', function () {
+    var undo = archiveUndoAction;
+    archiveToast.classList.remove('show');
+    archiveUndoAction = null;
+    if (undo) undo();
+  });
+  function persistArchiveState() {
+    var pages = archivedSourcePages();
+    if (SEND_VERSION) return archiveWrite;
+    archiveNeedsWrite = true;
+    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(pages));
+    var nextWrite = archiveWrite.catch(function () {}).then(function () {
+      return fetch(api('/archive'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ total: total, archived: pages })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('archive writeback failed');
+        return r.json();
+      }).then(function (result) {
+        localStorage.setItem(ARCHIVE_SOURCE_KEY, JSON.stringify(pages));
+        archiveNeedsWrite = JSON.stringify(archivedSourcePages()) !== JSON.stringify(pages);
+        return result;
+      });
+    });
+    nextWrite.catch(function () {
+      if (archiveToast.classList.contains('show') && archiveToastText.textContent.indexOf('saved in this browser') < 0) {
+        archiveToastText.textContent += ' · saved in this browser';
+      }
+    });
+    archiveWrite = nextWrite;
+    return archiveWrite;
+  }
+  function syncArchiveChrome() {
+    var count = archivedSourcePages().length;
+    ovTitle.textContent = overviewMode === 'archived' ? 'Archived pages' : 'Current pages';
+    ovArchiveCount.textContent = String(count);
+    ovArchiveToggle.classList.toggle('has-items', count > 0 || overviewMode === 'archived');
+    ovArchiveToggle.classList.toggle('on', overviewMode === 'archived');
+    ovArchiveToggle.setAttribute('aria-pressed', overviewMode === 'archived' ? 'true' : 'false');
+    ovArchiveToggle.setAttribute('aria-label', overviewMode === 'archived' ? 'Show current pages' : 'Show archived pages');
+    ovArchiveToggle.dataset.tip = overviewMode === 'archived' ? 'Current pages' : 'Archived pages';
+  }
+  function bumpArchiveCount() {
+    ovArchiveToggle.classList.remove('bump');
+    void ovArchiveToggle.offsetWidth;
+    ovArchiveToggle.classList.add('bump');
+    setTimeout(function () { ovArchiveToggle.classList.remove('bump'); }, motionDelay(280));
+  }
+  function setArchived(i, on, item, fromUndo) {
+    if (SEND_VERSION || !slides[i] || isArchived(i) === on) return;
+    var activeBefore = activeIndices();
+    if (on && activeBefore.length <= 1) {
+      showArchiveToast('Keep at least one current page.');
+      return;
+    }
+    var target = cur;
+    if (on && i === cur) {
+      var pos = activeBefore.indexOf(i);
+      target = activeBefore[pos + 1] !== undefined ? activeBefore[pos + 1] : activeBefore[pos - 1];
+    }
+    slides[i].dataset.archived = on ? '1' : '';
+    if (!on) delete slides[i].dataset.archived;
+    if (item && item.contains(document.activeElement)) {
+      var remaining = [];
+      slides.forEach(function (_s, source) {
+        if ((overviewMode === 'archived') === isArchived(source)) remaining.push(source);
+      });
+      var nextFocus = remaining.filter(function (source) { return source > i; })[0];
+      if (nextFocus === undefined) nextFocus = remaining[remaining.length - 1];
+      archiveFocusSource = nextFocus === undefined ? -1 : nextFocus + 1;
+    }
+    persistArchiveState();
+    if (on && i === cur) go(target, false, true);
+    else {
+      var currentPos = activePosition(cur);
+      rollNum(pnCur, String(currentPos + 1), 1);
+      pnSep.textContent = '/ ' + activeTotal();
+      progressBar.style.width = ((currentPos + 1) / activeTotal() * 100) + '%';
+      location.hash = 'p' + (currentPos + 1);
+      updateTime();
+      prFlip();
+    }
+    prNotes();
+    showArchiveToast(on ? 'Page archived.' : 'Page restored.', fromUndo ? null : function () {
+      setArchived(i, !on, null, true);
+    });
+    if (item) item.classList.add('archiving');
+    bumpArchiveCount();
+    setTimeout(function () { buildOverview(); }, item ? motionDelay(220) : 0);
+  }
   function buildOverview() {
     ovGrid.innerHTML = '';
-    slides.forEach(function (s, i) {
+    var active = activeIndices();
+    var list = [];
+    slides.forEach(function (_s, i) {
+      if ((overviewMode === 'archived') === isArchived(i)) list.push(i);
+    });
+    syncArchiveChrome();
+    ovEmpty.classList.toggle('show', list.length === 0);
+    ovEmpty.textContent = overviewMode === 'archived' ? 'No archived pages.' : 'No current pages.';
+    list.forEach(function (i) {
+      var s = slides[i];
       var item = document.createElement('div');
-      item.className = 'ovItem' + (i === cur ? ' now' : '');
+      item.className = 'ovItem' + (i === cur ? ' now' : '') + (isArchived(i) ? ' archived' : '');
       var wrap = document.createElement('div');
       wrap.className = 'thumbWrap';
       var clone = s.querySelector('.canvas').cloneNode(true);
       clone.style.transform = '';
       wrap.appendChild(clone);
+      if (!SEND_VERSION) {
+        var action = document.createElement('button');
+        action.className = 'ovArchiveAction';
+        action.type = 'button';
+        action.innerHTML = archiveIcon(isArchived(i));
+        action.dataset.tip = isArchived(i) ? 'Restore page' : 'Archive page';
+        action.dataset.sourcePage = String(i + 1);
+        action.setAttribute('aria-label', (isArchived(i) ? 'Restore ' : 'Archive ') + (s.dataset.title || 'page'));
+        action.addEventListener('click', function (e) {
+          e.preventDefault(); e.stopPropagation();
+          setArchived(i, !isArchived(i), item, false);
+        });
+        wrap.appendChild(action);
+      }
       var cap = document.createElement('div');
       cap.className = 'cap';
-      cap.textContent = 'P' + (i + 1) + ' ' + (s.dataset.title || '');
+      var labelNo = isArchived(i) ? 'Source P' + (i + 1) : 'P' + (active.indexOf(i) + 1);
+      cap.textContent = labelNo + ' ' + (s.dataset.title || '');
       item.appendChild(wrap);
       item.appendChild(cap);
-      item.addEventListener('click', function () {
-        go(i, false, true);                 // 总览选页不再叠加普通翻页的旧页淡出
-        requestAnimationFrame(function () { setView('default'); }); // 先画一帧 .9 缩放，再放大回默认视图
-      });
+      if (!isArchived(i)) item.addEventListener('click', function () {
+          go(i, false, true);                 // 总览选页不再叠加普通翻页的旧页淡出
+          requestAnimationFrame(function () { setView('default'); }); // 先画一帧 .9 缩放，再放大回默认视图
+        });
       ovGrid.appendChild(item);
     });
     requestAnimationFrame(function () {
+      if (archiveFocusSource !== null) {
+        var focusSource = archiveFocusSource;
+        archiveFocusSource = null;
+        var focusTarget = focusSource > 0
+          ? ovGrid.querySelector('.ovArchiveAction[data-source-page="' + focusSource + '"]')
+          : null;
+        (focusTarget || ovArchiveToggle).focus();
+      }
       // 总览自身正从 .95 放大到 1；getBoundingClientRect 会把这层动画缩放算进去，
       // 导致缩略图永久小 5%、从右侧和底部露出浅色底。clientWidth 只取布局宽度。
       ovGrid.querySelectorAll('.thumbWrap').forEach(function (tw) {
@@ -2452,6 +2732,10 @@ var SEND_VERSION = false;
       });
     });
   }
+  ovArchiveToggle.addEventListener('click', function () {
+    overviewMode = overviewMode === 'archived' ? 'active' : 'archived';
+    buildOverview();
+  });
 
   // ===== 讲稿与备注导出 =====
   // 导出取纯文本必须走这里:游离元素的 innerText 不做排版、段落间不产生换行,
@@ -2482,8 +2766,9 @@ var SEND_VERSION = false;
   function exportScript() {
     saveNote();
     var lines = ['# ' + DECK.name + ' | Speaker script', ''];
-    slides.forEach(function (s, i) {
-      lines.push('## P' + (i + 1) + ' ' + (s.dataset.title || ''), '');
+    activeIndices().forEach(function (i, pos) {
+      var s = slides[i];
+      lines.push('## P' + (pos + 1) + ' ' + (s.dataset.title || ''), '');
       var txt = textOf(localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0]), EDS[0]);
       lines.push(txt || '(No script)', '');
     });
@@ -2495,10 +2780,10 @@ var SEND_VERSION = false;
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function exportServer(kind) {
-    fetch(api('/export'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ what: kind })
-    }).then(function (r) {
+    archiveWrite.then(function () { return fetch(api('/export'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ what: kind })
+      }); }).then(function (r) {
       if (r.status === 403) { alert('Access token missing. Refresh the page, then try exporting again.'); return { skip: 1 }; }
       return r.json();
     }).then(function (d) {
@@ -2510,8 +2795,12 @@ var SEND_VERSION = false;
         send: 'Standalone HTML export started. Assets will be inlined and private notes removed.'
       }[kind]);
       else alert('Export could not start. Check the local service log.');
-    }).catch(function () {
-      alert('The local service is offline. Start the launcher, then try again.');
+    }).catch(function (error) {
+      if (error && error.message === 'archive writeback failed') {
+        alert('Archived pages are only saved in this browser. Start the local service, refresh, and try exporting again.');
+      } else {
+        alert('The local service is offline. Start the launcher, then try again.');
+      }
     });
   }
   document.addEventListener('click', function (e) {
@@ -2561,7 +2850,7 @@ var SEND_VERSION = false;
     beginViewAnim();
     view = v;
     var b = document.body;
-    if (v === 'overview') { buildOverview(); overview.classList.add('open'); }
+    if (v === 'overview') { overviewMode = 'active'; buildOverview(); overview.classList.add('open'); }
     else overview.classList.remove('open');
     b.classList.toggle('ov', v === 'overview');
     var wantP = (v === 'present');
@@ -2710,8 +2999,8 @@ var SEND_VERSION = false;
     if (b.dataset.ex) { doExport(b.dataset.ex); return; }
     if (b.dataset.view) { setView(b.dataset.view); return; }
     var act = b.dataset.act;
-    if (act === 'prev') go(cur - 1);
-    else if (act === 'next') go(cur + 1);
+    if (act === 'prev') prev();
+    else if (act === 'next') next();
     else if (act === 'raw') { setExMenu(false); toggleRaw(); }
     else if (act === 'drawer') toggleDrawer();
     else if (act === 'prompter') openPrompter();
@@ -2841,8 +3130,8 @@ var SEND_VERSION = false;
         e.preventDefault(); next(); break;
       case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
         e.preventDefault(); prev(); break;
-      case 'Home': e.preventDefault(); go(0); break;
-      case 'End': e.preventDefault(); go(total - 1); break;
+      case 'Home': e.preventDefault(); go(activeIndices()[0]); break;
+      case 'End': e.preventDefault(); go(activeIndices()[activeTotal() - 1]); break;
       case 'f': case 'F': case 'p': case 'P': togglePresent(); break;
       case 'n': case 'N': toggleNotes(); break;
       case 'o': case 'O': toggleOverview(); break;
@@ -2922,13 +3211,15 @@ var SEND_VERSION = false;
     if (!PR_ON) return;
     try { fetch(api(path), { method: 'POST', body: JSON.stringify(data) }).catch(function () {}); } catch (e) {}
   }
-  function prFlip() { prPost('/flip', { page: cur + 1, step: stepOf(cur), steps: stepsOf(cur) }); }
+  function prFlip() { prPost('/flip', { page: activePosition(cur) + 1, step: stepOf(cur), steps: stepsOf(cur) }); }
   function prNotes() {
-    prPost('/notes', { total: total, pages: slides.map(function (s, i) {
+    var active = activeIndices();
+    prPost('/notes', { total: active.length, sourceTotal: total, pages: active.map(function (i, pos) {
+      var s = slides[i];
       // 讲稿过 canonNs 再推:手机拿到的恒为行类型类格式(旧标记种子也被转掉)
       var html = canonNs(i === cur ? edScript.innerHTML : (localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0])));
       var comm = i === cur ? edComm.innerHTML : (localStorage.getItem(EDS[1].key + (i + 1)) || seedOf(i, EDS[1]));
-      return { n: i + 1, title: s.dataset.title || '', html: html, comm: comm, sec: Math.round(estSec(html)) };
+      return { n: pos + 1, source: i + 1, title: s.dataset.title || '', html: html, comm: comm, sec: Math.round(estSec(html)) };
     }) });
   }
   var prTimer = null;
@@ -2940,8 +3231,8 @@ var SEND_VERSION = false;
     new EventSource(api('/events')).addEventListener('cmd', function (e) {
       var d = JSON.parse(e.data);
       if (d.dir) { if (d.dir > 0) next(); else prev(); return; }
-      var n = (d.page | 0) - 1;
-      if (n >= 0 && n < total && n !== cur) go(n);
+      var n = sourceAtActivePosition((d.page | 0) - 1);
+      if (n !== undefined && n !== cur) go(n);
     });
   } catch (e) {}
 
@@ -2949,10 +3240,12 @@ var SEND_VERSION = false;
   if (SEND_VERSION) document.body.classList.add('send');
   var start = 0;
   var m = location.hash.match(/^#p(\d+)$/);
-  if (m) start = Math.min(Math.max(parseInt(m[1], 10) - 1, 0), total - 1);
-  go(start, true); // 与翻页同一入口:data-autostep 等进页行为在直开链接时同样生效
+  if (m) start = Math.min(Math.max(parseInt(m[1], 10) - 1, 0), activeTotal() - 1);
+  start = sourceAtActivePosition(start);
+  go(start, true, true); // 与翻页同一入口:data-autostep 等进页行为在直开链接时同样生效
   syncToolbar();
   fitSlide();
+  if (archiveNeedsWrite) persistArchiveState();
   prNotes();
   refreshLed();
   seedNow();       // 上次没写成的改动(当时服务没开)进页即补写
