@@ -55,6 +55,7 @@ seed_lock = threading.Lock()
 sse_clients = []
 phone_seen = {}
 export_busy = False
+preview_revision = 0
 
 
 def json_bytes(value):
@@ -488,12 +489,13 @@ def notify(title, message):
 
 
 def run_export(kind):
-    global export_busy
+    global export_busy, preview_revision
     try:
         scripts = {
             "send": ["build_send.py"],
             "imgs": ["export_pages.py"],
             "pdf": ["export_pages.py", "build_img_pdf.py"],
+            "previews": ["export_pages.py", "export_steps.py"],
         }[kind]
         for script in scripts:
             command = [sys.executable, os.path.join(HERE, script)]
@@ -501,10 +503,15 @@ def run_export(kind):
             if result.returncode:
                 detail = (result.stderr or result.stdout or "")[-400:]
                 raise RuntimeError("%s: %s" % (script, detail.strip()))
-        notify("Hanyu HTML Deck", "Export complete")
+        if kind == "previews":
+            preview_revision = time.time_ns()
+            broadcast("preview", {"rev": preview_revision})
+        else:
+            notify("Hanyu HTML Deck", "Export complete")
     except Exception as error:
         print("[导出失败]", error)
-        notify("Hanyu HTML Deck · Export failed", "Check the local service log for details.")
+        if kind != "previews":
+            notify("Hanyu HTML Deck · Export failed", "Check the local service log for details.")
     finally:
         export_busy = False
 
@@ -835,7 +842,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/export":
             global export_busy
             kind = body.get("what") or "imgs"
-            if kind not in ("imgs", "pdf", "send"):
+            if kind not in ("imgs", "pdf", "send", "previews"):
                 self.send_json({"err": "未知导出类型"}, 400)
                 return
             with lock:

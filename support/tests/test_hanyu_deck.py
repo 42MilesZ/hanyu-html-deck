@@ -4,6 +4,7 @@ import pathlib
 import re
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 TEMPLATE = ROOT / "assets" / "hanyu-html-deck" / "index.html"
@@ -220,6 +221,15 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("tw.clientWidth / 1920", overview)
         self.assertNotRegex(overview, r"tw\.getBoundingClientRect\s*\(")
 
+    def test_timeline_preview_uses_the_live_canvas(self):
+        timeline = self.html.split("// ===== 时间轴悬停预览", 1)[1].split(
+            "// ===== 画布就地编辑", 1
+        )[0]
+        self.assertIn('class="previewCanvas"', self.html)
+        self.assertIn("querySelector('.canvas').cloneNode(true)", timeline)
+        self.assertIn("tlPvCanvas.clientWidth / 1920", timeline)
+        self.assertNotIn("/thumbs/", timeline)
+
     def test_rate_button_uses_the_shared_muted_background(self):
         rule = re.search(r"#rateBtn\s*\{([^}]*)\}", self.html)
         self.assertIsNotNone(rule)
@@ -357,6 +367,30 @@ class ServerTests(unittest.TestCase):
         source = SERVER.read_text(encoding="utf-8")
         self.assertIn('notify("Hanyu HTML Deck", "Export complete")', source)
         self.assertIn('notify("Hanyu HTML Deck · Export failed"', source)
+
+    def test_preview_export_refreshes_pages_and_steps_without_notification(self):
+        mod = self.module
+        completed = mod.subprocess.CompletedProcess([], 0, "", "")
+        with mock.patch.object(mod.subprocess, "run", return_value=completed) as run, \
+             mock.patch.object(mod, "broadcast") as broadcast, \
+             mock.patch.object(mod, "notify") as notify:
+            mod.export_busy = True
+            mod.run_export("previews")
+        scripts = [pathlib.Path(call.args[0][1]).name for call in run.call_args_list]
+        self.assertEqual(scripts, ["export_pages.py", "export_steps.py"])
+        self.assertEqual(broadcast.call_args.args[0], "preview")
+        self.assertGreater(broadcast.call_args.args[1]["rev"], 0)
+        notify.assert_not_called()
+        self.assertFalse(mod.export_busy)
+
+    def test_phone_preview_reloads_and_falls_back_from_missing_step_frame(self):
+        phone = PHONE.read_text(encoding="utf-8")
+        html = TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("events.addEventListener('preview'", phone)
+        self.assertIn("previewRev = Math.max", phone)
+        self.assertIn("this.dataset.fallback", phone)
+        self.assertIn("this.src = fallback", phone)
+        self.assertIn("body: JSON.stringify({ what: 'previews' })", html)
 
     def test_canvas_markup_whitelist(self):
         mod = self.module

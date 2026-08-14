@@ -274,7 +274,11 @@
     opacity: 0; transition: left .18s ease, width .18s ease, opacity .2s ease, background .2s ease;
     pointer-events: none;
   }
-  #tlPv img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #000; }
+  #tlPv .previewCanvas { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
+  #tlPv .previewCanvas .canvas {
+    position: absolute; left: 0; top: 0; transform: scale(var(--tlpvscale)) !important;
+    transform-origin: top left; border: 0; box-shadow: none; pointer-events: none;
+  }
   #tlPv .lbl {
     font-size: 11px; font-weight: 300; letter-spacing: .08em; color: #98968f;
     padding: 5px 2px 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1336,7 +1340,7 @@
         <span id="tlTot"></span>
       </div>
       <div id="tlPv">
-        <img alt="">
+        <div class="previewCanvas" aria-hidden="true"></div>
         <div class="lbl"></div>
       </div>
     </div>
@@ -2098,7 +2102,7 @@ var SEND_VERSION = false;
   // ===== 时间轴悬停预览 + 拖动跳页(播放器式):hover 200ms 出小窗,按住拖动实时换页 =====
   var tl = document.getElementById('tl');
   var tlPv = document.getElementById('tlPv');
-  var tlPvImg = tlPv.querySelector('img');
+  var tlPvCanvas = tlPv.querySelector('.previewCanvas');
   var tlPvLbl = tlPv.querySelector('.lbl');
   var tlCums = [], tlTotSec = 1, tlHoverT = 0, tlShown = false, tlDrag = false, tlPvPage = -1, tlLastX = 0;
   function tlPageAt(clientX) {
@@ -2114,8 +2118,11 @@ var SEND_VERSION = false;
     if (pos !== tlPvPage) {
       tlPvPage = pos;
       tlPvLbl.textContent = 'P' + (pos + 1) + ' · ' + (slides[i].dataset.title || '');
-      tlPvImg.style.display = '';
-      tlPvImg.src = api('/thumbs/' + (pos + 1) + '.jpg');   // 服务没开时 onerror 隐藏图,只留页码标题
+      tlPvCanvas.innerHTML = '';
+      var clone = slides[i].querySelector('.canvas').cloneNode(true);
+      clone.style.transform = '';
+      tlPvCanvas.appendChild(clone);
+      tlPvCanvas.style.setProperty('--tlpvscale', tlPvCanvas.clientWidth / 1920);
       tlHov.style.left = (tlCums[pos] / tlTotSec * 100) + '%';
       tlHov.style.width = ((tlCums[pos + 1] - tlCums[pos]) / tlTotSec * 100) + '%';
     }
@@ -2133,7 +2140,6 @@ var SEND_VERSION = false;
     tlHov.style.opacity = 0;
     tlShown = false; tlPvPage = -1;
   }
-  tlPvImg.addEventListener('error', function () { tlPvImg.style.display = 'none'; });
   function tlJump(clientX) {
     var i = tlActive[tlPageAt(clientX)];
     if (i !== cur) go(i);
@@ -2438,7 +2444,10 @@ var SEND_VERSION = false;
         return fetch(api('/canvas'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body
         }).then(function (r) { return r.json(); }).then(function (d) {
-          if (d.ok) toast('P' + pageNo + ' canvas changes written to source');
+          if (d.ok) {
+            toast('P' + pageNo + ' canvas changes written to source');
+            schedulePhonePreviews();
+          }
           else toast('Write-back failed. Check the local service.', true);
         }, function () {
           toast('The local service is offline. Changes remain in this window and will be lost on refresh. Start the launcher, then edit once to write them back.', true);
@@ -2641,6 +2650,7 @@ var SEND_VERSION = false;
       }).then(function (result) {
         localStorage.setItem(ARCHIVE_SOURCE_KEY, JSON.stringify(pages));
         archiveNeedsWrite = JSON.stringify(archivedSourcePages()) !== JSON.stringify(pages);
+        schedulePhonePreviews();
         return result;
       });
     });
@@ -2953,6 +2963,23 @@ var SEND_VERSION = false;
   var pdUrl = document.getElementById('pdUrl');
   var pdStatus = document.getElementById('pdStatus');
   var pdTimer = null;
+  var phonePreviewsEnabled = false;
+  var phonePreviewTimer = null;
+  function runPhonePreviewExport() {
+    fetch(api('/export'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ what: 'previews' })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.busy && phonePreviewsEnabled) {
+        phonePreviewTimer = setTimeout(runPhonePreviewExport, 1800);
+      }
+    }).catch(function () {});
+  }
+  function schedulePhonePreviews() {
+    if (!phonePreviewsEnabled || SEND_VERSION) return;
+    clearTimeout(phonePreviewTimer);
+    phonePreviewTimer = setTimeout(runPhonePreviewExport, 800);
+  }
   function refreshPrompterInfo() {
     fetch(api('/info')).then(function (r) {
       if (r.status === 403) throw new Error('Access token missing');
@@ -2979,6 +3006,8 @@ var SEND_VERSION = false;
   }
   function openPrompter() {
     if (SEND_VERSION) return;
+    phonePreviewsEnabled = true;
+    schedulePhonePreviews();
     pd.classList.add('open');
     refreshPrompterInfo();
     clearInterval(pdTimer);

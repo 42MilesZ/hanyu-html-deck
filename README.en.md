@@ -125,6 +125,8 @@ Hovering a menu item for about 0.2 seconds shows a one-line explanation.
 
 Start the local service, then click the phone icon in the deck. Scan the LAN QR code. The QR refreshes automatically if the network address changes.
 
+Opening the phone prompter prepares current page thumbnails and step frames in the background. Direct canvas edits and archive changes then rebuild and refresh the phone preview automatically. Preview images require Playwright; without it, scripts, notes, and remote control continue to work without page images.
+
 Use the same trusted Wi-Fi by default. If no suitable Wi-Fi is available, enable the phone hotspot and connect the computer to it.
 
 The phone starts on the speaker script. A `Script / Notes` control switches views, and each page/view keeps its own scroll position. The phone can follow the computer or browse independently.
@@ -169,7 +171,7 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 
 In overview (`O`), every thumbnail has an archive action. Archived slides stay in the source file but are excluded from navigation, numbering, the timeline, phone prompting, and exports. The archive box in the upper-right lets you browse and restore them, and each action can be undone. At least one current slide is always kept.
 
-Offline changes are stored in the browser; with the local service running, the state is written safely back to `index.html`. A stale browser cache will not overwrite a newer source state from another session. Re-export page images or step frames after changing the archive sequence to refresh phone previews.
+Offline changes are stored in the browser; with the local service running, the state is written safely back to `index.html`. A stale browser cache will not overwrite a newer source state from another session. When the phone prompter is enabled, archive changes rebuild its previews automatically.
 
 ## Repository files
 

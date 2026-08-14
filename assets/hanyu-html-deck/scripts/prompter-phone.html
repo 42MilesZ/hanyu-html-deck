@@ -112,6 +112,7 @@
   var tab = 'script';
   var following = true;
   var connected = false;
+  var previewRev = 0;
   var $ = function (id) { return document.getElementById(id); };
   var content = $('content');
 
@@ -127,6 +128,9 @@
   function api(path) {
     return path + (path.indexOf('?') >= 0 ? '&' : '?') + 't=' + encodeURIComponent(TOKEN);
   }
+  function preview(path) {
+    return api(path + (path.indexOf('?') >= 0 ? '&' : '?') + 'v=' + previewRev);
+  }
   function setConnection(ok) {
     connected = ok;
     $('connection').textContent = ok ? 'Connected to local service' : 'Connection lost. Reconnecting';
@@ -141,8 +145,10 @@
     var frame = shown === state.page && state.steps > 0
       ? '/steps/' + shown + '-' + state.step + '.jpg'
       : '/thumbs/' + shown + '.jpg';
+    var fallback = '/thumbs/' + shown + '.jpg';
     $('thumb').style.visibility = '';
-    $('thumb').src = api(frame);
+    $('thumb').dataset.fallback = frame === fallback ? '' : preview(fallback);
+    $('thumb').src = preview(frame);
     content.innerHTML = item
       ? (tab === 'script' ? item.html : item.comm) || '<p id="empty">This page has no ' + (tab === 'script' ? 'script' : 'notes') + '.</p>'
       : '<p id="empty">Open the deck on your computer. The script will sync here automatically.</p>';
@@ -152,7 +158,15 @@
     requestAnimationFrame(restoreScroll);
     buildOverview();
   }
-  $('thumb').addEventListener('error', function () { this.style.visibility = 'hidden'; });
+  $('thumb').addEventListener('error', function () {
+    if (this.dataset.fallback) {
+      var fallback = this.dataset.fallback;
+      this.dataset.fallback = '';
+      this.src = fallback;
+      return;
+    }
+    this.style.visibility = 'hidden';
+  });
   $('thumb').addEventListener('load', function () { this.style.visibility = ''; });
   function loadNotes() {
     fetch(api('/notes.json')).then(function (response) { return response.json(); }).then(function (next) {
@@ -186,7 +200,7 @@
       img.alt = '';
       img.addEventListener('error', function () { this.style.visibility = 'hidden'; });
       img.addEventListener('load', function () { this.style.visibility = ''; });
-      img.src = api('/thumbs/' + (index + 1) + '.jpg');
+      img.src = preview('/thumbs/' + (index + 1) + '.jpg');
       var label = document.createElement('span');
       label.textContent = 'P' + (index + 1) + '　' + (item.title || '');
       button.appendChild(img);
@@ -238,6 +252,11 @@
     else render();
   });
   events.addEventListener('notes', loadNotes);
+  events.addEventListener('preview', function (event) {
+    var next = JSON.parse(event.data);
+    previewRev = Math.max(previewRev, Number(next.rev) || 0);
+    render();
+  });
 
   render();
   loadNotes();
