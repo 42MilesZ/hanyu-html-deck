@@ -190,6 +190,17 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("syncLed", self.html)
         self.assertNotIn("saveAsDefault", self.html)
 
+    def test_empty_edits_and_rejections_reach_terminal_states(self):
+        self.assertIn("return ed.canon(stored) || '<p><br></p>';", self.html)
+        self.assertIn("Write-back was rejected:", self.html)
+        self.assertIn("failed ? 'Error'", self.html)
+        self.assertIn("rejected = d.err || 'Unknown write-back error'", self.html)
+
+    def test_pasted_note_markup_is_sanitized_before_writeback(self):
+        self.assertIn("function cleanNoteHtml(html)", self.html)
+        self.assertIn("if (!NOTE_TAGS[n.tagName])", self.html)
+        self.assertIn("if (a.name !== 'class') n.removeAttribute(a.name)", self.html)
+
     def test_view_and_panel_changes_have_motion(self):
         self.assertIn("body.notes-anim #stage", self.html)
         self.assertIn("new ResizeObserver", self.html)
@@ -327,6 +338,7 @@ class ServerTests(unittest.TestCase):
             self.assertFalse(ok, payload)
         for payload in (
             '<p class="o-main">正常<b>加粗</b><br>换行</p>',
+            '<p><br></p>',
             "<p>讲到 a &lt; b 这种写法</p>",
         ):
             ok, why = mod.check_markup(payload, mod.NOTE_TAGS, mod.NOTE_ATTRS)

@@ -1706,6 +1706,36 @@ var SEND_VERSION = false;
   var normBox = document.createElement('div');
   // 讲稿的行类型类(结构真源,规范化与写回种子时保留)
   var NS_CLS = { 'o-task': 1, 'o-main': 1, 'o-sub': 1, 'o-pass': 1, 'o-stage': 1 };
+  var NOTE_TAGS = { P:1, BR:1, B:1, STRONG:1, I:1, EM:1, SPAN:1, UL:1, OL:1, LI:1 };
+  // contenteditable 粘贴会夹带 font/style/data-* 等浏览器格式。服务端为安全会拒绝这些内容，
+  // 写回前在浏览器端先做同口径清理：保留文字、段落、列表与基本强调，只保留 class 属性。
+  function cleanNoteHtml(html) {
+    var box = document.createElement('div');
+    box.innerHTML = html;
+    function clean(parent) {
+      Array.prototype.slice.call(parent.childNodes).forEach(function (n) {
+        if (n.nodeType === 8) { n.remove(); return; }
+        if (n.nodeType !== 1) return;
+        clean(n);
+        if (!NOTE_TAGS[n.tagName]) {
+          while (n.firstChild) parent.insertBefore(n.firstChild, n);
+          n.remove();
+          return;
+        }
+        Array.prototype.slice.call(n.attributes).forEach(function (a) {
+          if (a.name !== 'class') n.removeAttribute(a.name);
+        });
+        if (n.hasAttribute('class')) {
+          var cls = n.className.split(/\s+/).filter(function (c) {
+            return NS_CLS[c] || c === 'c-ref' || c === 'c-flag';
+          }).join(' ');
+          if (cls) n.className = cls; else n.removeAttribute('class');
+        }
+      });
+    }
+    clean(box);
+    return box.innerHTML;
+  }
   // 结构化规范形:分段统一成 <p>、行内标签保留、讲稿行类型类保留。改动判定必须用它——
   // 纯文本比较会把"只按回车分段/只加粗"误判成没改动,顺手删掉已存的稿(真丢过稿)
   function canonFrag(root) {
@@ -1719,8 +1749,10 @@ var SEND_VERSION = false;
           cls = (n.className || '').split(/\s+/).filter(function (c) { return NS_CLS[c]; }).sort().join(' ');
         } else h = n.outerHTML;
       }
-      h = h.replace(/<\/?div[^>]*>/gi, '').replace(/<br\s*\/?>\s*$/i, '').trim();
-      if (h) out.push(cls ? '<p class="' + cls + '">' + h + '</p>' : '<p>' + h + '</p>');
+      h = cleanNoteHtml(h.replace(/<\/?div[^>]*>/gi, '')).replace(/<br\s*\/?>\s*$/i, '').trim();
+      if (!h) return;
+      if (n.nodeType === 1 && (n.tagName === 'UL' || n.tagName === 'OL')) out.push(h);
+      else out.push(cls ? '<p class="' + cls + '">' + h + '</p>' : '<p>' + h + '</p>');
     });
     return out.join('');
   }
@@ -2210,14 +2242,18 @@ var SEND_VERSION = false;
   // ===== 自动写回:输入停顿后把改动页静默写回源文件,不需要用户点保存 =====
   // 状态只用一盏灯表达:绿=都已落盘,橙黄=还有改动只在浏览器里(服务没开/被拒/正在写)
   function fragOfPage(i, ed) {
-    return ed.canon(localStorage.getItem(ed.key + (i + 1)) || '');
+    var stored = localStorage.getItem(ed.key + (i + 1));
+    if (stored === null) return '';
+    // 用户把一栏清空也是一次有效修改。规范化后的空字符串会被服务端拒绝，
+    // 因此用一个可安全落盘、再次规范化仍为空的空段落表示它。
+    return ed.canon(stored) || '<p><br></p>';
   }
   var syncLed = document.getElementById('syncLed');
   var syncText = document.getElementById('syncText');
   var ledPop = document.createElement('div');
   ledPop.id = 'ledPop';
   document.body.appendChild(ledPop);
-  var ledState = { ok: true, why: '', pending: [], down: false, noToken: false };
+  var ledState = { ok: true, why: '', pending: [], down: false, noToken: false, failed: false };
   function dirtyPages() {
     var out = [];
     slides.forEach(function (s, i) {
@@ -2233,7 +2269,7 @@ var SEND_VERSION = false;
     var head = document.createElement('div');
     head.className = 'lp-head';
     var dot = document.createElement('i');
-    dot.className = 'led' + (ledState.ok ? ' ok' : ((ledState.down || ledState.noToken) ? ' fail' : ''));
+    dot.className = 'led' + (ledState.ok ? ' ok' : ((ledState.down || ledState.noToken || ledState.failed) ? ' fail' : ''));
     head.appendChild(dot);
     var title = document.createElement('span');
     title.textContent = ledState.ok ? 'Script and notes are saved to file' : ledState.pending.length + ' change(s) not written to file';
@@ -2241,7 +2277,9 @@ var SEND_VERSION = false;
     ledPop.appendChild(head);
     var note = document.createElement('p');
     note.className = 'lp-note';
-    note.textContent = ledState.noToken
+    note.textContent = ledState.failed
+      ? 'Write-back was rejected: ' + ledState.why
+      : ledState.noToken
       ? 'This page opened before the local service and has no write-back token. Refresh the page to reconnect.'
       : ledState.down
         ? 'The local service is offline. Changes remain in this browser until you start the launcher.'
@@ -2286,11 +2324,11 @@ var SEND_VERSION = false;
   syncLed.parentNode.addEventListener('mouseleave', function () { ledPopHide(); });
   ledPop.addEventListener('mouseenter', function () { clearTimeout(ledPopT); });
   ledPop.addEventListener('mouseleave', function () { ledPopHide(); });
-  function setLed(ok, why, down, noToken) {
+  function setLed(ok, why, down, noToken, failed) {
     syncLed.classList.toggle('ok', !!ok);
-    syncLed.classList.toggle('fail', !!down || !!noToken);
-    syncText.textContent = ok ? 'Saved' : (down ? 'Offline' : (noToken ? 'Reconnect' : 'Saving…'));
-    ledState = { ok: !!ok, why: why, pending: dirtyPages(), down: !!down, noToken: !!noToken };
+    syncLed.classList.toggle('fail', !!down || !!noToken || !!failed);
+    syncText.textContent = ok ? 'Saved' : (down ? 'Offline' : (noToken ? 'Reconnect' : (failed ? 'Error' : 'Saving…')));
+    ledState = { ok: !!ok, why: why, pending: dirtyPages(), down: !!down, noToken: !!noToken, failed: !!failed };
     if (ledPop.classList.contains('on')) ledPopShow();
   }
   function refreshLed() {
@@ -2312,7 +2350,7 @@ var SEND_VERSION = false;
     if (!changed.length) { refreshLed(); return; }
     if (seedBusy) { seedAgain = true; refreshLed(); return; }
     seedBusy = true;
-    var down = false, noToken = false;
+    var down = false, noToken = false, rejected = '';
     changed.forEach(function (c) {
       seedChain = seedChain.then(function () {
         if (down) return;
@@ -2328,7 +2366,7 @@ var SEND_VERSION = false;
           return r.json();
         }).then(function (d) {
           delete writeFlights[key];
-          if (!d.ok) return;               // 被拒:改动留在浏览器,灯保持橙黄
+          if (!d.ok) { rejected = d.err || 'Unknown write-back error'; return; }
           snapHist(c.i, c.ed);
           var src = slides[c.i].querySelector('aside ' + c.ed.sel);
           if (src) src.innerHTML = frag;
@@ -2347,6 +2385,7 @@ var SEND_VERSION = false;
       seedBusy = false;
       if (down) setLed(false, 'Local service offline', true);
       else if (noToken) setLed(false, 'Access token missing', false, true);
+      else if (rejected) setLed(false, rejected, false, false, true);
       else refreshLed();
       // 写回进行中若已经到了下一次定时，新版继续走同一条 3 秒自动写回链。
       if (seedAgain && !down && !noToken) { seedAgain = false; scheduleSeed(); }
