@@ -70,7 +70,7 @@ python3 scripts/create_deck.py ~/Documents/my-deck
 
 Open `my-deck/启动本地演示台.command`: it starts the local service and, once the service is ready, opens the deck. Update `DECK.name` and `DECK.key` near the end of `index.html`, then replace the six sample pages. Give each page a stable `data-slide-id`, a chapter in `data-part`, and a short outline label in `data-outline`. Double-clicking `index.html` directly also works for offline viewing, but it will not write back.
 
-The core HTML works in modern browsers on macOS, Windows, and Linux. In version 0.1 the local service, launcher, and export workflow are verified on macOS only: image, PDF, and send-copy exports rely on the macOS `sips` command. On Windows and Linux, run `python3 scripts/prompter_server.py` to use phone prompting and write-back; the exports are unavailable.
+The core HTML works in modern browsers on macOS, Windows, and Linux. The local service, launcher, and export workflow are currently verified on macOS only: image, PDF, and send-copy exports rely on the macOS `sips` command. On Windows and Linux, run `python3 scripts/prompter_server.py` to use phone prompting and write-back; the exports are unavailable.
 
 ## Installing the skill
 

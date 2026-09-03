@@ -75,7 +75,7 @@ python3 scripts/create_deck.py ~/Documents/my-deck
 3. 用真实内容替换六页示例；为每页设置稳定的 `data-slide-id`、章节 `data-part` 和大纲名 `data-outline`。
 4. 只想离线看一眼时，直接双击 `index.html` 也可以，此时不写回源文件。
 
-核心 HTML 可在 macOS、Windows 和 Linux 的现代浏览器中使用。0.1 版的本地服务、启动文件与导出流程只在 macOS 上验证过：图片、PDF 与发送版导出依赖 macOS 自带的 `sips`，在 Windows 与 Linux 上不可用；这些系统上可用 `python3 scripts/prompter_server.py` 启动服务使用手机提词与写回。
+核心 HTML 可在 macOS、Windows 和 Linux 的现代浏览器中使用。目前本地服务、启动文件与导出流程只在 macOS 上验证过：图片、PDF 与发送版导出依赖 macOS 自带的 `sips`，在 Windows 与 Linux 上不可用；这些系统上可用 `python3 scripts/prompter_server.py` 启动服务使用手机提词与写回。
 
 ## 安装 Skill
 
