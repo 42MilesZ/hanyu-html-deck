@@ -5,6 +5,7 @@ import argparse
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -23,19 +24,21 @@ def create(target: pathlib.Path):
     for item in SOURCE.iterdir():
         if item.is_dir():
             shutil.copytree(item, target / item.name, ignore=JUNK)
-        elif not item.name.startswith(".prompter-") and item.name != "发送版.html":
+        elif (
+            not item.name.startswith(".prompter-")
+            and item.name not in {"发送版.html", "AGENTS.md", "deck-content.json"}
+        ):
             shutil.copy2(item, target / item.name)
     deck = target / "index.html"
     # 模板此刻可能正被本地服务占用,行内带着本机写回凭据:带走它会把新稿的改动写回模板
     deck.write_text(
         TOKEN_LINE_RE.sub(r"\g<1>\g<3>", deck.read_text(encoding="utf-8")), encoding="utf-8"
     )
-    shutil.copy2(ROOT / "assets" / "deck-readme.md", target / "README.md")
-    # 生成目录会被整体转发,必须自带许可与第三方声明
+    # 生成目录是本软件的副本，MIT 许可声明必须随副本保留。
     shutil.copy2(ROOT / "LICENSE", target / "LICENSE")
-    shutil.copy2(
-        ROOT / "support" / "THIRD_PARTY_NOTICES.md",
-        target / "THIRD_PARTY_NOTICES.md",
+    subprocess.run(
+        [sys.executable, str(target / "scripts" / "deck_content.py"), "--root", str(target), "init"],
+        check=True,
     )
     print("已创建本地演示台演示稿：%s" % target)
     print("打开 index.html 可离线使用；双击“启动本地演示台.command”启用高级功能。")

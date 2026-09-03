@@ -2,6 +2,7 @@ import importlib.util
 import json
 import pathlib
 import re
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -30,7 +31,7 @@ class TemplateTests(unittest.TestCase):
         self.assertNotIn("</div>\n  \n  <aside>", self.html)
 
     def test_product_video_story_order(self):
-        titles = re.findall(r'<section class="slide" data-title="([^"]+)">', self.html)
+        titles = re.findall(r'<section class="slide"[^>]*data-title="([^"]+)"', self.html)
         self.assertEqual(
             titles,
             [
@@ -193,9 +194,9 @@ class TemplateTests(unittest.TestCase):
 
     def test_empty_edits_and_rejections_reach_terminal_states(self):
         self.assertIn("return ed.canon(stored) || '<p><br></p>';", self.html)
-        self.assertIn("Write-back was rejected:", self.html)
         self.assertIn("failed ? 'Error'", self.html)
         self.assertIn("rejected = d.err || 'Unknown write-back error'", self.html)
+        self.assertIn("else if (rejected) setLed(false, rejected, false, false, true)", self.html)
 
     def test_pasted_note_markup_is_sanitized_before_writeback(self):
         self.assertIn("function cleanNoteHtml(html)", self.html)
@@ -230,6 +231,16 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("tlPvCanvas.clientWidth / 1920", timeline)
         self.assertNotIn("/thumbs/", timeline)
 
+    def test_server_exports_flush_content_store_before_starting(self):
+        export = self.html.split("function exportServer(kind)", 1)[1].split(
+            "document.addEventListener('click'", 1
+        )[0]
+        self.assertLess(export.index("saveNote();"), export.index("fetch(api('/export')"))
+        self.assertLess(export.index("seedNow();"), export.index("fetch(api('/export')"))
+        self.assertLess(export.index("return seedChain;"), export.index("fetch(api('/export')"))
+        self.assertIn("if (dirtyPages().length) throw new Error", export)
+        self.assertIn("Export stopped:", export)
+
     def test_rate_button_uses_the_shared_muted_background(self):
         rule = re.search(r"#rateBtn\s*\{([^}]*)\}", self.html)
         self.assertIsNotNone(rule)
@@ -251,8 +262,26 @@ class TemplateTests(unittest.TestCase):
         mults = re.search(r"var RATE_MULTS = \[([^\]]+)\];", self.html)
         self.assertIsNotNone(mults)
         self.assertEqual(mults.group(1), "0.6, 0.8, 1.0, 1.3, 1.6")
-        self.assertIn("RATE_MIN / rate * 100", self.html)
+        self.assertIn("Math.max(s * rate / RATE_BASE, 4)", self.html)
+        self.assertIn("function timelineWidths(weights, trackWidth)", self.html)
         self.assertNotIn("180 / rate", self.html)
+
+    def test_outline_and_timeline_use_structural_slide_metadata(self):
+        self.assertIn('id="outlineDrawer"', self.html)
+        self.assertIn("function buildOutline()", self.html)
+        self.assertIn("slides[source].dataset.part || 'Pages'", self.html)
+        self.assertEqual(self.html.count('data-slide-id="'), 6)
+        self.assertEqual(self.html.count('data-part="'), 6)
+        self.assertEqual(self.html.count('data-outline="'), 6)
+        self.assertIn("var TL_PAGE_MIN_PX = 32", self.html)
+
+    def test_browser_refuses_missing_or_duplicate_stable_ids(self):
+        self.assertIn("function assertStableSlideIds()", self.html)
+        self.assertIn("Page ' + (i + 1) + ' is missing data-slide-id.", self.html)
+        self.assertIn("Duplicate data-slide-id: ' + id", self.html)
+        self.assertIn("assertStableSlideIds();", self.html)
+        self.assertIn("function slideId(i) { return slides[i].dataset.slideId; }", self.html)
+        self.assertNotIn("slides[i].dataset.slideId || ('slide-'", self.html)
 
     def test_no_public_transport(self):
         lowered = self.html.lower()
@@ -286,16 +315,13 @@ class GeneratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             target = pathlib.Path(temp) / "demo"
             module.create(target)
-            for name in (
-                "index.html",
-                "启动本地演示台.command",
-                "README.md",
-                "LICENSE",
-                "THIRD_PARTY_NOTICES.md",
-            ):
+            for name in ("index.html", "启动本地演示台.command", "deck-content.json", "LICENSE"):
                 self.assertTrue((target / name).exists(), name)
             self.assertTrue((target / "scripts" / "prompter_server.py").exists())
+            self.assertTrue((target / "scripts" / "deck_content.py").exists())
             self.assertTrue((target / "fonts" / "NotoSansSC.woff2").exists())
+            for internal in ("AGENTS.md", "README.md", "THIRD_PARTY_NOTICES.md"):
+                self.assertFalse((target / internal).exists(), internal)
             junk = [
                 str(p.relative_to(target))
                 for p in target.rglob("*")
@@ -307,6 +333,7 @@ class GeneratorTests(unittest.TestCase):
 class ServerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        sys.path.insert(0, str(SERVER.parent))
         spec = importlib.util.spec_from_file_location("prompter_server", SERVER)
         cls.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.module)

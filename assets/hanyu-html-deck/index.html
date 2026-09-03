@@ -17,7 +17,7 @@
     --paper: #f2f1ed; --hair: #d2d0c8; --ink: #111; --chrome: #121212; --chair: #2c2c2c;
     --muted-bg: rgba(255,255,255,.05); --edit-bg: #202224;
     --ease-ui: cubic-bezier(.22,.61,.21,1); --ease-view: cubic-bezier(.65,0,.35,1);
-    --nh: 296px; --dw: 420px;
+    --nh: 296px; --dw: 420px; --outline-w: 324px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -152,6 +152,51 @@
   body.present #toolbar:hover,
   body.present.reveal-ui #toolbar { opacity: 1; pointer-events: auto; }
 
+  /* ===== 制作端大纲：只在默认制作模式显示 ===== */
+  #outlineDrawer {
+    position: fixed; left: 0; top: 0; bottom: calc(var(--nh) + 4px); width: var(--outline-w); z-index: 70;
+    display: flex; flex-direction: column; background: #171717; color: #d8d6d0;
+    border-right: 1px solid #2c2c2c; transform: translateX(-100%);
+    transition: transform .34s cubic-bezier(.22,.61,.21,1), opacity .24s ease, visibility 0s;
+  }
+  body.notes-mini #outlineDrawer { bottom: 50px; }
+  body.notes-hidden:not(.present) #outlineDrawer { bottom: 16px; }
+  body.outline-open #outlineDrawer { transform: translateX(0); }
+  #outlineGrip { position: absolute; top: 0; right: -5px; bottom: 0; width: 10px; z-index: 3; cursor: col-resize; touch-action: none; }
+  #outlineGrip::after { content: ""; position: absolute; top: 0; right: 4px; bottom: 0; width: 1px; background: #2c2c2c; transition: background .16s ease; }
+  #outlineGrip:hover::after, body.outline-resizing #outlineGrip::after { background: #8f8d87; }
+  body.outline-collapse-ready #outlineGrip::after { background: #f0eee8; }
+  body:not(.outline-open) #outlineGrip { opacity: 0; pointer-events: none; }
+  body.outline-resizing, body.outline-resizing * { cursor: col-resize !important; user-select: none !important; }
+  body.outline-resizing #outlineDrawer, body.outline-resizing #stage, body.outline-resizing #zonePrev { transition: none !important; }
+  #outlineToggle {
+    position: absolute; right: -39px; top: 10px; width: 32px; height: 32px; padding: 0;
+    display: flex; align-items: center; justify-content: center; color: #b5b3ac;
+    background: rgba(14,14,14,.72); border: 0; border-radius: 3px; cursor: pointer;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  #outlineToggle:hover, body.outline-open #outlineToggle { background: var(--paper); color: var(--ink); }
+  #outlineToggle svg { width: 16px; height: 16px; }
+  #outlineHead { flex: none; height: 52px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2c2c2c; font-size: 11px; letter-spacing: .12em; color: #9d9b94; }
+  #outlineHead, #outlineTree { transition: opacity .18s ease, transform .18s var(--ease-ui); }
+  body.outline-collapse-ready #outlineHead, body.outline-collapse-ready #outlineTree { opacity: .42; transform: translateX(-8px); }
+  #outlineTree { flex: 1; overflow: auto; padding: 10px 0 24px; scrollbar-width: thin; scrollbar-color: #454545 transparent; }
+  .outline-part { padding: 17px 18px 8px; }
+  .outline-part-head { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: baseline; color: #f0eee8; }
+  .outline-part-title { font-size: 13px; line-height: 1.45; font-weight: 600; }
+  .outline-part-range { font-size: 11px; color: #77756f; font-variant-numeric: tabular-nums; }
+  .outline-pages { margin: 7px -18px 0; border-top: 1px solid #2c2c2c; }
+  .outline-page { width: 100%; min-height: 35px; padding: 8px 18px; display: grid; grid-template-columns: 28px 1fr; gap: 9px; align-items: start; text-align: left; color: #8f8d87; background: transparent; border: 0; cursor: pointer; font: inherit; }
+  .outline-page:hover { color: #d8d6d0; background: #202020; }
+  .outline-page.now { color: #111; background: #f0eee8; }
+  .outline-page-no { font-size: 11px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  .outline-page-title { font-size: 12px; line-height: 1.5; }
+  body.outline-open:not(.present):not(.ov):not(.raw):not(.exporting):not(.send) #stage,
+  body.outline-open:not(.present):not(.ov):not(.raw):not(.exporting):not(.send) #zonePrev { left: var(--outline-w); }
+  #stage, #zonePrev { transition: left .34s cubic-bezier(.22,.61,.21,1); }
+  body.present #outlineDrawer, body.ov #outlineDrawer, body.raw #outlineDrawer,
+  body.exporting #outlineDrawer, body.send #outlineDrawer { opacity: 0; visibility: hidden; pointer-events: none; }
+
   /* ===== 舞台与页面 ===== */
   #stage {
     /* 顶部无横条,画布向上撑满(fitSlide 的 0.97 缩放自带呼吸边) */
@@ -170,7 +215,7 @@
   body.notes-hidden:not(.present) #stage { bottom: 16px; }
 
   .slide { display: none; }
-  .slide.current { display: block; }
+  .slide.current { display: block; position: relative; z-index: 2; }
   .slide aside { display: none; } /* 讲稿/内部注记模板,由底部批注面板读取展示 */
   .canvas {
     width: 1920px; height: 1080px;
@@ -238,12 +283,12 @@
      历史与备注开关在各自栏的右下角工具条里,不在表头 */
   #notesHead {
     flex: none; display: flex; align-items: center;
-    padding: 9px 22px 0; font-size: 13px; color: #d8d6d0;
+    gap: 16px; padding: 9px 22px 0; font-size: 13px; color: #d8d6d0;
   }
-  /* 页码与标题用一个淡底块包起来,读作一组;标题保持固定槽位,时间轴起点不被标题长短推移 */
+  /* 页码与标题用一个淡底块包起来,读作一组;短标题按内容收窄,长标题不超过原有槽位 */
   #headChip {
-    display: inline-flex; align-items: center; flex: none;
-    padding: 3px 12px; margin-right: 18px;
+    display: inline-flex; align-items: center; flex: none; min-width: 0; max-width: 272px;
+    padding: 3px 12px;
     background: var(--muted-bg); border-radius: 3px;
   }
   #pageNum { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; min-width: 58px; }
@@ -252,11 +297,12 @@
   #pnSep { font-size: 12px; font-weight: 300; color: rgba(255,255,255,.32); margin-left: 7px; letter-spacing: .1em; }
   #pageTitle {
     font-size: 15px; font-weight: 600; color: #8a8781; letter-spacing: .06em; margin-left: 8px;
-    flex: none; width: 182px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 0 1 auto; width: auto; max-width: 182px; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  /* 全场时间轴:细线=全稿,页边界 1px 刻度;亮线=已讲完,3px 高亮段=当前页(时长标注挂段中点下方),
-     白色游标=讲到本页的时间点(累计时间在其上方)。轴线落在 34px 盒子的垂直中点,与表头文字同一中线 */
-  #tl { position: relative; flex: 1; height: 34px; margin: 0 10px 0 28px; min-width: 220px; cursor: pointer; }
+  /* 全场时间轴:章节底面承担分组,页面片段只表达边界、当前页和悬浮状态；不区分已讲与未讲 */
+  #tl { position: relative; flex: 1; height: 34px; min-width: 220px; cursor: pointer; touch-action: none; }
+  #tl:focus-visible { outline: 1px solid rgba(240,238,232,.42); outline-offset: 2px; }
   #tlPv {
     /* fixed:面板 overflow:hidden 会裁掉探出顶部的部分,fixed 不受祖先裁剪;位置由 JS 按轴矩形算 */
     position: fixed; width: 192px; z-index: 70; pointer-events: none;
@@ -268,11 +314,36 @@
     opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
     transition: opacity .18s ease, transform .22s cubic-bezier(.22,.61,.21,1);
   }
-  /* 悬停所指页的区间段:5px 软带;颜色随区段状态——已讲过用与亮线一致的高亮度,未讲过用柔和档(JS 设) */
-  #tlHov {
-    position: absolute; bottom: 14px; height: 5px; background: rgba(240, 238, 232, .35);
-    opacity: 0; transition: left .18s ease, width .18s ease, opacity .2s ease, background .2s ease;
-    pointer-events: none;
+  /* 章节带:12px 淡面承载页面片段与当前页时长,相邻章节由两侧各 4px 透明边形成 8px 间隔 */
+  #tlParts { position: absolute; inset: 0; pointer-events: none; }
+  #tlParts .tl-part {
+    position: absolute; bottom: 11px; height: 12px; box-sizing: border-box;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    background: rgba(240,238,232,.06); background-clip: padding-box;
+    transition: background .16s ease;
+  }
+  #tlParts .tl-part.hover { background-color: rgba(240,238,232,.13); }
+  #tlPages { position: absolute; inset: 0; pointer-events: none; }
+  #tlPages .tl-page {
+    position: absolute; bottom: 11px; height: 12px; box-sizing: border-box;
+    border-left: 1px solid rgba(240,238,232,.08); background: transparent;
+    background-clip: padding-box; transition: background .14s ease;
+  }
+  #tlPages .tl-page.chapter-start { border-left: 4px solid transparent; }
+  #tlPages .tl-page.chapter-end { border-right: 4px solid transparent; }
+  #tlPages .tl-page.current { background-color: rgba(240,238,232,.24); }
+  #tlPages .tl-page.hover { background-color: rgba(240,238,232,.38); }
+  #tlPartName {
+    position: fixed; z-index: 72; max-width: 240px; padding: 5px 8px;
+    color: #d8d6d0; background: var(--chrome); border: 1px solid var(--chair);
+    font-size: 11px; line-height: 1.2; letter-spacing: .06em; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+    opacity: 0; visibility: hidden; transform: translateX(-50%) translateY(4px);
+    transition: opacity .12s ease, transform .16s var(--ease-ui), visibility 0s linear .12s;
+  }
+  #tlPartName.on {
+    opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+    transition: opacity .12s ease, transform .16s var(--ease-ui);
   }
   #tlPv .previewCanvas { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #000; }
   #tlPv .previewCanvas .canvas {
@@ -283,19 +354,24 @@
     font-size: 11px; font-weight: 300; letter-spacing: .08em; color: #98968f;
     padding: 5px 2px 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  /* 轴长随语速伸缩:最慢档(×0.6)顶满,宽度=RATE_MIN/rate,内部全百分比定位整体跟随 */
-  #tlIn { position: relative; height: 100%; width: 100%; transition: width .55s cubic-bezier(.22,.61,.21,1); }
-  #tl .trk { position: absolute; left: 0; right: 0; bottom: 16px; height: 1px; background: rgba(240,238,232,.13); }
-  #tl .tick { position: absolute; bottom: 14px; width: 1px; height: 5px; background: rgba(240,238,232,.2); transition: left .55s cubic-bezier(.22,.61,.21,1); }
-  #tlFill { position: absolute; left: 0; bottom: 16px; height: 1px; background: rgba(240,238,232,.8); transition: width .55s cubic-bezier(.22,.61,.21,1); }
-  #tlCur { position: absolute; bottom: 15px; height: 3px; background: #fff; transition: left .55s cubic-bezier(.22,.61,.21,1), width .55s cubic-bezier(.22,.61,.21,1); }
-  #tlHead { position: absolute; bottom: 11px; width: 2px; height: 11px; margin-left: -1px; background: rgba(240,238,232,.9); transition: left .55s cubic-bezier(.22,.61,.21,1); }
-  #tlNow { position: absolute; bottom: 23px; transform: translateX(-50%); font-size: 11px; color: rgba(240,238,232,.8); letter-spacing: .06em; font-variant-numeric: tabular-nums; transition: left .55s cubic-bezier(.22,.61,.21,1); }
-  /* 本页时长:淡底块包裹,与轴上的其他数字区分 */
+  /* 时间轴始终占满可用宽度;语速只改变时间数字,不改变几何长度 */
+  #tlIn { position: relative; height: 100%; width: 100%; }
+  #tlHead, #tlTail {
+    position: absolute; bottom: 9px; width: 2px; height: 16px; margin-left: -1px;
+    background: rgba(240,238,232,.9); opacity: 0; transition: opacity .14s ease;
+  }
+  #tlHead.on, #tlTail.on { opacity: 1; }
+  #tlNow {
+    position: absolute; bottom: 23px; transform: translateX(-50%);
+    font-size: 11px; color: rgba(240,238,232,.8); letter-spacing: .06em; font-variant-numeric: tabular-nums;
+    opacity: 0; visibility: hidden; transition: opacity .14s ease, visibility 0s linear .14s;
+  }
+  #tlNow.on { opacity: 1; visibility: visible; transition: opacity .14s ease; }
+  /* 本页时长直接写入当前页面片段,不再使用独立底色块 */
   #tlSec {
-    position: absolute; bottom: 0; transform: translateX(-50%);
-    padding: 2px 7px; background: rgba(255,255,255,.08); border-radius: 2px;
-    font-size: 11px; color: rgba(240,238,232,.75); letter-spacing: .06em; font-variant-numeric: tabular-nums;
+    position: absolute; bottom: 11px; z-index: 2; height: 12px; line-height: 12px; transform: translateX(-50%);
+    padding: 0; background: none; border-radius: 0; pointer-events: none; text-align: center; white-space: nowrap;
+    font-size: 10px; color: rgba(240,238,232,.82); letter-spacing: .04em; font-variant-numeric: tabular-nums;
     transition: left .55s cubic-bezier(.22,.61,.21,1);
   }
   #tlTot { position: absolute; right: 0; bottom: 23px; font-size: 11px; color: rgba(240,238,232,.32); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
@@ -356,7 +432,7 @@
   }
   /* 讲稿与备注共用一处保存状态:输入立即存浏览器,停顿后写回文件 */
   #saveState {
-    height: 32px; min-width: 70px; padding: 0 9px; margin-right: 8px;
+    height: 32px; min-width: 70px; padding: 0 9px;
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
     background: var(--muted-bg); color: #98968f; border-radius: 2px;
     font-size: 11px; letter-spacing: .04em; cursor: default;
@@ -558,10 +634,11 @@
      离场时选择器不变、动画不被重置,入场没播完就翻页时以当前帧继续播并随整页淡出。
      初始隐藏态与 keyframes 只在 .on/.current 下生效,总览缩略图与导出恒为静态终态。
      ============================================================ */
-  .slide.on .canvas { animation: cvIn .5s ease; }
-  @keyframes cvIn { from { opacity: 0; } }
-  .slide.leaving { display: block; position: absolute; z-index: 2; pointer-events: none; animation: cvOut .45s ease forwards; }
-  @keyframes cvOut { to { opacity: 0; } }
+  /* 普通跨页由旧页完整托底，新页在上层淡入；旧页只在新页 canvas 的真实入场完成后清理。 */
+  .slide.on .canvas { animation: cvIn .45s ease both; }
+  @keyframes cvIn { from { opacity: 0; } to { opacity: 1; } }
+  .slide.page-motion-off .canvas { animation: none !important; opacity: 1 !important; }
+  .slide.leaving { display: block; position: absolute; z-index: 1; pointer-events: none; animation: none; opacity: 1; }
   /* 满幅贴图页:图 1.6s Ken Burns 缓推收束(个别页要豁免时给画布加 nokb 类) */
   .slide.on .canvas.full-img:not(.nokb) > img { animation: kbIn 1.6s cubic-bezier(.22,.61,.36,1); }
   @keyframes kbIn { from { transform: scale(1.04); } }
@@ -645,7 +722,7 @@
   .slide.on .pbody .bd-steps { opacity: 0; animation: fwFadeIn .7s ease .55s forwards; }
   .slide.on .pbody .bd-tree { opacity: 0; animation: fwFadeIn .7s ease .55s forwards; }
 
-  /* --- 示例:分步页(data-steps 步进:→ 逐项点亮,未点亮压暗细字;讲到哪亮到哪) --- */
+  /* --- 示例:分步页(data-steps 进入后自动逐项点亮；←/→ 始终翻页) --- */
   .psteps { background: #000; color: #fff; }
   .psteps .st-title { position: absolute; top: 88px; left: 100px; font-size: 60px; font-weight: 200; letter-spacing: .1em; }
   .psteps .st-rows { position: absolute; top: 300px; left: 100px; right: 100px; display: flex; flex-direction: column; gap: 0; }
@@ -1277,7 +1354,8 @@
   .ovItem .v-editor .edit-before, body.exporting .v-editor .edit-before, body.raw .v-editor .edit-before { opacity: 0 !important; }
   .ovItem .v-editor .edit-after, body.exporting .v-editor .edit-after, body.raw .v-editor .edit-after { transform: none; }
   @media (prefers-reduced-motion: reduce) {
-    .slide.on .vdeck *, .slide.leaving { animation: none !important; transition: none !important; }
+    .slide.on .canvas, .slide.on .vdeck *, .slide.leaving { animation: none !important; transition: none !important; }
+    .slide.on .canvas { opacity: 1 !important; }
     .slide.on .vdeck * { opacity: 1 !important; }
     .slide.on .v-editor .edit-before { opacity: 0 !important; }
     .slide.on .v-editor .edit-after { transform: none; }
@@ -1319,6 +1397,15 @@
   </span>
 </div>
 
+<aside id="outlineDrawer" aria-label="Presentation outline">
+  <div id="outlineGrip" role="separator" aria-orientation="vertical" aria-label="Resize outline" aria-valuemin="240" aria-valuemax="520" aria-valuenow="324" aria-hidden="true" tabindex="-1"></div>
+  <button id="outlineToggle" type="button" data-tip="Open or close outline" aria-label="Open outline" aria-controls="outlineDrawer" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M8 6h13M8 12h13M8 18h13"></path><path d="M3 6h.01M3 12h.01M3 18h.01"></path></g></svg>
+  </button>
+  <div id="outlineHead"><span>OUTLINE</span><span id="outlineCount"></span></div>
+  <nav id="outlineTree" aria-label="Presentation pages"></nav>
+</aside>
+
 <div id="stage"></div>
 <div id="zonePrev" class="navzone"></div>
 <div id="zoneNext" class="navzone"></div>
@@ -1328,13 +1415,12 @@
   <div id="nGrip" title="Drag to resize panel height"></div>
   <div id="notesHead">
     <span id="headChip"><span id="pageNum"><span id="pnCur"></span><span id="pnSep"></span></span><span id="pageTitle"></span></span>
-    <div id="tl" title="Full timeline: cursor = current point, highlight = current page, number = page duration">
+    <div id="tl" role="slider" aria-label="Presentation timeline" aria-orientation="horizontal" aria-valuemin="1" aria-valuemax="6" aria-valuenow="1" tabindex="0" title="Full timeline: cursor = current point, highlight = current page, number = page duration">
       <div id="tlIn">
-        <div class="trk"></div>
-        <div id="tlFill"></div>
-        <div id="tlCur"></div>
-        <div id="tlHov"></div>
+        <div id="tlParts"></div>
+        <div id="tlPages"></div>
         <div id="tlHead"></div>
+        <div id="tlTail"></div>
         <span id="tlNow"></span>
         <span id="tlSec" title="Page duration"></span>
         <span id="tlTot"></span>
@@ -1343,12 +1429,13 @@
         <div class="previewCanvas" aria-hidden="true"></div>
         <div class="lbl"></div>
       </div>
+      <div id="tlPartName"></div>
     </div>
-    <span id="saveState" aria-label="Script and notes save status"><i id="syncLed" class="led ok"></i><span id="syncText">Saved</span></span>
     <div id="rateWrap">
       <button id="rateBtn" class="tip-up" data-tip="Speaking speed" aria-label="Speaking speed"><span id="rateNow">×1.0</span><i class="caret"></i></button>
       <div id="rateMenu"></div>
     </div>
+    <span id="saveState" aria-label="Script and notes save status"><i id="syncLed" class="led ok"></i><span id="syncText">Saved</span></span>
   </div>
   <div id="nsCols">
     <div class="col script">
@@ -1397,7 +1484,7 @@
 <template id="slides">
 
 <!-- 封面：先给出四个亮点，后四页逐一展开 -->
-<section class="slide" data-title="本地演示台">
+<section class="slide" data-slide-id="slide-001" data-title="本地演示台" data-part="示例" data-outline="封面">
   <div class="canvas nofoot vdeck v-cover">
     <div class="v-kicker">HANYU HTML DECK</div>
     <div class="cover-mark">AI → STAGE</div>
@@ -1417,7 +1504,7 @@
 </section>
 
 <!-- 功能一：AI 生成 -->
-<section class="slide" data-title="AI 生成整场演示">
+<section class="slide" data-slide-id="slide-002" data-title="AI 生成整场演示" data-part="示例" data-outline="主视觉与流程">
   <div class="canvas nofoot vdeck v-generate">
     <div class="v-kicker">GENERATE</div>
     <div class="v-corner">01 / 04</div>
@@ -1437,7 +1524,7 @@
 </section>
 
 <!-- 功能二：直接修改 -->
-<section class="slide" data-title="在页面上直接改">
+<section class="slide" data-slide-id="slide-003" data-title="在页面上直接改" data-part="示例" data-outline="前后状态">
   <div class="canvas nofoot vdeck v-edit">
     <div class="v-kicker">EDIT</div>
     <div class="v-corner">02 / 04</div>
@@ -1456,7 +1543,7 @@
 </section>
 
 <!-- 功能三：手机提词与遥控 -->
-<section class="slide" data-title="手机提词与遥控">
+<section class="slide" data-slide-id="slide-004" data-title="手机提词与遥控" data-part="示例" data-outline="设备关系">
   <div class="canvas nofoot vdeck v-phone">
     <div class="v-kicker">PRESENT</div>
     <div class="v-corner">03 / 04</div>
@@ -1479,7 +1566,7 @@
 </section>
 
 <!-- 功能四：导出交付 -->
-<section class="slide" data-title="讲完立即交付">
+<section class="slide" data-slide-id="slide-005" data-title="讲完立即交付" data-part="示例" data-outline="输出分支">
   <div class="canvas nofoot vdeck v-export">
     <div class="v-kicker">DELIVER</div>
     <div class="v-corner">04 / 04</div>
@@ -1502,7 +1589,7 @@
 </section>
 
 <!-- 封尾 -->
-<section class="slide" data-title="从第一版到正式上台">
+<section class="slide" data-slide-id="slide-006" data-title="从第一版到正式上台" data-part="示例" data-outline="结语">
   <div class="canvas nofoot vdeck v-end">
     <div class="end-mark"></div>
     <div class="end-line">让 AI 做的 PPT<br>更顺手</div>
@@ -1571,6 +1658,31 @@ var SEND_VERSION = false;
   var stage = document.getElementById('stage');
   var total = slides.length;
   var cur = 0;
+
+  // 草稿、缓存与协作内容都按稳定 ID 关联。缺失或重复时绝不退回页序键，
+  // 否则插页/重排会把一页的内容静默挂到另一页。
+  function assertStableSlideIds() {
+    var seen = {};
+    for (var i = 0; i < slides.length; i++) {
+      var id = slides[i].dataset.slideId;
+      if (!id || seen[id]) {
+        var reason = !id ? 'Page ' + (i + 1) + ' is missing data-slide-id.' : 'Duplicate data-slide-id: ' + id;
+        var fatal = document.createElement('main');
+        fatal.style.cssText = 'max-width:720px;margin:12vh auto;padding:32px;color:#f0eee8;font:16px/1.7 sans-serif';
+        var title = document.createElement('h1');
+        title.style.cssText = 'font-size:24px;margin-bottom:12px';
+        title.textContent = 'Deck structure error';
+        var detail = document.createElement('p');
+        detail.textContent = reason + ' Add a unique stable ID to every slide before editing.';
+        fatal.appendChild(title); fatal.appendChild(detail);
+        document.body.innerHTML = '';
+        document.body.appendChild(fatal);
+        throw new Error(reason);
+      }
+      seen[id] = true;
+    }
+  }
+  assertStableSlideIds();
 
   // 把模板里的页面搬进舞台（不注入页脚线：页脚与页码按项目要求去掉）
   slides.forEach(function (s, i) {
@@ -1674,15 +1786,148 @@ var SEND_VERSION = false;
   var archiveUndo = document.getElementById('archiveUndo');
   var edComm = document.getElementById('edComm');
   var EDS = [
-    { key: DECK.key + '.s.', hkey: DECK.key + '.h.', el: edScript, sel: '.ns', label: 'Script', canon: canonNs },
-    { key: DECK.key + '.c.', hkey: DECK.key + '.hc.', el: edComm, sel: '.nc', label: 'Notes', canon: canon }
+    { field: 'script', key: DECK.key + '.s.', hkey: DECK.key + '.h.', el: edScript, sel: '.ns', label: 'Script', canon: canonNs },
+    { field: 'note', key: DECK.key + '.c.', hkey: DECK.key + '.hc.', el: edComm, sel: '.nc', label: 'Notes', canon: canon }
   ];
   var WRITEBACK_DELAY = 3000;
   var writeFlights = {};
+  var TAB_ID = '', PREVIOUS_TAB_ID = '';
+  try {
+    PREVIOUS_TAB_ID = window.sessionStorage.getItem(DECK.key + '.tabId') || '';
+    TAB_ID = window.crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    window.sessionStorage.setItem(DECK.key + '.tabId', TAB_ID);
+  } catch (e) { TAB_ID = Math.random().toString(36).slice(2); }
+  var CONTENT_OWNER = 'browser-' + TAB_ID;
+  var contentRevisions = {};
+  var contentLoaded = false;
+  function slideId(i) { return slides[i].dataset.slideId; }
+  function contentKey(i, ed) { return slideId(i) + '.' + ed.field; }
+  function draftKey(i, ed) { return DECK.key + '.draft.' + TAB_ID + '.' + contentKey(i, ed); }
+  function previousDraftKey(i, ed) { return PREVIOUS_TAB_ID ? DECK.key + '.draft.' + PREVIOUS_TAB_ID + '.' + contentKey(i, ed) : ''; }
+  function sharedDraftKey(i, ed) { return DECK.key + '.draft.' + contentKey(i, ed); }
+  function cacheKey(i, ed) { return DECK.key + '.cache.' + contentKey(i, ed); }
+  function revisionKey(i, ed) { return DECK.key + '.revision.' + contentKey(i, ed); }
+  function historyKey(i, ed) { return DECK.key + '.history.' + contentKey(i, ed); }
+  function draftOf(i, ed) {
+    var key = draftKey(i, ed), value = localStorage.getItem(key);
+    if (value === null) {
+      var previous = previousDraftKey(i, ed);
+      if (previous) value = localStorage.getItem(previous);
+      if (value === null) value = localStorage.getItem(sharedDraftKey(i, ed));
+      if (value === null) value = localStorage.getItem(ed.key + (i + 1));
+      if (value !== null) {
+        // 复制而不删除上一实例：普通刷新由新实例接手；复制标签页时源标签的草稿仍安全保留。
+        localStorage.setItem(key, value);
+        localStorage.removeItem(sharedDraftKey(i, ed));
+        localStorage.removeItem(ed.key + (i + 1));
+      }
+    }
+    return value;
+  }
+  function putDraft(i, ed, value) { localStorage.setItem(draftKey(i, ed), value); }
+  function dropDraft(i, ed) {
+    localStorage.removeItem(draftKey(i, ed));
+    localStorage.removeItem(sharedDraftKey(i, ed));
+    localStorage.removeItem(ed.key + (i + 1));
+  }
+  function cacheContent(i, ed, value) { localStorage.setItem(cacheKey(i, ed), value); }
+  function contentOf(i, ed) { var value = draftOf(i, ed); return value !== null ? value : seedOf(i, ed); }
+  function contentRevision(i, ed) {
+    return contentRevisions[contentKey(i, ed)] || Number(localStorage.getItem(revisionKey(i, ed))) || 0;
+  }
+  // file:// 刷新时本地服务可能尚未启动：先用这个浏览器最后见过的磁盘版本覆盖旧 HTML 种子。
+  slides.forEach(function (slide, i) {
+    EDS.forEach(function (ed) {
+      var cached = localStorage.getItem(cacheKey(i, ed));
+      var src = slide.querySelector('aside ' + ed.sel);
+      if (cached !== null && src) src.innerHTML = cached;
+    });
+  });
+  // 同一 deck 开了多个标签页时，写入成功会在别的标签页触发 storage；
+  // 草稿键清除后用刚收到的共享缓存补上，避免 SSE 比响应先到造成一次跳过。
+  window.addEventListener('storage', function (event) {
+    if (!event.key || event.newValue !== null || event.key.indexOf(DECK.key + '.draft.') !== 0) return;
+    slides.forEach(function (_slide, i) {
+      EDS.forEach(function (ed) {
+        if (!event.key.endsWith('.' + contentKey(i, ed)) || draftOf(i, ed) !== null) return;
+        var cached = localStorage.getItem(cacheKey(i, ed));
+        if (cached !== null) applyContent(i, ed, cached, localStorage.getItem(revisionKey(i, ed)));
+      });
+    });
+  });
   var PANEL_KEY = DECK.key + '.ui.panelExpanded';
   var DRAWER_KEY = DECK.key + '.ui.notesDrawerOpen';
+  var OUTLINE_KEY = DECK.key + '.ui.outlineOpen';
+  var OUTLINE_WIDTH_KEY = DECK.key + '.ui.outlineWidth';
+  var OUTLINE_MIN_WIDTH = 240;
+  var OUTLINE_MAX_WIDTH = 520;
+  var OUTLINE_AUTO_MAX_WIDTH = 324;
+  var OUTLINE_COLLAPSE_DISTANCE = 56;
+  var OUTLINE_COLLAPSE_HYSTERESIS = 16;
+  var outlineDrawer = document.getElementById('outlineDrawer');
+  var outlineGrip = document.getElementById('outlineGrip');
+  var outlineToggle = document.getElementById('outlineToggle');
+  var outlineHead = document.getElementById('outlineHead');
+  var outlineTree = document.getElementById('outlineTree');
+  var outlineCount = document.getElementById('outlineCount');
+  function clampOutlineWidth(width) {
+    return Math.round(Math.min(OUTLINE_MAX_WIDTH, Math.max(OUTLINE_MIN_WIDTH, width)));
+  }
+  function applyOutlineWidth(width) {
+    var next = clampOutlineWidth(width);
+    document.documentElement.style.setProperty('--outline-w', next + 'px');
+    if (outlineGrip) {
+      outlineGrip.setAttribute('aria-valuenow', String(next));
+      outlineGrip.removeAttribute('aria-valuetext');
+    }
+    return next;
+  }
+  function applyOutlineOverdrag(overdrag) {
+    var resistance = Math.min(16, Math.max(0, overdrag) * .18);
+    document.documentElement.style.setProperty('--outline-w', Math.round(OUTLINE_MIN_WIDTH - resistance) + 'px');
+    if (outlineGrip) outlineGrip.setAttribute('aria-valuenow', String(OUTLINE_MIN_WIDTH));
+  }
+  function measureOutlineAutoWidth() {
+    if (!outlineDrawer) return OUTLINE_AUTO_MAX_WIDTH;
+    var probe = document.createElement('span');
+    probe.style.cssText = 'position:fixed;left:-10000px;top:-10000px;width:max-content;white-space:nowrap;visibility:hidden;pointer-events:none;';
+    document.body.appendChild(probe);
+    function textWidth(element) {
+      if (!element) return 0;
+      var style = getComputedStyle(element);
+      probe.style.fontFamily = style.fontFamily;
+      probe.style.fontSize = style.fontSize;
+      probe.style.fontWeight = style.fontWeight;
+      probe.style.letterSpacing = style.letterSpacing;
+      probe.textContent = element.textContent;
+      return probe.getBoundingClientRect().width;
+    }
+    var required = OUTLINE_MIN_WIDTH;
+    Array.prototype.forEach.call(outlineDrawer.querySelectorAll('.outline-page'), function (page) {
+      required = Math.max(required, 18 + 28 + 9 + textWidth(page.querySelector('.outline-page-title')) + 18);
+    });
+    Array.prototype.forEach.call(outlineDrawer.querySelectorAll('.outline-part-head'), function (head) {
+      required = Math.max(required, 18 + textWidth(head.querySelector('.outline-part-title')) + 12 + textWidth(head.querySelector('.outline-part-range')) + 18);
+    });
+    probe.remove();
+    return Math.round(Math.min(OUTLINE_AUTO_MAX_WIDTH, Math.max(OUTLINE_MIN_WIDTH, required)));
+  }
+  function syncOutlineAccessibility(open) {
+    if (outlineHead) outlineHead.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if (outlineTree) {
+      outlineTree.inert = !open;
+      outlineTree.setAttribute('aria-hidden', open ? 'false' : 'true');
+    }
+    if (outlineGrip) {
+      outlineGrip.tabIndex = open ? 0 : -1;
+      outlineGrip.setAttribute('aria-hidden', open ? 'false' : 'true');
+    }
+  }
+  var savedOutlineWidth = parseInt(localStorage.getItem(OUTLINE_WIDTH_KEY), 10);
+  applyOutlineWidth(Number.isFinite(savedOutlineWidth) ? savedOutlineWidth : OUTLINE_AUTO_MAX_WIDTH);
   if (localStorage.getItem(PANEL_KEY) === '1') document.body.classList.remove('notes-mini');
   if (localStorage.getItem(DRAWER_KEY) === '1') document.body.classList.add('notes-drawer-open');
+  if (localStorage.getItem(OUTLINE_KEY) === '1' && !SEND_VERSION) document.body.classList.add('outline-open');
 
   function fitSlide() {
     var raw = document.body.classList.contains('raw');
@@ -1770,19 +2015,21 @@ var SEND_VERSION = false;
   }
   function saveNote() {
     EDS.forEach(function (ed) {
-      var key = ed.key + (cur + 1);
+      var key = draftKey(cur, ed);
       // 旧版正在写回时，即使用户改回当前种子，也要保留显式覆盖：
       // 旧响应随后会改掉种子，提前删覆盖会把用户刚改回去的版本吞掉。
-      if (!writeFlights[key] && ed.canon(ed.el.innerHTML) === ed.canon(seedOf(cur, ed))) localStorage.removeItem(key);
-      else localStorage.setItem(key, ed.el.innerHTML);
-      ed.el.classList.toggle('dirty', !!localStorage.getItem(key));
+      var matchesSeed = ed.canon(ed.el.innerHTML) === ed.canon(seedOf(cur, ed));
+      if (!writeFlights[key] && matchesSeed) {
+        if (contentLoaded) dropDraft(cur, ed);
+      } else putDraft(cur, ed, ed.el.innerHTML);
+      ed.el.classList.toggle('dirty', draftOf(cur, ed) !== null);
     });
   }
   function loadNotes(i) {
     EDS.forEach(function (ed) {
-      var stored = localStorage.getItem(ed.key + (i + 1));
-      ed.el.innerHTML = stored || seedOf(i, ed);
-      ed.el.classList.toggle('dirty', !!stored);
+      var stored = draftOf(i, ed);
+      ed.el.innerHTML = stored !== null ? stored : seedOf(i, ed);
+      ed.el.classList.toggle('dirty', stored !== null);
     });
     decorate();
     decorateComm();
@@ -1985,11 +2232,10 @@ var SEND_VERSION = false;
   })();
 
   // ===== 讲稿时长估算 + 全场时间轴:中文按字、英文按词(1 词≈1.2 字),(→ …) 舞台指示不计 =====
-  // 语速用倍数表示:×1.0 = 210 字/分钟。轴长以最慢档为满幅基准
+  // 语速用倍数表示:×1.0 = 210 字/分钟。语速只改变时长数字，不改变时间轴长度
   var RATE_KEY = DECK.key + '.rate';
   var RATE_BASE = 210;
   var RATE_MULTS = [0.6, 0.8, 1.0, 1.3, 1.6];
-  var RATE_MIN = Math.round(RATE_BASE * RATE_MULTS[0]);
   var rate = parseInt(localStorage.getItem(RATE_KEY), 10) || RATE_BASE;
   var rateWrap = document.getElementById('rateWrap');
   var rateBtn = document.getElementById('rateBtn');
@@ -2041,12 +2287,13 @@ var SEND_VERSION = false;
   syncRateBtn();
   var tlSec = document.getElementById('tlSec');
   var tlIn = document.getElementById('tlIn');
-  var tlFill = document.getElementById('tlFill');
-  var tlCur = document.getElementById('tlCur');
+  var tlParts = document.getElementById('tlParts');
+  var tlPages = document.getElementById('tlPages');
+  var tlPartName = document.getElementById('tlPartName');
   var tlHead = document.getElementById('tlHead');
+  var tlTail = document.getElementById('tlTail');
   var tlNow = document.getElementById('tlNow');
   var tlTot = document.getElementById('tlTot');
-  var ticks = [];
   var estBox = document.createElement('div');
   function estSec(html) {
     estBox.innerHTML = canonNs(html);
@@ -2061,42 +2308,94 @@ var SEND_VERSION = false;
     s = Math.round(s);
     return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   }
+  var TL_PAGE_MIN_PX = 32;
+  function timelineWidths(weights, trackWidth) {
+    var count = weights.length;
+    if (!count) return [];
+    var minWidth = Math.min(TL_PAGE_MIN_PX, trackWidth / count);
+    var widths = new Array(count);
+    var open = weights.map(function (_, i) { return i; });
+    var remaining = trackWidth;
+    while (open.length) {
+      var weightTotal = open.reduce(function (sum, i) { return sum + weights[i]; }, 0);
+      var scale = weightTotal > 0 ? remaining / weightTotal : 0;
+      var clamped = open.filter(function (i) { return weights[i] * scale < minWidth; });
+      if (!clamped.length) {
+        open.forEach(function (i) { widths[i] = weightTotal > 0 ? weights[i] * scale : remaining / open.length; });
+        break;
+      }
+      clamped.forEach(function (i) { widths[i] = minWidth; remaining -= minWidth; });
+      open = open.filter(function (i) { return clamped.indexOf(i) < 0; });
+    }
+    return widths;
+  }
   // 时间轴:游标停在「讲到本页开头」的累计时间点,翻页/改稿/换语速时缓动滑移
-  var tlActive = [];
+  var tlActive = [], tlGroups = [], tlPartEls = [], tlPageEls = [];
   function updateTime() {
     var secs = [];
     tlActive = activeIndices();
     tlActive.forEach(function (i) {
       var html = i === cur ? edScript.innerHTML :
-        (localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0]));
+        contentOf(i, EDS[0]);
       secs.push(estSec(html));
     });
-    var totalSec = secs.reduce(function (a, b) { return a + b; }, 0) || 1;
-    var cum = 0, cums = [0];
-    secs.forEach(function (s) { cum += s; cums.push(cum); });
-    ticks.forEach(function (t) { t.remove(); });
-    ticks = [];
-    for (var j = 1; j < tlActive.length; j++) {
-      var t = document.createElement('div');
-      t.className = 'tick';
-      tlIn.appendChild(t);
-      ticks.push(t);
-    }
-    ticks.forEach(function (t, j) { t.style.left = (cums[j + 1] / totalSec * 100) + '%'; });
-    tlIn.style.width = (RATE_MIN / rate * 100) + '%'; // 最慢档顶满,轴长正比于该语速下的总时长
+    var totalSec = secs.reduce(function (a, b) { return a + b; }, 0);
+    var timeCum = 0, timeCums = [0];
+    secs.forEach(function (s) { timeCum += s; timeCums.push(timeCum); });
+    // 空讲稿页仍要保留可点击区间；4 秒只参与几何分配，不进入时长数字。
+    var geomSecs = secs.map(function (s) { return Math.max(s * rate / RATE_BASE, 4); });
+    var trackWidth = Math.max(tlIn.clientWidth || tlIn.getBoundingClientRect().width || 0, tlActive.length);
+    var geomWidths = timelineWidths(geomSecs, trackWidth);
+    var geomTotal = geomWidths.reduce(function (a, b) { return a + b; }, 0) || 1;
+    var geomCum = 0, cums = [0];
+    geomWidths.forEach(function (w) { geomCum += w; cums.push(geomCum); });
     var curPos = Math.max(activePosition(cur), 0);
-    var pos = cums[curPos] / totalSec * 100;
-    tlFill.style.width = pos + '%';
-    tlCur.style.left = pos + '%';
-    tlCur.style.width = (secs[curPos] / totalSec * 100) + '%';
-    tlHead.style.left = pos + '%';
-    tlNow.style.left = Math.min(Math.max(pos, 2.5), 88) + '%';
-    tlNow.textContent = fmtClock(cums[curPos]);
+    tlGroups = [];
+    tlActive.forEach(function (source, pos) {
+      var name = slides[source].dataset.part || 'Pages';
+      var last = tlGroups[tlGroups.length - 1];
+      if (last && last.name === name) last.end = pos + 1;
+      else tlGroups.push({ name: name, start: pos, end: pos + 1 });
+    });
+    tlParts.innerHTML = '';
+    tlPartEls = tlGroups.map(function (group, groupIndex) {
+      var part = document.createElement('div');
+      part.className = 'tl-part';
+      part.dataset.part = group.name;
+      part.dataset.group = groupIndex;
+      part.style.left = (cums[group.start] / geomTotal * 100) + '%';
+      part.style.width = ((cums[group.end] - cums[group.start]) / geomTotal * 100) + '%';
+      tlParts.appendChild(part);
+      return part;
+    });
+    tlPages.innerHTML = '';
+    tlPageEls = tlActive.map(function (source, pagePos) {
+      var groupIndex = -1;
+      for (var g = 0; g < tlGroups.length; g++) {
+        if (pagePos >= tlGroups[g].start && pagePos < tlGroups[g].end) { groupIndex = g; break; }
+      }
+      var group = tlGroups[groupIndex];
+      var page = document.createElement('div');
+      page.className = 'tl-page' + (pagePos === curPos ? ' current' : '') +
+        (pagePos === group.start ? ' chapter-start' : '') + (pagePos === group.end - 1 ? ' chapter-end' : '');
+      page.dataset.page = pagePos;
+      page.dataset.group = groupIndex;
+      page.style.left = (cums[pagePos] / geomTotal * 100) + '%';
+      page.style.width = (geomWidths[pagePos] / geomTotal * 100) + '%';
+      tlPages.appendChild(page);
+      return page;
+    });
+    var pos = cums[curPos] / geomTotal * 100;
     // 本页时长标注在当前页高亮段的中点下方(与游标上方的累计时间上下错层,不相撞)
-    tlSec.style.left = Math.min(Math.max(pos + secs[curPos] / totalSec * 50, 2.5), 95) + '%';
+    tlSec.style.left = Math.min(Math.max(pos + geomWidths[curPos] / geomTotal * 50, 2.5), 95) + '%';
     tlSec.textContent = fmtClock(secs[curPos]);
     tlTot.textContent = fmtClock(totalSec);
-    tlCums = cums; tlTotSec = totalSec;   // 悬停预览/拖动跳页用同一套页时长映射
+    tl.setAttribute('aria-valuemax', String(tlActive.length));
+    tl.setAttribute('aria-valuenow', String(curPos + 1));
+    tl.setAttribute('aria-valuetext', 'Page ' + (curPos + 1) + ' of ' + tlActive.length + ', ' +
+      (slides[tlActive[curPos]].dataset.part || 'Pages') + ', ' + (slides[tlActive[curPos]].dataset.title || ''));
+    tlCums = cums; tlTimeCums = timeCums; tlTotSec = geomTotal;
+    if ((tlShown || tlDrag) && tlLastX) tlPartShow(tlPageAt(tlLastX));
   }
 
   // ===== 时间轴悬停预览 + 拖动跳页(播放器式):hover 200ms 出小窗,按住拖动实时换页 =====
@@ -2104,17 +2403,55 @@ var SEND_VERSION = false;
   var tlPv = document.getElementById('tlPv');
   var tlPvCanvas = tlPv.querySelector('.previewCanvas');
   var tlPvLbl = tlPv.querySelector('.lbl');
-  var tlCums = [], tlTotSec = 1, tlHoverT = 0, tlShown = false, tlDrag = false, tlPvPage = -1, tlLastX = 0;
+  var tlCums = [], tlTimeCums = [], tlTotSec = 1, tlHoverT = 0, tlShown = false, tlDrag = false, tlDragSaved = false, tlPvPage = -1, tlLastX = 0;
   function tlPageAt(clientX) {
     var r = tlIn.getBoundingClientRect();
     var t = Math.min(Math.max((clientX - r.left) / r.width, 0), 0.999) * tlTotSec;
     for (var i = 0; i < tlActive.length; i++) if (t < tlCums[i + 1]) return i;
     return Math.max(tlActive.length - 1, 0);
   }
-  var tlHov = document.getElementById('tlHov');
+  function tlGroupAt(pos) {
+    for (var g = 0; g < tlGroups.length; g++) {
+      if (pos >= tlGroups[g].start && pos < tlGroups[g].end) return g;
+    }
+    return -1;
+  }
+  function tlPartShow(pos) {
+    var groupIndex = tlGroupAt(pos);
+    if (groupIndex < 0) return;
+    var group = tlGroups[groupIndex];
+    tlPartEls.forEach(function (part) { part.classList.toggle('hover', +part.dataset.group === groupIndex); });
+    tlPageEls.forEach(function (page, pagePos) { page.classList.toggle('hover', pagePos === pos); });
+    var pageEl = tlPageEls[pos];
+    var pageRect = pageEl.getBoundingClientRect();
+    var trackRect = tlIn.getBoundingClientRect();
+    var pageStyle = getComputedStyle(pageEl);
+    var start = pageRect.left - trackRect.left + (parseFloat(pageStyle.borderLeftWidth) || 0);
+    var end = pageRect.right - trackRect.left - (parseFloat(pageStyle.borderRightWidth) || 0);
+    tlHead.style.left = start + 'px';
+    tlTail.style.left = end + 'px';
+    tlNow.style.left = Math.min(Math.max(start, trackRect.width * .025), trackRect.width * .975) + 'px';
+    tlNow.textContent = fmtClock(tlTimeCums[pos] || 0);
+    tlHead.classList.add('on'); tlTail.classList.add('on'); tlNow.classList.add('on');
+    var partRect = tlPartEls[groupIndex].getBoundingClientRect();
+    var tlRect = tl.getBoundingClientRect();
+    var notesToggleRect = document.getElementById('notesToggle').getBoundingClientRect();
+    var center = partRect.left + partRect.width / 2;
+    tlPartName.textContent = group.name;
+    tlPartName.style.left = Math.min(Math.max(center, tlRect.left + 80), tlRect.right - 80) + 'px';
+    tlPartName.style.bottom = (window.innerHeight - notesToggleRect.top + 8) + 'px';
+    tlPartName.classList.add('on');
+  }
+  function tlPartHide() {
+    tlPartEls.forEach(function (part) { part.classList.remove('hover'); });
+    tlPageEls.forEach(function (page) { page.classList.remove('hover'); });
+    tlHead.classList.remove('on'); tlTail.classList.remove('on'); tlNow.classList.remove('on');
+    tlPartName.classList.remove('on');
+  }
   function tlPvShow(clientX) {
     var pos = tlPageAt(clientX);
     var i = tlActive[pos];
+    tlPartShow(pos);
     if (pos !== tlPvPage) {
       tlPvPage = pos;
       tlPvLbl.textContent = 'P' + (pos + 1) + ' · ' + (slides[i].dataset.title || '');
@@ -2123,63 +2460,100 @@ var SEND_VERSION = false;
       clone.style.transform = '';
       tlPvCanvas.appendChild(clone);
       tlPvCanvas.style.setProperty('--tlpvscale', tlPvCanvas.clientWidth / 1920);
-      tlHov.style.left = (tlCums[pos] / tlTotSec * 100) + '%';
-      tlHov.style.width = ((tlCums[pos + 1] - tlCums[pos]) / tlTotSec * 100) + '%';
     }
-    // 已讲过区段用与亮线一致的高亮度,未讲过用柔和档,视觉状态不打架
-    tlHov.style.background = 'rgba(240,238,232,' + (pos < activePosition(cur) ? '.75' : '.35') + ')';
-    tlHov.style.opacity = 1;
     var r = tl.getBoundingClientRect();
     tlPv.style.left = Math.min(Math.max(clientX, r.left + 100), r.left + r.width - 100) + 'px';
-    tlPv.style.bottom = (window.innerHeight - r.top + 10) + 'px';
+    tlPv.style.bottom = (window.innerHeight - r.top + 38) + 'px';
     tlPv.classList.add('on');
     tlShown = true;
   }
   function tlPvHide() {
     tlPv.classList.remove('on');
-    tlHov.style.opacity = 0;
     tlShown = false; tlPvPage = -1;
   }
   function tlJump(clientX) {
-    var i = tlActive[tlPageAt(clientX)];
-    if (i !== cur) go(i);
+    var pos = tlPageAt(clientX);
+    var i = tlActive[pos];
+    if (i !== cur) {
+      goImmediate(i, tlDragSaved);
+      tlDragSaved = true;
+    }
+    tlPartShow(tlPageAt(clientX));
   }
   tl.addEventListener('pointermove', function (e) {
     tlLastX = e.clientX;
+    tlPartShow(tlPageAt(e.clientX));
     if (tlShown || tlDrag) tlPvShow(e.clientX);
     else if (!tlHoverT) tlHoverT = setTimeout(function () { tlHoverT = 0; tlPvShow(tlLastX); }, 200);
     if (tlDrag) tlJump(e.clientX);
   });
   tl.addEventListener('pointerleave', function () {
     clearTimeout(tlHoverT); tlHoverT = 0;
-    if (!tlDrag) tlPvHide();
+    if (!tlDrag) { tlPvHide(); tlPartHide(); }
   });
   tl.addEventListener('pointerdown', function (e) {
     if (e.button !== 0) return;
     e.preventDefault();
     tlDrag = true;
+    tlDragSaved = false;
     try { tl.setPointerCapture(e.pointerId); } catch (err) {}
+    tlPartShow(tlPageAt(e.clientX));
     tlPvShow(e.clientX);
     tlJump(e.clientX);
   });
   tl.addEventListener('pointerup', function (e) {
     if (!tlDrag) return;
     tlDrag = false;
+    tlDragSaved = false;
     var r = tl.getBoundingClientRect();
-    if (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right) tlPvHide();
+    if (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right) {
+      tlPvHide(); tlPartHide();
+    }
+  });
+  function tlCancelDrag() {
+    if (!tlDrag) return;
+    tlDrag = false;
+    tlDragSaved = false;
+    clearTimeout(tlHoverT); tlHoverT = 0;
+    tlPvHide(); tlPartHide();
+  }
+  tl.addEventListener('pointercancel', tlCancelDrag);
+  tl.addEventListener('lostpointercapture', tlCancelDrag);
+  tl.addEventListener('keydown', function (e) {
+    var pos = Math.max(activePosition(cur), 0);
+    var next = pos;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = Math.max(pos - 1, 0);
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = Math.min(pos + 1, tlActive.length - 1);
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tlActive.length - 1;
+    else return;
+    e.preventDefault(); e.stopPropagation();
+    if (tlActive[next] !== cur) go(tlActive[next]);
   });
   edScript.addEventListener('input', updateTime);
+  var tlResizeRaf = 0;
+  function refreshTimelineWidth() {
+    if (tlResizeRaf) return;
+    tlResizeRaf = requestAnimationFrame(function () {
+      tlResizeRaf = 0;
+      if (!tlIn.getBoundingClientRect().width) return;
+      updateTime();
+    });
+  }
+  var tlResizeObserver = window.ResizeObserver ? new ResizeObserver(refreshTimelineWidth) : null;
+  if (tlResizeObserver) tlResizeObserver.observe(tl);
+  else window.addEventListener('resize', refreshTimelineWidth);
   // ===== 版本历史:讲稿与备注各一条时间线(localStorage 键 <ed.hkey>N,数组,上限 30 条)。
   // 记录时机:离开改过的页、自动写回前、从历史恢复前——恢复永不丢当前稿。
   // 自动写回每次停顿都会记,故同页同栏一分钟内只保留一条,不然 30 条很快被连续输入刷空 =====
   var SNAP_MERGE_MS = 60000;
   function histOf(i, ed) {
-    try { return JSON.parse(localStorage.getItem(ed.hkey + (i + 1))) || []; }
+    try { return JSON.parse(localStorage.getItem(historyKey(i, ed))) || []; }
     catch (e) { return []; }
   }
   function snapHist(i, ed) {
-    var h = localStorage.getItem(ed.key + (i + 1));
-    if (!h) return;                       // 与默认稿一致(无改动)不记
+    var h = draftOf(i, ed);
+    if (h === null) return;               // 与默认稿一致(无改动)不记
     var arr = histOf(i, ed);
     var last = arr[arr.length - 1];
     if (last && ed.canon(last.h) === ed.canon(h)) return;   // 与最近一条相同不重复记
@@ -2187,7 +2561,7 @@ var SEND_VERSION = false;
     if (last && now - last.t < SNAP_MERGE_MS) arr[arr.length - 1] = { t: now, h: h };
     else arr.push({ t: now, h: h });
     if (arr.length > 30) arr = arr.slice(arr.length - 30);
-    localStorage.setItem(ed.hkey + (i + 1), JSON.stringify(arr));
+    localStorage.setItem(historyKey(i, ed), JSON.stringify(arr));
   }
   function snapAll(i) { EDS.forEach(function (ed) { snapHist(i, ed); }); }
   var histMenu = document.getElementById('histMenu');
@@ -2231,11 +2605,11 @@ var SEND_VERSION = false;
     histMenu.classList.remove('open');
     saveNote();
     snapHist(cur, ed);                    // 当前稿先入历史,再恢复
-    if (b.dataset.k === 'seed') localStorage.removeItem(ed.key + (cur + 1));
+    if (b.dataset.k === 'seed') dropDraft(cur, ed);
     else {
       var it = histOf(cur, ed)[+b.dataset.k];
       if (!it) return;
-      localStorage.setItem(ed.key + (cur + 1), it.h);
+      putDraft(cur, ed, it.h);
     }
     loadNotes(cur);
     saveNote();                           // 恢复的版本若与默认稿一致,顺手清掉覆盖标记
@@ -2245,10 +2619,39 @@ var SEND_VERSION = false;
     if (!e.target.closest('.hist-btn') && !e.target.closest('#histMenu')) histMenu.classList.remove('open');
   });
 
-  // ===== 自动写回:输入停顿后把改动页静默写回源文件,不需要用户点保存 =====
+  // 磁盘内容仓覆盖 HTML 中的离线种子；本地草稿存在时始终让草稿优先。
+  function applyContent(i, ed, html, revision) {
+    contentRevisions[contentKey(i, ed)] = Number(revision) || 0;
+    localStorage.setItem(revisionKey(i, ed), String(Number(revision) || 0));
+    cacheContent(i, ed, html);
+    var src = slides[i].querySelector('aside ' + ed.sel);
+    if (src) src.innerHTML = html;
+    if (i === cur && draftOf(i, ed) === null && document.activeElement !== ed.el) {
+      ed.el.innerHTML = html;
+      ed.el.classList.remove('dirty');
+      if (ed.field === 'script') { decorate(); updateTime(); } else decorateComm();
+    }
+  }
+  function loadContentStore() {
+    if (SEND_VERSION) return Promise.resolve();
+    return fetch(api('/content')).then(function (r) {
+      if (!r.ok) throw new Error('content ' + r.status);
+      return r.json();
+    }).then(function (store) {
+      contentLoaded = true;
+      slides.forEach(function (_slide, i) {
+        var record = store.slides && store.slides[slideId(i)];
+        if (!record) return;
+        EDS.forEach(function (ed) { if (record[ed.field]) applyContent(i, ed, record[ed.field].html, record[ed.field].revision); });
+      });
+      loadNotes(cur);
+    });
+  }
+
+  // ===== 自动写回:输入停顿后把改动页静默写入 deck-content.json,不需要用户点保存 =====
   // 状态只用一盏灯表达:绿=都已落盘,橙黄=还有改动只在浏览器里(服务没开/被拒/正在写)
   function fragOfPage(i, ed) {
-    var stored = localStorage.getItem(ed.key + (i + 1));
+    var stored = draftOf(i, ed);
     if (stored === null) return '';
     // 用户把一栏清空也是一次有效修改。规范化后的空字符串会被服务端拒绝，
     // 因此用一个可安全落盘、再次规范化仍为空的空段落表示它。
@@ -2264,7 +2667,7 @@ var SEND_VERSION = false;
     var out = [];
     slides.forEach(function (s, i) {
       EDS.forEach(function (ed) {
-        if (localStorage.getItem(ed.key + (i + 1))) out.push({ i: i, ed: ed });
+        if (draftOf(i, ed) !== null) out.push({ i: i, ed: ed });
       });
     });
     return out;
@@ -2284,12 +2687,12 @@ var SEND_VERSION = false;
     var note = document.createElement('p');
     note.className = 'lp-note';
     note.textContent = ledState.failed
-      ? 'Write-back was rejected: ' + ledState.why
+      ? 'Sync paused: ' + ledState.why + '. Your browser draft is preserved.'
       : ledState.noToken
       ? 'This page opened before the local service and has no write-back token. Refresh the page to reconnect.'
       : ledState.down
         ? 'The local service is offline. Changes remain in this browser until you start the launcher.'
-        : (ledState.ok ? 'Changes write back to index.html 3 seconds after you stop typing.' : 'Saved in this browser. Waiting to write back after typing stops.');
+        : (ledState.ok ? 'Changes sync to deck-content.json 3 seconds after you stop typing.' : 'Saved in this browser. Waiting to sync after typing stops.');
     ledPop.appendChild(note);
     if (ledState.pending.length) {
       var list = document.createElement('div');
@@ -2339,7 +2742,7 @@ var SEND_VERSION = false;
   }
   function refreshLed() {
     var n = dirtyPages().length;
-    if (!n) setLed(true, 'Script and notes are saved to index.html', false, false);
+    if (!n) setLed(true, 'Script and notes are saved to deck-content.json', false, false);
     else setLed(false, n + ' change(s) not written to file', ledState.down, ledState.noToken);
   }
   var seedTimer = null, seedChain = Promise.resolve(), seedBusy = false, seedAgain = false;
@@ -2362,23 +2765,28 @@ var SEND_VERSION = false;
         if (down) return;
         var frag = fragOfPage(c.i, c.ed);
         if (!frag) return;                 // 内容为空不写,留在浏览器里等下一次
-        var key = c.ed.key + (c.i + 1);
+        var key = draftKey(c.i, c.ed);
         writeFlights[key] = frag;
-        return fetch(api('/seed'), {
+        return fetch(api('/content/patch'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ page: c.i + 1, total: total, html: frag, sel: c.ed.sel.slice(1) })
+          body: JSON.stringify({ slideId: slideId(c.i), field: c.ed.field, html: frag,
+            baseRevision: contentRevision(c.i, c.ed), owner: CONTENT_OWNER })
         }).then(function (r) {
           if (r.status === 403) noToken = true;   // 缺凭据:得从启动脚本打开才能写回
-          return r.json();
+          return r.json().then(function (d) { d._status = r.status; return d; });
         }).then(function (d) {
           delete writeFlights[key];
-          if (!d.ok) { rejected = d.err || 'Unknown write-back error'; return; }
+          if (!d.ok) {
+            if (d.current) applyContent(c.i, c.ed, d.current.html, d.current.revision);
+            rejected = d.err || 'Unknown write-back error';
+            return;
+          }
+          contentRevisions[contentKey(c.i, c.ed)] = Number(d.fieldRevision) || 0;
           snapHist(c.i, c.ed);
-          var src = slides[c.i].querySelector('aside ' + c.ed.sel);
-          if (src) src.innerHTML = frag;
+          applyContent(c.i, c.ed, frag, d.fieldRevision);
           // 请求发出后可能又输入了新内容：只清掉本次真正写回的那一版。
           if (fragOfPage(c.i, c.ed) === frag) {
-            localStorage.removeItem(key);
+            dropDraft(c.i, c.ed);
             if (c.i === cur) c.ed.el.classList.remove('dirty');
           }
         }, function () {
@@ -2518,7 +2926,7 @@ var SEND_VERSION = false;
   })();
   // ===== CVEDIT-END =====
 
-  // ===== 页内分步(canvas 带 data-steps 的页,→ 先展开节点再翻页) =====
+  // ===== 页内分步：进入页面后自动推进；演讲者输入始终只负责翻页 =====
   function stepsOf(i) {
     var c = slides[i].querySelector('.canvas');
     return c && c.dataset.steps ? parseInt(c.dataset.steps, 10) : 0;
@@ -2531,78 +2939,159 @@ var SEND_VERSION = false;
     var c = slides[i].querySelector('.canvas');
     return c && c.dataset.initstep ? parseInt(c.dataset.initstep, 10) : 0;
   }
+  function frozenStepsOf(i) {
+    var c = slides[i].querySelector('.canvas');
+    return !!(c && c.dataset.stepfreeze === '1');
+  }
+  function autoStepsOf(i) {
+    return stepsOf(i) > 0 && !frozenStepsOf(i);
+  }
   function setStep(i, n) {
     var c = slides[i].querySelector('.canvas');
     if (c) c.dataset.step = n;
-    if (i === cur) prFlip(); // 步进(含 data-autostep 定时器)也同步给手机提词页,预览帧跟着换
+    if (i === cur) prFlip(); // 步进(含默认自动定时器)也同步给手机提词页,预览帧跟着换
   }
 
   var autoTimer = null;
   var leaveTimer = null, leavingEl = null;
+  var navigationRunning = false, navigationTarget = null;
+  var navigationQueue = [];
+  var navigationGeneration = 0;
+  function scheduleAutoSteps(i, interval) {
+    clearTimeout(autoTimer);
+    var target = i;
+    var delay = Math.max(120, parseInt(interval, 10) || 420);
+    function advance() {
+      if (cur !== target || stepOf(target) >= stepsOf(target)) return;
+      setStep(target, stepOf(target) + 1);
+      if (stepOf(target) < stepsOf(target)) autoTimer = setTimeout(advance, delay);
+    }
+    autoTimer = setTimeout(advance, delay);
+  }
+  window.hanyuFreezeStepsForExport = function () {
+    clearTimeout(autoTimer);
+    var canvas = slides[cur] && slides[cur].querySelector('.canvas');
+    if (!canvas) return;
+    canvas.dataset.stepfreeze = '1';
+    canvas.removeAttribute('data-autostep');
+  };
+  function clearLeavingBuffer(element) {
+    if (!element) return;
+    element.classList.remove('leaving');
+    element.classList.remove('on');
+    if (leavingEl === element) leavingEl = null;
+  }
+  function drainNavigationQueue() {
+    while (!navigationRunning && navigationQueue.length) {
+      var pending = navigationQueue.shift();
+      go(pending.i, pending.skipSave, pending.skipMotion);
+    }
+  }
   function go(i, skipSave, skipMotion) {
     if (i < 0 || i >= total || isArchived(i)) return;
+    if (navigationRunning) {
+      navigationQueue.push({ i: i, skipSave: skipSave, skipMotion: skipMotion });
+      return;
+    }
+    if (i === cur && slides[cur].classList.contains('current')) return;
+    skipMotion = !!skipMotion || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     var oldPos = activePosition(cur);
     var newPos = activePosition(i);
     var dirn = oldPos < 0 ? (i >= cur ? 1 : -1) : (newPos >= oldPos ? 1 : -1);
     if (!skipSave) { saveNote(); snapAll(cur); seedNow(); }
     clearTimeout(autoTimer);
-    // 出场:旧页加 .leaving 绝对定位叠在新页上淡出 450ms(快速连翻时立刻清掉上一个 leaving)。
-    // .on 在 current 与 leaving 期间都保留:入场动画全部挂 .slide.on 下,选择器在离场时不变,
-    // 动画不被重置、以当前帧继续播并随整页淡出——修"翻页时动画瞬间跳完成态再过渡"的闪动。
-    if (leavingEl) { leavingEl.classList.remove('leaving'); leavingEl.classList.remove('on'); leavingEl = null; }
     clearTimeout(leaveTimer);
+    if (leavingEl) clearLeavingBuffer(leavingEl);
     var old = slides[cur];
-    slides[cur].classList.remove('current');
-    if (old !== slides[i]) {
-      if (skipMotion) old.classList.remove('on');
-      else {
-        old.classList.add('leaving');
-        leavingEl = old;
-        leaveTimer = setTimeout(function () { old.classList.remove('leaving'); old.classList.remove('on'); if (leavingEl === old) leavingEl = null; }, 460);
-      }
+    var nextSlide = slides[i];
+    var newCanvas = nextSlide.querySelector('.canvas');
+    var keepOldAsBuffer = old !== nextSlide && !skipMotion;
+    // 先把旧页固定为完整不透明底层，再移除 current；新页从上方进入。
+    if (keepOldAsBuffer) {
+      old.classList.add('leaving');
+      leavingEl = old;
     }
+    slides[cur].classList.remove('current');
+    if (old !== nextSlide && !keepOldAsBuffer) clearLeavingBuffer(old);
     cur = i;
-    slides[cur].classList.add('current');
-    slides[cur].classList.add('on');
+    nextSlide.classList.toggle('page-motion-off', skipMotion);
+    nextSlide.classList.add('current');
+    nextSlide.classList.add('on');
     if (stepsOf(cur)) setStep(cur, initStepOf(cur));
     var pos = activePosition(cur);
     rollNum(pnCur, String(pos + 1), dirn);
     pnSep.textContent = '/ ' + activeTotal();
     pageTitle.textContent = slides[cur].dataset.title || '';
+    syncOutline();
     // 标题超出固定槽位就缩字号(下限 10px),槽位宽度不动、时间轴起点才稳
     pageTitle.style.fontSize = '';
     for (var fs = 15; fs > 11 && pageTitle.scrollWidth > pageTitle.clientWidth; fs -= 0.5) {
       pageTitle.style.fontSize = fs + 'px';
     }
     // 画布带 nav-narrow 类的页:翻页热区收窄到 4%,给页内悬停交互让位
-    document.body.classList.toggle('navnarrow', !!slides[cur].querySelector('.canvas.nav-narrow'));
+    document.body.classList.toggle('navnarrow', newCanvas.classList.contains('nav-narrow'));
     progressBar.style.width = ((pos + 1) / activeTotal() * 100) + '%';
     loadNotes(cur);
     location.hash = 'p' + (pos + 1);
-    // 声明 data-autostep(毫秒)的页:进页后延迟自动步进一步,不需手动 →
-    var ac = slides[cur].querySelector('.canvas[data-autostep]');
-    if (ac) {
-      var target = cur;
-      autoTimer = setTimeout(function () {
-        if (cur === target && stepOf(cur) < stepsOf(cur)) setStep(cur, stepOf(cur) + 1);
-      }, parseInt(ac.dataset.autostep, 10));
-    }
+    // 分步页默认自动推进到终态，data-autostep 只覆盖默认 420ms 间隔。
+    var ac = slides[cur].querySelector('.canvas[data-steps]');
+    if (ac && autoStepsOf(cur)) scheduleAutoSteps(cur, ac.dataset.autostep);
     prFlip();
+
+    if (!keepOldAsBuffer) return;
+    navigationRunning = true;
+    navigationTarget = i;
+    var generation = ++navigationGeneration;
+    var released = false;
+    function releaseNavigation() {
+      if (released || generation !== navigationGeneration) return;
+      released = true;
+      clearTimeout(leaveTimer);
+      clearLeavingBuffer(old);
+      navigationRunning = false;
+      navigationTarget = null;
+      drainNavigationQueue();
+    }
+    requestAnimationFrame(function () {
+      if (released || generation !== navigationGeneration) return;
+      var canvasMotions = newCanvas.getAnimations().filter(function (animation) {
+        return animation.effect && animation.effect.target === newCanvas && animation.playState !== 'finished';
+      });
+      if (canvasMotions.length) {
+        Promise.all(canvasMotions.map(function (animation) {
+          return animation.finished.catch(function () {});
+        })).then(releaseNavigation);
+        leaveTimer = setTimeout(function () {
+          canvasMotions.forEach(function (animation) { try { animation.finish(); } catch (e) {} });
+          releaseNavigation();
+        }, 3000);
+      } else {
+        releaseNavigation();
+      }
+    });
+  }
+  function goImmediate(i, skipSave) {
+    if (i < 0 || i >= total || isArchived(i) || i === cur) return;
+    navigationGeneration += 1;
+    navigationQueue.length = 0;
+    clearTimeout(leaveTimer);
+    if (leavingEl) clearLeavingBuffer(leavingEl);
+    navigationRunning = false;
+    navigationTarget = null;
+    go(i, skipSave, true);
+  }
+  function intendedNavigationIndex() {
+    if (navigationQueue.length) return navigationQueue[navigationQueue.length - 1].i;
+    if (navigationRunning && navigationTarget !== null) return navigationTarget;
+    return cur;
   }
   function next() {
-    if (stepOf(cur) < stepsOf(cur)) setStep(cur, stepOf(cur) + 1);
-    else {
-      var active = activeIndices(), pos = active.indexOf(cur);
-      if (pos >= 0 && pos + 1 < active.length) go(active[pos + 1]);
-    }
+    var active = activeIndices(), pos = active.indexOf(intendedNavigationIndex());
+    if (pos >= 0 && pos + 1 < active.length) go(active[pos + 1]);
   }
   function prev() {
-    // 只有声明了 data-steps 的页才回退步进;回退下限是 data-initstep(默认 0),静态硬编码 data-step 的页直接翻页
-    if (stepsOf(cur) && stepOf(cur) > initStepOf(cur)) setStep(cur, stepOf(cur) - 1);
-    else {
-      var active = activeIndices(), pos = active.indexOf(cur);
-      if (pos > 0) go(active[pos - 1]);
-    }
+    var active = activeIndices(), pos = active.indexOf(intendedNavigationIndex());
+    if (pos > 0) go(active[pos - 1]);
   }
 
   // ===== 总览 =====
@@ -2712,6 +3201,7 @@ var SEND_VERSION = false;
       updateTime();
       prFlip();
     }
+    buildOutline();
     prNotes();
     showArchiveToast(on ? 'Page archived.' : 'Page restored.', fromUndo ? null : function () {
       setArchived(i, !on, null, true);
@@ -2818,7 +3308,7 @@ var SEND_VERSION = false;
     activeIndices().forEach(function (i, pos) {
       var s = slides[i];
       lines.push('## P' + (pos + 1) + ' ' + (s.dataset.title || ''), '');
-      var txt = textOf(localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0]), EDS[0]);
+      var txt = textOf(contentOf(i, EDS[0]), EDS[0]);
       lines.push(txt || '(No script)', '');
     });
     var blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
@@ -2829,10 +3319,22 @@ var SEND_VERSION = false;
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function exportServer(kind) {
-    archiveWrite.then(function () { return fetch(api('/export'), {
+    // 服务端导出从磁盘内容仓水合讲稿。先把当前浏览器草稿写完；离线、冲突或
+    // 被租约拒绝时宁可停止导出，也不能静默固化旧讲稿。
+    saveNote();
+    clearTimeout(seedTimer);
+    var priorWrites = seedChain;
+    archiveWrite.then(function () { return priorWrites; }).then(function () {
+      seedAgain = false;
+      seedNow();
+      return seedChain;
+    }).then(function () {
+      if (dirtyPages().length) throw new Error(ledState.why || 'Script or notes are not saved yet.');
+      return fetch(api('/export'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ what: kind })
-      }); }).then(function (r) {
+      });
+    }).then(function (r) {
       if (r.status === 403) { alert('Access token missing. Refresh the page, then try exporting again.'); return { skip: 1 }; }
       return r.json();
     }).then(function (d) {
@@ -2847,6 +3349,8 @@ var SEND_VERSION = false;
     }).catch(function (error) {
       if (error && error.message === 'archive writeback failed') {
         alert('Archived pages are only saved in this browser. Start the local service, refresh, and try exporting again.');
+      } else if (dirtyPages().length) {
+        alert('Export stopped: ' + (error && error.message ? error.message : 'Save the latest script and notes, then try again.'));
       } else {
         alert('The local service is offline. Start the launcher, then try again.');
       }
@@ -2863,6 +3367,158 @@ var SEND_VERSION = false;
   var segThumb = segView.querySelector('.thumb');
   var view = 'default';
   var viewAnimT = null;
+  function outlinePageNo(n) { return String(n).padStart(2, '0'); }
+  function buildOutline() {
+    if (!outlineTree) return;
+    outlineTree.innerHTML = '';
+    var active = activeIndices();
+    outlineCount.textContent = active.length + ' PAGES';
+    var groups = [];
+    active.forEach(function (source, pos) {
+      var slide = slides[source];
+      var name = slide.dataset.part || 'Pages';
+      var group = groups[groups.length - 1];
+      if (!group || group.name !== name) {
+        group = { name: name, pages: [] };
+        groups.push(group);
+      }
+      group.pages.push({ source: source, page: pos + 1, title: slide.dataset.outline || slide.dataset.title || '' });
+    });
+    groups.forEach(function (group) {
+      var part = document.createElement('section');
+      part.className = 'outline-part';
+      var head = document.createElement('div');
+      head.className = 'outline-part-head';
+      var title = document.createElement('span');
+      title.className = 'outline-part-title';
+      title.textContent = group.name;
+      var range = document.createElement('span');
+      range.className = 'outline-part-range';
+      var first = group.pages[0].page, last = group.pages[group.pages.length - 1].page;
+      range.textContent = first === last ? outlinePageNo(first) : outlinePageNo(first) + '–' + outlinePageNo(last);
+      head.appendChild(title); head.appendChild(range); part.appendChild(head);
+      var pages = document.createElement('div');
+      pages.className = 'outline-pages';
+      group.pages.forEach(function (entry) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'outline-page';
+        button.dataset.source = entry.source;
+        var no = document.createElement('span');
+        no.className = 'outline-page-no'; no.textContent = outlinePageNo(entry.page);
+        var label = document.createElement('span');
+        label.className = 'outline-page-title'; label.textContent = entry.title;
+        button.appendChild(no); button.appendChild(label);
+        button.addEventListener('click', function () { go(entry.source, false, true); });
+        pages.appendChild(button);
+      });
+      part.appendChild(pages); outlineTree.appendChild(part);
+    });
+    if (!Number.isFinite(parseInt(localStorage.getItem(OUTLINE_WIDTH_KEY), 10))) applyOutlineWidth(measureOutlineAutoWidth());
+    syncOutline();
+  }
+  function syncOutline() {
+    if (!outlineTree) return;
+    Array.prototype.forEach.call(outlineTree.querySelectorAll('.outline-page'), function (button) {
+      button.classList.toggle('now', parseInt(button.dataset.source, 10) === cur);
+    });
+    if (document.body.classList.contains('outline-open')) {
+      var now = outlineTree.querySelector('.outline-page.now');
+      if (now) now.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  function setOutline(on) {
+    if (SEND_VERSION) return;
+    if (on && view !== 'default') setView('default');
+    if (!on && document.activeElement &&
+        (document.activeElement === outlineGrip || (outlineTree && outlineTree.contains(document.activeElement)))) {
+      outlineToggle.focus({ preventScroll: true });
+    }
+    if (on) {
+      var rememberedWidth = parseInt(localStorage.getItem(OUTLINE_WIDTH_KEY), 10);
+      applyOutlineWidth(Number.isFinite(rememberedWidth) ? rememberedWidth : measureOutlineAutoWidth());
+    }
+    document.body.classList.toggle('outline-open', on);
+    localStorage.setItem(OUTLINE_KEY, on ? '1' : '0');
+    syncOutlineAccessibility(on);
+    outlineToggle.setAttribute('aria-expanded', on ? 'true' : 'false');
+    outlineToggle.setAttribute('aria-label', on ? 'Close outline' : 'Open outline');
+    if (on) syncOutline();
+    fitSlide();
+  }
+  function toggleOutline() { setOutline(!document.body.classList.contains('outline-open')); }
+  if (outlineToggle) {
+    var outlineInitiallyOpen = document.body.classList.contains('outline-open');
+    syncOutlineAccessibility(outlineInitiallyOpen);
+    outlineToggle.setAttribute('aria-expanded', outlineInitiallyOpen ? 'true' : 'false');
+    outlineToggle.setAttribute('aria-label', outlineInitiallyOpen ? 'Close outline' : 'Open outline');
+    outlineToggle.addEventListener('click', toggleOutline);
+  }
+  if (outlineGrip) {
+    (function () {
+      var startX = 0, startWidth = 0, currentWidth = 0, collapseReady = false, fitRequest = 0;
+      function refitOutline() {
+        if (fitRequest) return;
+        fitRequest = requestAnimationFrame(function () { fitRequest = 0; fitSlide(); });
+      }
+      function moveOutlineGrip(event) {
+        var rawWidth = startWidth + event.clientX - startX;
+        if (rawWidth >= OUTLINE_MIN_WIDTH) {
+          collapseReady = false;
+          document.body.classList.remove('outline-collapse-ready');
+          currentWidth = applyOutlineWidth(rawWidth);
+        } else {
+          var overdrag = OUTLINE_MIN_WIDTH - rawWidth;
+          if (!collapseReady && overdrag >= OUTLINE_COLLAPSE_DISTANCE) collapseReady = true;
+          if (collapseReady && overdrag <= OUTLINE_COLLAPSE_DISTANCE - OUTLINE_COLLAPSE_HYSTERESIS) collapseReady = false;
+          currentWidth = OUTLINE_MIN_WIDTH;
+          document.body.classList.toggle('outline-collapse-ready', collapseReady);
+          applyOutlineOverdrag(overdrag);
+          if (collapseReady) outlineGrip.setAttribute('aria-valuetext', 'Release to close outline');
+          else outlineGrip.removeAttribute('aria-valuetext');
+        }
+        refitOutline();
+      }
+      function stopOutlineResize(event, cancelled) {
+        if (outlineGrip.releasePointerCapture && outlineGrip.hasPointerCapture && outlineGrip.hasPointerCapture(event.pointerId)) outlineGrip.releasePointerCapture(event.pointerId);
+        outlineGrip.removeEventListener('pointermove', moveOutlineGrip);
+        outlineGrip.removeEventListener('pointerup', finishOutlineResize);
+        outlineGrip.removeEventListener('pointercancel', cancelOutlineResize);
+        var shouldCollapse = collapseReady && !cancelled;
+        collapseReady = false;
+        document.body.classList.remove('outline-resizing', 'outline-collapse-ready');
+        if (cancelled) { applyOutlineWidth(startWidth); fitSlide(); return; }
+        if (shouldCollapse) { applyOutlineWidth(OUTLINE_MIN_WIDTH); setOutline(false); return; }
+        currentWidth = applyOutlineWidth(currentWidth);
+        localStorage.setItem(OUTLINE_WIDTH_KEY, String(currentWidth));
+        fitSlide();
+      }
+      function finishOutlineResize(event) { stopOutlineResize(event, false); }
+      function cancelOutlineResize(event) { stopOutlineResize(event, true); }
+      outlineGrip.addEventListener('pointerdown', function (event) {
+        if (!document.body.classList.contains('outline-open') || !event.isPrimary || event.button !== 0) return;
+        event.preventDefault();
+        startX = event.clientX;
+        startWidth = outlineDrawer.getBoundingClientRect().width;
+        currentWidth = startWidth;
+        collapseReady = false;
+        document.body.classList.add('outline-resizing');
+        outlineGrip.setPointerCapture && outlineGrip.setPointerCapture(event.pointerId);
+        outlineGrip.addEventListener('pointermove', moveOutlineGrip);
+        outlineGrip.addEventListener('pointerup', finishOutlineResize);
+        outlineGrip.addEventListener('pointercancel', cancelOutlineResize);
+      });
+      outlineGrip.addEventListener('keydown', function (event) {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault(); event.stopPropagation();
+        var step = event.shiftKey ? 32 : 12;
+        var current = outlineDrawer.getBoundingClientRect().width;
+        currentWidth = applyOutlineWidth(current + (event.key === 'ArrowRight' ? step : -step));
+        localStorage.setItem(OUTLINE_WIDTH_KEY, String(currentWidth));
+        fitSlide();
+      });
+    })();
+  }
   function beginViewAnim() {
     document.body.classList.add('view-anim');
     clearTimeout(viewAnimT);
@@ -2922,6 +3578,7 @@ var SEND_VERSION = false;
     document.body.classList.toggle('raw', on);
     syncToolbar();
     fitSlide();
+    if (!on) requestAnimationFrame(refreshTimelineWidth);
   }
   function toggleRaw() { setRaw(!document.body.classList.contains('raw')); }
   document.addEventListener('fullscreenchange', function () {
@@ -3120,10 +3777,33 @@ var SEND_VERSION = false;
   document.getElementById('zonePrev').addEventListener('click', prev);
   document.getElementById('zoneNext').addEventListener('click', next);
 
+  var leaseTimers = {}, leaseSlides = {};
+  function leasePost(ed, action, leasedSlide) {
+    if (SEND_VERSION) return Promise.resolve();
+    return fetch(api('/content/lease'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slideId: leasedSlide || leaseSlides[ed.field] || slideId(cur), field: ed.field, owner: CONTENT_OWNER, action: action })
+    }).then(function (r) { if (!r.ok) throw new Error('lease ' + r.status); }).catch(function () {});
+  }
+  function leaseStart(ed) {
+    clearInterval(leaseTimers[ed.field]);
+    leaseSlides[ed.field] = slideId(cur);
+    leasePost(ed, 'acquire', leaseSlides[ed.field]);
+    leaseTimers[ed.field] = setInterval(function () { leasePost(ed, 'renew', leaseSlides[ed.field]); }, 3000);
+  }
+  function leaseStop(ed) {
+    var leasedSlide = leaseSlides[ed.field];
+    clearInterval(leaseTimers[ed.field]);
+    leaseTimers[ed.field] = 0;
+    seedNow();
+    setTimeout(function () { if (document.activeElement !== ed.el) leasePost(ed, 'release', leasedSlide); }, 1200);
+  }
   EDS.forEach(function (ed) {
+    ed.el.addEventListener('focus', function () { leaseStart(ed); });
+    ed.el.addEventListener('blur', function () { leaseStop(ed); });
     ed.el.addEventListener('input', function () {
       saveNote();       // 每次输入立即落到浏览器，避免 Notes 在 3 秒窗口内丢失
-      scheduleSeed();  // 停止输入 3 秒后再合并写回源文件
+      scheduleSeed();  // 停止输入 3 秒后写入共享内容仓
     });
   });
 
@@ -3285,8 +3965,8 @@ var SEND_VERSION = false;
     prPost('/notes', { total: active.length, sourceTotal: total, pages: active.map(function (i, pos) {
       var s = slides[i];
       // 讲稿过 canonNs 再推:手机拿到的恒为行类型类格式(旧标记种子也被转掉)
-      var html = canonNs(i === cur ? edScript.innerHTML : (localStorage.getItem(EDS[0].key + (i + 1)) || seedOf(i, EDS[0])));
-      var comm = i === cur ? edComm.innerHTML : (localStorage.getItem(EDS[1].key + (i + 1)) || seedOf(i, EDS[1]));
+      var html = canonNs(i === cur ? edScript.innerHTML : contentOf(i, EDS[0]));
+      var comm = i === cur ? edComm.innerHTML : contentOf(i, EDS[1]);
       return { n: pos + 1, source: i + 1, title: s.dataset.title || '', html: html, comm: comm, sec: Math.round(estSec(html)) };
     }) });
   }
@@ -3294,9 +3974,16 @@ var SEND_VERSION = false;
   edScript.addEventListener('input', function () { clearTimeout(prTimer); prTimer = setTimeout(prNotes, 1200); });
   edComm.addEventListener('input', function () { clearTimeout(prTimer); prTimer = setTimeout(prNotes, 1200); });
   // 手机遥控:监听本地服务的 cmd 事件(手机在同步态翻页/点总览时发来);EventSource 断线自动重连。
-  // dir=方向步进,与键盘 → 同走 next()/prev()(页内动画先步进再翻页);page=总览直接跳页
-  if (PR_ON) try {
-    new EventSource(api('/events')).addEventListener('cmd', function (e) {
+  // dir=翻页方向,与键盘 → 同走 next()/prev():演讲者输入始终只翻页;page=总览直接跳页
+  if (!SEND_VERSION) try {
+    var deckEvents = new EventSource(api('/events'));
+    deckEvents.addEventListener('content', function (e) {
+      var d = JSON.parse(e.data), i = -1;
+      slides.some(function (_slide, n) { if (slideId(n) === d.slideId) { i = n; return true; } return false; });
+      var ed = d.field === 'script' ? EDS[0] : (d.field === 'note' ? EDS[1] : null);
+      if (i >= 0 && ed) applyContent(i, ed, d.html, d.fieldRevision);
+    });
+    if (PR_ON) deckEvents.addEventListener('cmd', function (e) {
       var d = JSON.parse(e.data);
       if (d.dir) { if (d.dir > 0) next(); else prev(); return; }
       var n = sourceAtActivePosition((d.page | 0) - 1);
@@ -3310,13 +3997,14 @@ var SEND_VERSION = false;
   var m = location.hash.match(/^#p(\d+)$/);
   if (m) start = Math.min(Math.max(parseInt(m[1], 10) - 1, 0), activeTotal() - 1);
   start = sourceAtActivePosition(start);
-  go(start, true, true); // 与翻页同一入口:data-autostep 等进页行为在直开链接时同样生效
+  buildOutline();
+  go(start, true, true); // 与翻页同一入口:data-steps 默认自动推进等进页行为在直开链接时同样生效
   syncToolbar();
   fitSlide();
   if (archiveNeedsWrite) persistArchiveState();
   prNotes();
   refreshLed();
-  seedNow();       // 上次没写成的改动(当时服务没开)进页即补写
+  loadContentStore().then(seedNow, seedNow); // 先取共享真源，再补写上次离线留下的浏览器草稿
 })();
 </script>
 </body>

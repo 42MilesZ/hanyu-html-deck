@@ -23,11 +23,13 @@ import urllib.parse
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from deck_content import ContentConflict, ensure_store, patch_store, read_store
 from deck_source import archived_slide_pages, set_archived_slides
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 INDEX_FILE = os.path.join(ROOT, "index.html")
+CONTENT_FILE = os.path.join(ROOT, "deck-content.json")
 PHONE_FILE = os.path.join(HERE, "prompter-phone.html")
 NOTES_FILE = os.path.join(HERE, ".prompter-notes.json")
 STATE_FILE = os.path.join(HERE, ".prompter-state.json")
@@ -52,6 +54,9 @@ state = {"seq": int(time.time()), "page": 1, "step": 0, "steps": 0, "nv": ""}
 notes = None
 lock = threading.Lock()
 seed_lock = threading.Lock()
+content_lock = threading.RLock()
+content_leases = {}
+CONTENT_LEASE_SECONDS = 8
 sse_clients = []
 phone_seen = {}
 export_busy = False
@@ -516,7 +521,10 @@ def run_export(kind):
         export_busy = False
 
 
-LOCAL_ONLY = ("/archive", "/canvas", "/seed", "/export", "/notes", "/flip", "/info", "/qr.svg")
+LOCAL_ONLY = (
+    "/archive", "/canvas", "/seed", "/export", "/notes", "/flip", "/info", "/qr.svg",
+    "/content", "/content/lease", "/content/patch",
+)
 PHONE_PATHS = ("/", "/p", "/notes.json", "/events", "/goto", "/phone-heartbeat")
 MAX_SSE_CLIENTS = 8
 
@@ -659,6 +667,10 @@ class Handler(BaseHTTPRequestHandler):
             with lock:                      # 锁内只取快照:发送在锁外,慢客户端卡不住其他请求
                 payload = {"nv": state["nv"], "notes": notes}
             self.send_json(payload)
+        elif path == "/content":
+            with content_lock:
+                payload = read_store(CONTENT_FILE)
+            self.send_json(payload)
         elif re.match(r"^/thumbs/\d+\.jpg$", path):
             number = int(re.search(r"(\d+)", path).group(1))
             target = thumb_path(number)
@@ -739,7 +751,81 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"err": "参数不对"}, 400)
 
     def handle_post(self, path, body):
-        if path == "/flip":
+        if path == "/content/lease":
+            slide_id = body.get("slideId") or ""
+            field = body.get("field") or ""
+            owner = body.get("owner") or ""
+            action = body.get("action") or "acquire"
+            if field not in ("script", "note") or not slide_id or not owner:
+                self.send_json({"err": "参数不对"}, 400)
+                return
+            key = (slide_id, field)
+            now = time.monotonic()
+            with content_lock:
+                active = content_leases.get(key)
+                if active and active["expires"] <= now:
+                    content_leases.pop(key, None)
+                    active = None
+                if action == "release":
+                    if active and active["owner"] == owner:
+                        content_leases.pop(key, None)
+                    self.send_json({"ok": 1})
+                    return
+                if action not in ("acquire", "renew"):
+                    self.send_json({"err": "未知的租约动作"}, 400)
+                    return
+                if active and active["owner"] != owner:
+                    self.send_json({"err": "这个字段正在另一处编辑"}, 423)
+                    return
+                content_leases[key] = {"owner": owner, "expires": now + CONTENT_LEASE_SECONDS}
+            self.send_json({"ok": 1, "expiresIn": CONTENT_LEASE_SECONDS})
+        elif path == "/content/patch":
+            slide_id = body.get("slideId") or ""
+            field = body.get("field") or ""
+            fragment = body.get("html")
+            owner = body.get("owner") or ""
+            if field not in ("script", "note") or not slide_id or not owner or not isinstance(fragment, str):
+                self.send_json({"err": "参数不对"}, 400)
+                return
+            safe, why = check_markup(fragment, NOTE_TAGS, NOTE_ATTRS)
+            if not safe:
+                self.send_json({"err": why}, 400)
+                return
+            key = (slide_id, field)
+            with content_lock:
+                now = time.monotonic()
+                active = content_leases.get(key)
+                if active and active["expires"] <= now:
+                    content_leases.pop(key, None)
+                    active = None
+                if active and active["owner"] != owner:
+                    self.send_json({"err": "这个字段正在另一处编辑"}, 423)
+                    return
+                try:
+                    store, current = patch_store(
+                        CONTENT_FILE, slide_id, field, fragment, int(body.get("baseRevision"))
+                    )
+                except ContentConflict as error:
+                    latest = read_store(CONTENT_FILE)["slides"].get(slide_id, {}).get(field)
+                    self.send_json({"err": str(error), "current": latest}, 409)
+                    return
+                except KeyError as error:
+                    self.send_json({"err": str(error)}, 404)
+                    return
+            selector = "ns" if field == "script" else "nc"
+            if slide_id in store["order"]:
+                sync_notes_page(store["order"].index(slide_id) + 1, fragment, selector)
+            event = {
+                "slideId": slide_id,
+                "field": field,
+                "html": current["html"],
+                "fieldRevision": current["revision"],
+                "revision": store["revision"],
+                "actor": owner,
+            }
+            broadcast("content", event)
+            self.send_json({"ok": 1, **event})
+        elif path == "/flip":
             with lock:
                 state["seq"] += 1
                 state["page"] = int(body.get("page") or 1)
@@ -865,6 +951,7 @@ class Server(ThreadingHTTPServer):
 
 def main():
     global notes
+    ensure_store(INDEX_FILE, CONTENT_FILE)
     if os.path.exists(NOTES_FILE):
         try:
             with open(NOTES_FILE, encoding="utf-8") as handle:

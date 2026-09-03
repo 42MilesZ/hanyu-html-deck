@@ -4,12 +4,12 @@
     {
       "id": 1,
       "prompt": "Create an eight-page Chinese HTML presentation for a product strategy review. Include speaker scripts, revision notes, a comparison page, a data page, and a phone teleprompter. Keep the work local-only.",
-      "expected_output": "A Hanyu HTML Deck-based folder with 1920×1080 slides, bilingual Chinese-English natural-paragraph .ns scripts, .nc notes, English non-content UI, reused comparison/data patterns, and no public relay."
+      "expected_output": "A Hanyu HTML Deck-based folder with 1920×1080 slides, stable slide IDs, chapter and outline metadata, bilingual Chinese-English natural-paragraph .ns scripts, .nc notes, English non-content UI, and no public relay."
     },
     {
       "id": 2,
       "prompt": "Revise an existing Hanyu HTML Deck so the notes drawer is optional and remembered, while script and notes edits save automatically and write back to the source when the local service is available.",
-      "expected_output": "Separate deck-scoped localStorage state, bilingual plain-paragraph scripts, automatic source write-back with visible save status, and an Export script action without a redundant changed-notes clipboard workflow."
+      "expected_output": "Separate deck-scoped browser drafts, a deck-content.json collaboration store, revision-aware automatic write-back with visible save status, and an Export script action without a redundant changed-notes clipboard workflow."
     },
     {
       "id": 3,

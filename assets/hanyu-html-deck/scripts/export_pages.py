@@ -4,11 +4,14 @@
 from playwright.sync_api import sync_playwright
 import pathlib, json, re, tempfile
 
+from deck_content import ensure_store
+
 BASE = pathlib.Path(__file__).resolve().parent.parent
 URL = (BASE / "index.html").as_uri()
 OUT = BASE / "导出图片"
 WORK = pathlib.Path(tempfile.gettempdir()) / "deck-export"
 WORK.mkdir(parents=True, exist_ok=True)
+CONTENT = ensure_store(BASE / "index.html", BASE / "deck-content.json")
 
 # 把入场动画/过渡压到 1ms:截图恒为静态终态(与总览缩略图同一原则)
 FF_CSS = "*{animation-delay:0s !important;animation-duration:1ms !important;transition-duration:1ms !important;transition-delay:0s !important;}"
@@ -24,6 +27,14 @@ with tempfile.TemporaryDirectory(prefix="deck-export-pages-", dir=str(BASE)) as 
         def load(p):
             pg.goto("about:blank")
             pg.goto(URL + f"#p{p}")
+            pg.evaluate("""store => document.querySelectorAll('#stage .slide').forEach((slide, i) => {
+              const id = slide.dataset.slideId || `slide-${String(i + 1).padStart(3, '0')}`;
+              const item = store.slides && store.slides[id];
+              if (!item) return;
+              const script = slide.querySelector('aside .ns'), note = slide.querySelector('aside .nc');
+              if (script && item.script) script.innerHTML = item.script.html;
+              if (note && item.note) note.innerHTML = item.note.html;
+            })""", CONTENT)
             pg.evaluate("document.body.classList.add('present', 'exporting'); window.dispatchEvent(new Event('resize'))")
             pg.add_style_tag(content=FF_CSS)
             pg.wait_for_timeout(350)

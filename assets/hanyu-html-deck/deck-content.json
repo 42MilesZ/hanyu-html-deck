@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "revision": 0,
+  "order": [
+    "slide-001",
+    "slide-002",
+    "slide-003",
+    "slide-004",
+    "slide-005",
+    "slide-006"
+  ],
+  "slides": {
+    "slide-001": {
+      "title": "本地演示台",
+      "script": {
+        "html": "<p>这是本地演示台。它让 AI 做的 PPT 不只停在第一版，而是直接走完生成、修改、提词和交付。</p><p>This is Hanyu HTML Deck. It takes an AI-made presentation from the first draft through editing, prompting, and final delivery.</p><p>接下来只看四个最亮眼的功能。</p><p>Here are the four features that matter most.</p>",
+        "revision": 0
+      },
+      "note": {
+        "html": "<p>视频开场直接切入四个亮点；鼠标扫过右侧功能时可录下轻微位移反馈。</p>",
+        "revision": 0
+      }
+    },
+    "slide-002": {
+      "title": "AI 生成整场演示",
+      "script": {
+        "html": "<p>给 AI 一份内容，它会同时生成演示页面、逐页讲稿和讲解动画。</p><p>Give AI the source content, and it creates the slides, page-by-page script, and explanatory motion together.</p><p>拿到的不是一组静态页面，而是一场可以直接讲的演示。</p><p>The result is not a stack of static pages. It is a presentation ready to deliver.</p>",
+        "revision": 0
+      },
+      "note": {
+        "html": "<p>画面中的三张内容层会依次装配；悬停可让三层稍微展开。</p>",
+        "revision": 0
+      }
+    },
+    "slide-003": {
+      "title": "在页面上直接改",
+      "script": {
+        "html": "<p>看到不合适的文字，直接在页面上改。讲稿和备注也能在同一个界面里调整。</p><p>When a line feels wrong, edit it on the page. The script and notes live in the same workspace.</p><p>启动本地演示台后，修改会自动回到源文件，改完就是下一版。</p>",
+        "revision": 0
+      },
+      "note": {
+        "html": "<p>页面自动演示“旧文案划掉—新文案出现—写回完成”，适合直接录屏。</p>",
+        "revision": 0
+      }
+    },
+    "slide-004": {
+      "title": "手机提词与遥控",
+      "script": {
+        "html": "<p>打开手机，就能同步看到当前页讲稿。需要时，还可以切换备注。</p><p>Open the phone prompter to see the current page script in sync, with notes one tap away.</p><p>手机前后翻页，电脑会同步响应。一部手机，就是提词器和遥控器。</p><p>Move forward or back on the phone and the computer follows. One phone becomes both prompter and remote.</p>",
+        "revision": 0
+      },
+      "note": {
+        "html": "<p>同步线连接电脑与手机；录制时可悬停手机，让设备轻微抬起。</p>",
+        "revision": 0
+      }
+    },
+    "slide-005": {
+      "title": "讲完立即交付",
+      "script": {
+        "html": "<p>演示完成后，可以直接导出每页图片、PDF，或者一份可以独立打开的 HTML。</p><p>When the presentation is ready, export page images, a PDF, or a standalone HTML file directly.</p><p>不用再整理第二套文件，讲完就能发出去。</p><p>There is no second package to rebuild. Finish the talk, then send it.</p>",
+        "revision": 0
+      },
+      "note": {
+        "html": "<p>三个交付物从母版向外展开；悬停其中一个格式可点亮。</p>",
+        "revision": 0
+      }
+    },
+    "slide-006": {
+      "title": "从第一版到正式上台",
+      "script": {
+        "html": "<p>从第一版到正式上台，本地演示台把演示需要的每一步连在一起。</p><p>From the first draft to the live stage, Hanyu HTML Deck connects every step of the presentation workflow.</p><p>让 AI 做的 PPT，直接走到台前。</p><p>Take an AI-made presentation all the way to the stage.</p>",
+        "revision": 0
+      },
+      "note": {
+        "html": "<p>封尾停留两秒后结束视频。</p>",
+        "revision": 0
+      }
+    }
+  }
+}

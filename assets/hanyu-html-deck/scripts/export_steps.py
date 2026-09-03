@@ -30,7 +30,9 @@ with tempfile.TemporaryDirectory(prefix="deck-export-steps-", dir=str(BASE / "sc
             pg.goto(URL + "#p%d" % m['page'])
             pg.evaluate("document.body.classList.add('present'); window.dispatchEvent(new Event('resize'))")
             pg.add_style_tag(content=FF_CSS)
-            pg.wait_for_timeout(1600)  # 等 data-autostep 定时器走完,之后手动设 step 不再被它覆盖
+            # 导出每个离散关键帧时关闭自动连续步进，避免计时器覆盖脚本手动设置的 step。
+            pg.evaluate("window.hanyuFreezeStepsForExport()")
+            pg.wait_for_timeout(250)
             for s in range(0, m['steps'] + 1):
                 pg.evaluate("document.querySelector('.slide.current .canvas').dataset.step = %d" % s)
                 pg.wait_for_timeout(250)

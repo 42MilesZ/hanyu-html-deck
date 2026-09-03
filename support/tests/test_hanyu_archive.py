@@ -105,7 +105,7 @@ class DeckArchiveContractTests(unittest.TestCase):
 
     def test_archive_writeback_is_protected_local_endpoint(self):
         server = (DECK / "scripts" / "prompter_server.py").read_text(encoding="utf-8")
-        self.assertIn('LOCAL_ONLY = ("/archive",', server)
+        self.assertIn('"/archive", "/canvas", "/seed", "/export"', server)
         self.assertIn('elif path == "/archive":', server)
         self.assertIn("save_archive(archived, dom_total)", server)
 
@@ -131,6 +131,22 @@ class DeckArchiveContractTests(unittest.TestCase):
         self.assertIn('.prompter-step-state.json', steps)
         self.assertIn("this.style.visibility = 'hidden'", phone)
         self.assertIn("img.addEventListener('error'", phone)
+
+    def test_autostep_runs_continuously_and_step_export_disables_it(self):
+        self.assertIn("function scheduleAutoSteps(i, interval)", self.html)
+        self.assertIn("autoTimer = setTimeout(advance, delay)", self.html)
+        self.assertIn("function frozenStepsOf(i)", self.html)
+        self.assertIn("function autoStepsOf(i)", self.html)
+        self.assertIn("return stepsOf(i) > 0 && !frozenStepsOf(i)", self.html)
+        self.assertIn("if (ac && autoStepsOf(cur)) scheduleAutoSteps(cur, ac.dataset.autostep)", self.html)
+        self.assertNotIn("function manualStepsOf(i)", self.html)
+        self.assertIn("case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':", self.html)
+        self.assertIn("e.preventDefault(); next(); break;", self.html)
+        steps = (DECK / "scripts" / "export_steps.py").read_text(encoding="utf-8")
+        self.assertIn("window.hanyuFreezeStepsForExport = function ()", self.html)
+        self.assertIn("clearTimeout(autoTimer)", self.html)
+        self.assertIn("canvas.dataset.stepfreeze = '1'", self.html)
+        self.assertIn("window.hanyuFreezeStepsForExport()", steps)
 
 
 if __name__ == "__main__":

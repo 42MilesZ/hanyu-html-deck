@@ -11,13 +11,14 @@ import subprocess
 import sys
 import tempfile
 
+from deck_content import ensure_store, hydrate_html
 from deck_source import strip_archived_slides
 
 BASE = pathlib.Path(__file__).resolve().parent.parent
 TMP = pathlib.Path(tempfile.gettempdir()) / "deck-export" / "send-img"
 TMP.mkdir(parents=True, exist_ok=True)
 SOURCE = (BASE / "index.html").read_text(encoding="utf-8")
-html = SOURCE
+html = hydrate_html(SOURCE, ensure_store(BASE / "index.html", BASE / "deck-content.json"))
 
 
 def fail(message):

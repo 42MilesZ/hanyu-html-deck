@@ -2,7 +2,7 @@
   "criteria": [
     {
       "name": "uses_hanyu_deck_structure",
-      "description": "Uses .slide > .canvas + aside with one .ns and one .nc block per page.",
+      "description": "Uses .slide > .canvas + aside with one .ns and one .nc block per page, a unique stable data-slide-id, and data-part/data-outline metadata.",
       "weight": 2
     },
     {
@@ -27,13 +27,18 @@
     },
     {
       "name": "visual_system",
-      "description": "The result uses the restrained 1920×1080 visual system and reuses suitable page patterns.",
+      "description": "The result uses a 1920×1080 canvas and creates page layouts from the content instead of treating the six sample pages as a visual template library.",
       "weight": 1
     },
     {
       "name": "export_contract",
-      "description": "Provides full-script export and changed-notes copy with the agreed labels.",
+      "description": "Provides full-script export and the documented image, PDF, and standalone HTML outputs with the agreed labels.",
       "weight": 1
+    },
+    {
+      "name": "collaborative_content_store",
+      "description": "Treats deck-content.json as the script and note source of truth and uses field revisions rather than silently overwriting concurrent edits.",
+      "weight": 2
     }
   ]
 }

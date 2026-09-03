@@ -40,14 +40,14 @@ It is not a slide design template. There are no themes, color schemes, or ready-
 
 | Feature | HTML only | Local service |
 |---|:---:|:---:|
-| Slide navigation, overview, presentation mode | ✓ | ✓ |
+| Navigation, authoring outline, chapter timeline, overview, presentation mode | ✓ | ✓ |
 | Archive, browse, and restore slides from overview | ✓ | ✓ |
 | Step animations and hover interactions | ✓ | ✓ |
 | Edit script and notes in the browser | ✓ | ✓ |
 | Remember panel and drawer state | ✓ | ✓ |
 | Export script | ✓ | ✓ |
 | Phone teleprompter and remote | | ✓ |
-| Write script, notes, and canvas text back to source | | ✓ |
+| Write scripts and notes to the collaborative content store, and canvas text back to source | | ✓ |
 | Export page images, PDF, and a standalone send copy | | ✓ |
 
 The local service stays on the current LAN. It does not use a public relay or upload speaker content. Cross-network control is intentionally out of scope.
@@ -68,7 +68,7 @@ cd hanyu-html-deck
 python3 scripts/create_deck.py ~/Documents/my-deck
 ```
 
-Open `my-deck/启动本地演示台.command`: it starts the local service and, once the service is ready, opens the deck. Update `DECK.name` and `DECK.key` near the end of `index.html`, then replace the sample content. Double-clicking `index.html` directly also works for offline viewing, but it will not write back.
+Open `my-deck/启动本地演示台.command`: it starts the local service and, once the service is ready, opens the deck. Update `DECK.name` and `DECK.key` near the end of `index.html`, then replace the six sample pages. Give each page a stable `data-slide-id`, a chapter in `data-part`, and a short outline label in `data-outline`. Double-clicking `index.html` directly also works for offline viewing, but it will not write back.
 
 The core HTML works in modern browsers on macOS, Windows, and Linux. In version 0.1 the local service, launcher, and export workflow are verified on macOS only: image, PDF, and send-copy exports rely on the macOS `sips` command. On Windows and Linux, run `python3 scripts/prompter_server.py` to use phone prompting and write-back; the exports are unavailable.
 
@@ -109,7 +109,9 @@ The bottom script panel starts collapsed to a single header row. Press `N` to ex
 
 Once expanded, a sidebar icon at the bottom right of the script column opens the notes drawer, and closes it again. Drag the drawer's left edge to resize the notes column; the width is remembered. Notes can hold revision requests, supporting information, or personal reminders. Closing the drawer only changes the view; it does not delete content.
 
-Panel and drawer state are stored separately in localStorage and scoped by `DECK.key`.
+`deck-content.json` is the collaborative source of truth for scripts and notes; `.ns/.nc` in the HTML are offline seeds. Browser drafts, caches, and histories are keyed by stable slide ID. Field writes use revisions and short leases so a browser and an AI tool do not silently overwrite one another.
+
+The left outline is generated from each slide's `data-part` and `data-outline` and appears only in the default authoring view. The bottom timeline groups pages by chapter, preserves a usable minimum hit area for short pages, and degrades to equal widths when space is tight. Changing speaking speed updates time labels without changing the timeline geometry.
 
 The export menu includes:
 
@@ -137,7 +139,7 @@ For a formal presentation, test the connection 5–10 minutes early, move forwar
 
 Phone prompting, remote control, and source write-back need Python 3 only. The QR generator is vendored.
 
-Image and PDF exports additionally require:
+Image and PDF exports, along with the repository's real-browser behavior tests, additionally require:
 
 ```bash
 python3 -m pip install playwright
@@ -148,7 +150,7 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 
 ## Source write-back
 
-- Script and note edits are saved in the browser immediately. While the local service is running, they write back to `index.html` automatically 3 seconds after you stop typing. There is no save button.
+- Script and note edits are saved in the browser immediately. While the local service is running, they write to `deck-content.json` automatically 3 seconds after you stop typing. There is no save button.
 - With the service stopped, the deck does not write back: edits live in the browser (they survive a reload), and the save status says why. Start the service and change any character to flush the pending edits.
 - Why a credential: any web page in your browser can present itself as a local file (`Origin: null`) and post to a service on your machine, so "came from this machine" is not a sufficient check. On startup the service stamps a one-time credential into `index.html` and clears it on exit; write-back, exports, and phone prompting all require it, and other pages cannot obtain it.
 - So the page has to be opened after the service starts. If it was already open, the save status tells you to reload. The launcher waits for the service to answer before opening the deck.
@@ -160,7 +162,7 @@ The single-file HTML export does not require Playwright. It embeds fonts and ima
 
 ## Keyboard
 
-- `← / →`: previous page / next step or page
+- `← / →`: previous page / next page; in-page states advance automatically after entry
 - `P` or `F`: presentation mode
 - `O`: overview
 - `N`: expand or collapse the script panel
@@ -175,11 +177,11 @@ Offline changes are stored in the browser; with the local service running, the s
 
 ## Repository files
 
-`scripts/create_deck.py` copies only the template, fonts, local service, and user documentation into a new Deck. Repository-maintenance files live under `support/` and are not included in generated projects:
+`scripts/create_deck.py` copies only the runnable template, fonts, local service, and the `LICENSE` that must accompany copies of the software, then initializes `deck-content.json` from the HTML seeds. It excludes maintenance contracts, repository documentation, runtime state, and export intermediates. Repository-only material stays under `support/`:
 
 - `support/tests/` checks page-to-note alignment, separate UI state, local-network boundaries, and agreed product labels.
 - `support/evals/` checks whether an AI agent follows the Skill when creating a Deck.
-- `support/THIRD_PARTY_NOTICES.md` records the bundled font and QR-generator licenses; generated Decks receive a copy at their root.
+- `support/THIRD_PARTY_NOTICES.md` summarizes the bundled font and QR-generator licenses; the font and vendored QR directories retain their original license files.
 - `.github/workflows/ci.yml` runs the tests after each push.
 
 ## License
