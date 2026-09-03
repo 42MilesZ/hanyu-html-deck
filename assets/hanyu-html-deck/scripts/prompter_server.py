@@ -669,7 +669,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(payload)
         elif path == "/content":
             with content_lock:
-                payload = read_store(CONTENT_FILE)
+                payload = ensure_store(INDEX_FILE, CONTENT_FILE)
             self.send_json(payload)
         elif re.match(r"^/thumbs/\d+\.jpg$", path):
             number = int(re.search(r"(\d+)", path).group(1))
@@ -802,6 +802,9 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({"err": "这个字段正在另一处编辑"}, 423)
                     return
                 try:
+                    # 服务运行期间源 HTML 也可能被 Agent 插页或重排；每次正式写入前
+                    # 重新核对 ID 与 order，不能沿用启动时的页面快照。
+                    ensure_store(INDEX_FILE, CONTENT_FILE)
                     store, current = patch_store(
                         CONTENT_FILE, slide_id, field, fragment, int(body.get("baseRevision"))
                     )

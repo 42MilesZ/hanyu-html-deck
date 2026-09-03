@@ -183,13 +183,29 @@ def hydrate_html(document, store):
     return document
 
 
-def _server_patch(args):
+def _server_url(args, path):
     root = pathlib.Path(args.root).resolve()
     index_path = root / "index.html"
     token_match = TOKEN_RE.search(index_path.read_text(encoding="utf-8"))
     token = token_match.group(1) if token_match else ""
     if not token:
         raise SystemExit("本地演示台未连接：先运行“启动本地演示台.command”")
+    return "http://127.0.0.1:%d%s?t=%s" % (args.port, path, token)
+
+
+def _server_show(args):
+    request = urllib.request.Request(_server_url(args, "/content"))
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", "replace")
+        raise SystemExit("读取失败（HTTP %d）：%s" % (error.code, detail))
+    except urllib.error.URLError as error:
+        raise SystemExit("本地演示台未连接：%s" % error.reason)
+
+
+def _server_patch(args):
     value = pathlib.Path(args.value_file).read_text(encoding="utf-8")
     payload = json.dumps(
         {
@@ -201,8 +217,9 @@ def _server_patch(args):
         },
         ensure_ascii=False,
     ).encode("utf-8")
-    url = "http://127.0.0.1:%d/content/patch?t=%s" % (args.port, token)
-    request = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    request = urllib.request.Request(
+        _server_url(args, "/content/patch"), data=payload, headers={"Content-Type": "application/json"}
+    )
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             print(response.read().decode("utf-8"))
@@ -218,7 +235,8 @@ def main():
     parser.add_argument("--root", default=str(pathlib.Path(__file__).resolve().parent.parent))
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("init")
-    sub.add_parser("show")
+    show = sub.add_parser("show")
+    show.add_argument("--port", type=int, default=8123)
     patch = sub.add_parser("patch")
     patch.add_argument("--slide-id", required=True)
     patch.add_argument("--field", choices=FIELDS, required=True)
@@ -233,9 +251,8 @@ def main():
         store = ensure_store(root / "index.html", content_path)
         print("已初始化 %d 页内容仓" % len(store["order"]))
     elif args.command == "show":
-        if not content_path.exists():
-            raise SystemExit("内容仓尚未初始化：先启动本地演示台或运行 init")
-        store = read_store(content_path)
+        # 与 patch 共用服务端单写者边界；/content 会在 content_lock 内核对当前 HTML。
+        store = _server_show(args)
         json.dump(store, sys.stdout, ensure_ascii=False, indent=2)
         print()
     else:

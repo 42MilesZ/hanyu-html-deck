@@ -39,7 +39,7 @@ description: Use when creating or revising a local-first HTML presentation with 
 - 备注写在 `.nc` 中。它既可保存修改意见，也可保存补充说明或个人提醒。
 - 每页都有且只有一个 `.ns` 和一个 `.nc`，顺序不变；`.ns` 是演讲者讲稿，`.nc` 是出处、问题、参数和个人提醒。
 - `deck-content.json` 是讲稿与备注的协作真源，HTML 中的 `.ns/.nc` 只是离线种子。不要直接编辑内容仓。
-- AI 修改讲稿或备注时，先运行 `python3 scripts/deck_content.py show` 读取修订号，再用 `patch --slide-id ... --field script|note --base-revision ... --value-file ...` 提交。
+- AI 修改讲稿或备注时，本地演示台必须保持运行；先执行 `python3 scripts/deck_content.py show` 经服务读取修订号，再用 `patch --slide-id ... --field script|note --base-revision ... --value-file ...` 提交。
 - 普通入场挂在 `.slide.on` 下，并为 `.ovItem`、`body.exporting` 和 `body.raw` 提供静态终态。
 - 页内自动状态使用 `data-steps`、`data-step` 与可选的 `data-autostep`。演讲者输入只负责翻页；需要独立停留讲述的状态拆成单独页面。
 
