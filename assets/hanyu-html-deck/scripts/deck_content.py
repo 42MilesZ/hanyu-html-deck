@@ -111,13 +111,15 @@ def write_store(content_path, store):
             os.unlink(temporary)
 
 
-def ensure_store(index_path, content_path):
+def ensure_store(index_path, content_path, *, persist=True):
+    """合并当前种子与已保存修订；导出用 persist=False，避免修改源稿。"""
     index_path = pathlib.Path(index_path)
     document = index_path.read_text(encoding="utf-8")
     seeds = _new_store(document)
     path = pathlib.Path(content_path)
     if not path.exists():
-        write_store(path, seeds)
+        if persist:
+            write_store(path, seeds)
         return seeds
     store = read_store(path)
     changed = False
@@ -141,7 +143,7 @@ def ensure_store(index_path, content_path):
     if store.get("order") != seeds["order"]:
         store["order"] = seeds["order"]
         changed = True
-    if changed:
+    if changed and persist:
         write_store(path, store)
     return store
 

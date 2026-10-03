@@ -159,6 +159,8 @@ python3 -m playwright install chromium
 
 发送版 HTML 不需要 Playwright。发送版会内联字体和图片，并剥除备注与浏览器写回代码。
 
+命令行运行 `python3 scripts/build_send.py`；可用 `--root /稿件目录 --output /发送版.html` 导出其他稿件，源稿与内容仓只读。字体子集化可选安装 `fonttools brotli`，缺失时保留完整字体；`--no-subset` 可关闭子集化。
+
 ## 浏览器写回
 
 - 讲稿与备注的改动会立即保存在浏览器中；本地服务在跑时，停止输入 3 秒后自动写回 `deck-content.json`，不需要点保存。

@@ -148,6 +148,8 @@ python3 -m playwright install chromium
 
 The single-file HTML export does not require Playwright. It embeds fonts and images and removes notes and source write-back code.
 
+Run `python3 scripts/build_send.py`; use `--root /deck --output /send.html` to export another deck without modifying its source or content store. Optional `fonttools brotli` dependencies enable font subsetting; otherwise fonts remain complete. Use `--no-subset` to disable subsetting.
+
 ## Source write-back
 
 - Script and note edits are saved in the browser immediately. While the local service is running, they write to `deck-content.json` automatically 3 seconds after you stop typing. There is no save button.
