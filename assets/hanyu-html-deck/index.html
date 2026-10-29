@@ -1353,26 +1353,9 @@
   .ovItem .v-generate .v-sheet:nth-child(3), body.exporting .v-generate .v-sheet:nth-child(3), body.raw .v-generate .v-sheet:nth-child(3) { transform: rotate(-1deg); }
   .ovItem .v-editor .edit-before, body.exporting .v-editor .edit-before, body.raw .v-editor .edit-before { opacity: 0 !important; }
   .ovItem .v-editor .edit-after, body.exporting .v-editor .edit-after, body.raw .v-editor .edit-after { transform: none; }
-  @media (prefers-reduced-motion: reduce) {
-    .slide.on .canvas, .slide.on .vdeck *, .slide.leaving { animation: none !important; transition: none !important; }
-    .slide.on .canvas { opacity: 1 !important; }
-    .slide.on .vdeck * { opacity: 1 !important; }
-    .slide.on .v-editor .edit-before { opacity: 0 !important; }
-    .slide.on .v-editor .edit-after { transform: none; }
-    .v-cover .cover-feature:hover, .v-phone-body:hover, .v-output:hover { transform: none; }
-    .v-stack:hover .v-sheet:nth-child(1) { transform: rotate(-5deg); }
-    .v-stack:hover .v-sheet:nth-child(2) { transform: rotate(2deg); }
-    .v-stack:hover .v-sheet:nth-child(3) { transform: rotate(-1deg); }
-  }
 
   /* ===== 画布就地编辑:双击画布文字直接改,失焦后经本地服务写回本文件源文 ===== */
 
-  @media (prefers-reduced-motion: reduce) {
-    body, #overview, #notesPanel, #notesToggle, #segView .thumb,
-    body.notes-anim #stage, body.notes-anim .navzone,
-    body.view-anim #stage, body.view-anim #stage .slide.current,
-    .ovItem.archiving, #ovArchiveToggle.bump, #archiveToast { animation: none !important; transition: none !important; }
-  }
 </style>
 </head>
 <body class="notes-mini">
@@ -2994,7 +2977,7 @@ var SEND_VERSION = false;
       return;
     }
     if (i === cur && slides[cur].classList.contains('current')) return;
-    skipMotion = !!skipMotion || !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    skipMotion = !!skipMotion;
     var oldPos = activePosition(cur);
     var newPos = activePosition(i);
     var dirn = oldPos < 0 ? (i >= cur ? 1 : -1) : (newPos >= oldPos ? 1 : -1);
@@ -3100,8 +3083,6 @@ var SEND_VERSION = false;
   var archiveUndoAction = null;
   var archiveWrite = Promise.resolve();
   var archiveFocusSource = null;
-  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
-  function motionDelay(ms) { return reduceMotion && reduceMotion.matches ? 0 : ms; }
   function archiveIcon(restore) {
     return restore
       ? '<svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h2M20 8v11a2 2 0 0 1-2 2h-2m-7-6l3-3l3 3m-3-3v9"></path></g></svg>'
@@ -3165,7 +3146,7 @@ var SEND_VERSION = false;
     ovArchiveToggle.classList.remove('bump');
     void ovArchiveToggle.offsetWidth;
     ovArchiveToggle.classList.add('bump');
-    setTimeout(function () { ovArchiveToggle.classList.remove('bump'); }, motionDelay(280));
+    setTimeout(function () { ovArchiveToggle.classList.remove('bump'); }, 280);
   }
   function setArchived(i, on, item, fromUndo) {
     if (SEND_VERSION || !slides[i] || isArchived(i) === on) return;
@@ -3208,7 +3189,7 @@ var SEND_VERSION = false;
     });
     if (item) item.classList.add('archiving');
     bumpArchiveCount();
-    setTimeout(function () { buildOverview(); }, item ? motionDelay(220) : 0);
+    setTimeout(function () { buildOverview(); }, item ? 220 : 0);
   }
   function buildOverview() {
     ovGrid.innerHTML = '';

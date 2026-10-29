@@ -213,7 +213,7 @@ class TemplateTests(unittest.TestCase):
         self.assertIn("}, 560);", self.html)
         self.assertIn("go(i, false, true)", self.html)
         self.assertIn("requestAnimationFrame(function () { setView('default'); })", self.html)
-        self.assertIn("prefers-reduced-motion: reduce", self.html)
+        self.assertNotIn("prefers-reduced-motion", self.html)
 
     def test_overview_thumbnail_scale_ignores_entrance_transform(self):
         overview = self.html.split("function buildOverview()", 1)[1].split(
